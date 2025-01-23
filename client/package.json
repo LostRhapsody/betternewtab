@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@clerk/clerk-js": "^5.47.0",
+    "@supabase/supabase-js": "^2.48.0",
     "@types/lodash": "^4.17.14",
     "axios": "^1.7.9",
     "fuse.js": "^7.0.0",

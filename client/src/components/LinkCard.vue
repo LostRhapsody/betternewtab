@@ -25,19 +25,21 @@ const isMdiIcon = computed(() => props.icon?.startsWith('mdi-'))
     :ripple="false"
   >
     <div class="d-flex align-center flex-grow-1">
-      <v-icon
-          v-if="isMdiIcon"
-          :icon="icon"
-          size="36"
-          class="mr-4"
-          color="primary"
-        />
-        <img
-          v-else
-          :src="icon"
-          alt=""
-          class="custom-icon mr-4"
-        />
+      <div v-if="icon !== ''">
+        <v-icon
+            v-if="isMdiIcon"
+            :icon="icon"
+            size="36"
+            class="mr-4"
+            color="primary"
+          />
+          <img
+            v-else
+            :src="icon"
+            alt=""
+            class="custom-icon mr-4"
+          />
+      </div>
       <div>
         <div class="text-h6">{{ title }}</div>
         <div class="text-body-2 text-medium-emphasis">{{ description }}</div>

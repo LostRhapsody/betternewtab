@@ -3,9 +3,11 @@ import { ref, nextTick, onMounted } from 'vue';
 import SearchBar from './components/SearchBar.vue';
 import LinkColumns from './components/LinkColumns.vue';
 import LandingPage from './components/LandingPage.vue';
-import type { iLinkCard } from './types/LinkCard';
 import { useApi } from './composables/useApi';
 import { Clerk } from "@clerk/clerk-js";
+import { linkUtils } from './composables/useDatabase';
+import type { Tables } from './types/Database';
+type Link = Tables<'links'>;
 
 const { api } = useApi()
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -13,30 +15,28 @@ const clerk = new Clerk(clerkPubKey);
 
 const isLoggedIn = ref(false);
 const showSignIn = ref(false);
+const isLoading = ref(true);
 
-const tools: iLinkCard[] = [
-  { icon: 'mdi-gmail', title: 'Gmail', description: 'Email service', link: 'https://mail.google.com' },
-  { icon: 'mdi-calendar', title: 'Google Calendar', description: 'Calendar service', link: 'https://calendar.google.com' },
-];
+const userId = ref<string | null>(null);
 
-const docs: iLinkCard[] = [
-  { icon: 'mdi-file-document', title: 'Google Docs', description: 'Document creation', link: 'https://docs.google.com' },
-  { icon: 'mdi-google-spreadsheet', title: 'Google Sheets', description: 'Spreadsheet creation', link: 'https://sheets.google.com' },
-  { icon: 'mdi-google-drive', title: 'Google Drive', description: 'File storage', link: 'https://drive.google.com' },
-];
+const tools = ref<Link[]>([]);
+const docs = ref<Link[]>([]);
+const handleToolAdded = (tool: Link) => {
+  tools.value.push(tool);
+};
 
-const news: iLinkCard[] = [
-  { icon: 'mdi-information', title: '"Company News"', description: 'Relevant news for all employees will display here periodically once integrated.', link: 'https://google.com' },
-];
+const handleDocAdded = (doc: Link) => {
+  docs.value.push(doc);
+};
 
 const showHelpDialog = ref(false);
 
-const toolShortcuts = tools.map((tool, index) => ({
+const toolShortcuts = tools.value.map((tool, index) => ({
   shortcut: `Ctrl+${index + 1}`,
   description: `Open ${tool.title}`
 }));
 
-const docShortcuts = docs.map((doc, index) => ({
+const docShortcuts = docs.value.map((doc, index) => ({
   shortcut: `Alt+${index + 1}`,
   description: `Open ${doc.title}`
 }));
@@ -52,87 +52,109 @@ function handleShowSignIn() {
 }
 
 onMounted(async () => {
+  isLoading.value = true;
   await clerk.load();
   isLoggedIn.value = !!clerk.user;
 
   if (isLoggedIn.value) {
+    // mostly for type checks
+    if(!clerk.user) return;    
+    userId.value = clerk.user.id;
+    const links = await linkUtils.getUserLinks(clerk.user.id);
+    for(const link of links) {
+      if (link.column_type === "tools") handleToolAdded(link); else handleDocAdded(link);
+    }
+
+  } // end if is logged in
+
+  isLoading.value = false;
+  if(isLoggedIn.value) {
     nextTick(() => {
+      // mount the 'user edit' button
       const userButtonDiv = document.getElementById('user-button');
+      console.log(userButtonDiv);
       if (userButtonDiv) {
         clerk.mountUserButton(userButtonDiv as HTMLDivElement);
       }
     });
   }
+
 });
 </script>
 
 <template>
   <v-theme-provider theme="dark">
-    <div v-if="isLoggedIn"  class="mt-16">
-      <v-container class="bg-primary text-center">
-        <v-row align="center" justify="end" class="text-end">
-          <v-col>
-            <v-btn id="user-button">User</v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-      <div class="header">
-        <h1 class="mt-16 text-3xl">
-          <v-icon icon="mdi-rocket" size="24" />
-          Better New Tab
-        </h1>
-        <v-btn icon="mdi-help" @click="showHelpDialog = true"></v-btn>
-      </div>
-      <SearchBar :tools="tools" :docs="docs" />
-      <LinkColumns :tools="tools" :docs="docs" />
-      <v-dialog v-model="showHelpDialog" max-width="900px">
-        <v-card>
-          <v-card-title class="headline">Help</v-card-title>
-          <v-card-text>
-            <h3 class="text-xl">Search Bar Controls</h3>
-            <p>While in the search bar, type in a Jira Ticket number for relevant links, then use arrow keys or your mouse to navigate</p>
-            <br />
-            <h3 class="text-xl">Keyboard Shortcuts</h3>
-            <br />
-            <h4 class="text-lg"><v-icon icon="mdi-chevron-right" />Tools and Docs</h4>
-            <v-row>
-              <v-col>
-                <ul>
-                  <li v-for="shortcut in toolShortcuts" :key="shortcut.shortcut">
-                    <strong>{{ shortcut.shortcut }}</strong>: {{ shortcut.description }}
-                  </li>
-                </ul>
-              </v-col>
-              <v-col>
-                <ul>
-                  <li v-for="shortcut in docShortcuts" :key="shortcut.shortcut">
-                    <strong>{{ shortcut.shortcut }}</strong>: {{ shortcut.description }}
-                  </li>
-                </ul>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn variant="tonal" @click="showHelpDialog = false">Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+    <div v-if="isLoading" class="h-screen flex items-center justify-center">
+      <v-progress-circular indeterminate />
     </div>
-    <div v-else class="mt-16">
-      <v-container class="bg-primary text-center">
-        <v-row align="center" justify="end" class="text-end">
-          <v-col>
-            <v-btn @click="handleShowSignIn" color="primary">Login</v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-      <LandingPage />
-      <v-dialog v-model="showSignIn" max-width="600px">
-        <div class="m-auto">
-          <div id="sign-in"></div>
+    <div v-else>
+      <div v-if="isLoggedIn" class="mt-16">
+        <v-container class="bg-primary text-center">
+          <v-row align="center" justify="end" class="text-end">
+            <v-col>
+              <v-btn id="user-button">User</v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
+        <div class="header">
+          <h1 class="mt-16 text-3xl">
+            <v-icon icon="mdi-rocket" size="24" />
+            Better New Tab
+          </h1>
+          <v-btn icon="mdi-help" @click="showHelpDialog = true"></v-btn>
         </div>
+        <SearchBar :tools="tools" :docs="docs" />
+        <LinkColumns :tools="tools" :docs="docs" :userId="userId" :can-add-links="true" @tool-added="handleToolAdded"
+        @doc-added="handleDocAdded" />
+        <v-dialog v-model="showHelpDialog" max-width="900px">
+          <v-card>
+            <v-card-title class="headline">Help</v-card-title>
+            <v-card-text>
+              <h3 class="text-xl">Search Bar Controls</h3>
+              <p>While in the search bar, type in a Jira Ticket number for relevant links, then use arrow keys or your mouse to navigate</p>
+              <br />
+              <h3 class="text-xl">Keyboard Shortcuts</h3>
+              <br />
+              <h4 class="text-lg"><v-icon icon="mdi-chevron-right" />Tools and Docs</h4>
+              <v-row>
+                <v-col>
+                  <ul>
+                    <li v-for="shortcut in toolShortcuts" :key="shortcut.shortcut">
+                      <strong>{{ shortcut.shortcut }}</strong>: {{ shortcut.description }}
+                    </li>
+                  </ul>
+                </v-col>
+                <v-col>
+                  <ul>
+                    <li v-for="shortcut in docShortcuts" :key="shortcut.shortcut">
+                      <strong>{{ shortcut.shortcut }}</strong>: {{ shortcut.description }}
+                    </li>
+                  </ul>
+                </v-col>
+              </v-row>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn variant="tonal" @click="showHelpDialog = false">Close</v-btn>
+            </v-card-actions>
+          </v-card>
         </v-dialog>
+      </div>
+      <div v-else class="mt-16">
+        <v-container class="bg-primary text-center">
+          <v-row align="center" justify="end" class="text-end">
+            <v-col>
+              <v-btn @click="handleShowSignIn" color="primary">Login</v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
+        <LandingPage />
+        <v-dialog v-model="showSignIn" max-width="600px">
+          <div class="m-auto">
+            <div id="sign-in"></div>
+          </div>
+          </v-dialog>
+      </div>
     </div>
   </v-theme-provider>
 </template>

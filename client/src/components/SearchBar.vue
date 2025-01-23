@@ -52,7 +52,7 @@
             <div v-for="(result, index) in fuzzyResults" :key="result.item.title" class="dropdown-item"
               :class="{ focused: focusedIndex === index }" @mouseover="focusedIndex = index">
               <div>{{ result.item.title }}</div>
-              <a :href="result.item.link" target="_blank">{{ result.item.description }} <v-icon icon="mdi-link" /></a>
+              <a :href="result.item.url" target="_blank">{{ result.item.description }} <v-icon icon="mdi-link" /></a>
             </div>
           </div>
         </div>
@@ -87,12 +87,14 @@
   import { useTheme } from 'vuetify';
   import Fuse from 'fuse.js'
   import type { FuseResult } from 'fuse.js';
-  import type { iLinkCard } from '../types/LinkCard';
+  import type { Tables } from '../types/Database';
+  type Link = Tables<'links'>;
+
   import { debounce } from 'lodash';
 
   interface Props {
-    tools: iLinkCard[];
-    docs: iLinkCard[];
+    tools: Link[];
+    docs: Link[];
   }
 
   interface HistoryItem {
@@ -291,7 +293,7 @@
             } else {
               // Handle fuzzy result selection
               const fuzzyIndex = focusedIndex.value - historyLength;
-              window.open(fuzzyResults.value[fuzzyIndex].item.link, '_blank');
+              window.open(fuzzyResults.value[fuzzyIndex].item.url, '_blank');
               searchQuery.value = '';
             }
           }
@@ -345,7 +347,7 @@
   });
 
   // Fuzzy search setup
-  const fuse = new Fuse<iLinkCard>([...props.tools, ...props.docs], {
+  const fuse = new Fuse<Link>([...props.tools, ...props.docs], {
     keys: ['title', 'description'],
     threshold: 0.3,
     findAllMatches: false,
@@ -366,7 +368,7 @@
     }]
   }));
 
-  const fuzzyResults = ref<FuseResult<iLinkCard>[]>([]);
+  const fuzzyResults = ref<FuseResult<Link>[]>([]);
 
   // Create a debounced search function
   const debouncedFuzzySearch = debounce((query: string) => {
