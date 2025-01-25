@@ -14,7 +14,7 @@ type Link = Tables<'links'>;
 const { api } = useApi()
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerk = new Clerk(clerkPubKey);
-const userTeams = ref<Array<{ id: string; name: string; role: string }>>([]);
+const userTeams = ref<Array<{ id: string; name: string; role: string; organization_id: string; }>>([]);
 const showTeamManageModal = ref(false);
 const selectedTeamId = ref<string>('');
 
@@ -23,9 +23,10 @@ const isLoggedIn = ref(false);
 const showSignIn = ref(false);
 const isLoading = ref(true);
 const currentRole = ref('member');
+const isOrganization = ref(false);
 
 const userId = ref<string | null>(null);
-  const userPlan = ref<Tables<'plans'> | null>(null);
+const userPlan = ref<Tables<'plans'> | null>(null);
 
 const tools = ref<Link[]>([]);
 const docs = ref<Link[]>([]);
@@ -102,7 +103,6 @@ onMounted(async () => {
     nextTick(() => {
       // mount the 'user edit' button
       const userButtonDiv = document.getElementById('user-button');
-      console.log(userButtonDiv);
       if (userButtonDiv) {
         clerk.mountUserButton(userButtonDiv as HTMLDivElement);
       }
@@ -117,8 +117,16 @@ async function loadUserTeams() {
   userTeams.value = teams.map(t => ({
     id: t.entity_id,
     name: t.teams?.name || '',
-    role: t.role
-  })).filter(t => t.role === 'admin');
+    role: t.role,
+    organization_id: t.teams?.organization_id || ''
+  })).filter(t => t.role === 'admin' || t.role === 'owner');
+
+  for (const team of userTeams.value) {
+    if (team.organization_id.length > 0) {
+      isOrganization.value = true;
+      break;
+    }
+  }
 }
 
 const plans: Tables<'plans'>[] = [
@@ -130,18 +138,25 @@ const plans: Tables<'plans'>[] = [
     id: ''
   },
   {
-    name: 'pro',
+    name: 'plus',
     max_pins: 20,
-    features: { custom_domains: true, analytics: true, team_features: false },
+    features: { custom_domains: false, analytics: false, team_features: false },
     created_at: null,
-    id: ''
+    id: '5eb628db-35df-4c0d-80b8-2a609aa8bddd'
   },
   {
     name: 'team',
     max_pins: 50,
     features: { custom_domains: true, analytics: true, team_features: true },
     created_at: null,
-    id: ''
+    id: '48c706b0-6da9-439a-8ce5-916544130a70'
+  },
+  {
+    name: 'enterprise',
+    max_pins: 100,
+    features: { custom_domains: true, analytics: true, team_features: true },
+    created_at: null,
+    id: 'f5dfd34a-62a0-4963-8b82-097a06baf99f'
   }
 ];
 
@@ -175,20 +190,23 @@ function switchPlan(plan: typeof plans[0]) {
               </v-btn>
               <!-- Show Manage Teams dropdown if teams exist -->
               <template v-if="userTeams.length > 0">
-                <v-menu>
+                <v-menu v-if="isOrganization">
                   <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" class="ml-2">
                       Manage Teams
                       <v-icon right>mdi-chevron-down</v-icon>
                     </v-btn>
                   </template>
-                  <v-list>
+                  <v-list v-if=isOrganization>
                     <v-list-item v-for="team in userTeams" :key="team.id"
                       @click="selectedTeamId = team.id; showTeamManageModal = true">
                       <v-list-item-title>{{ team.name }}</v-list-item-title>
                     </v-list-item>
                   </v-list>
                 </v-menu>
+                <v-btn v-else @click="showTeamManageModal = true; selectedTeamId = userTeams[0].id" class="ml-2">
+                  Manage Team
+                </v-btn>
               </template>
             </v-col>
           </v-row>
@@ -255,7 +273,7 @@ function switchPlan(plan: typeof plans[0]) {
         </v-dialog>
       </div>
     </div>
-    <TeamManageModal  v-model="showTeamManageModal" :teamId="selectedTeamId" :userId="userId"
+    <TeamManageModal  v-model="showTeamManageModal" :teamId="selectedTeamId" :userId="userId" :planId="userPlan?.id"
       @linkAdded="loadUserTeams" />
   </v-theme-provider>
   <div class="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg z-50">

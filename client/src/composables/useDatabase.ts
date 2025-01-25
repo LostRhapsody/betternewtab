@@ -119,6 +119,7 @@ export const teamUtils = {
     return data.map(membership => ({
       entity_id: membership.entity_id,
       role: membership.role,
+			organization_id: teams.find(t => t.id === membership.entity_id)?.organization_id,
       teams: teams.find(t => t.id === membership.entity_id)
     }));
   },
@@ -144,30 +145,22 @@ export const teamUtils = {
     }));
   },
 
-  async createTeam(team: Omit<Team, 'id' | 'created_at'>, userId: string) {
-    const { data: teamData, error: teamError } = await supabase
-      .from('teams')
-      .insert(team)
-      .select()
-      .single();
+	// function to create a team
+	async createTeam(
+		currentUserId: string,
+		selectedPlanId: string,
+		teamName: string,
+		organizationId?: string
+	) {
+		const { data: teamId, error } = await supabase
+		.rpc('create_team', {
+			team_name: teamName,
+			owner_id: currentUserId,
+			plan_id: selectedPlanId,
+			org_id: organizationId // optional
+		});
+	},
 
-    if (teamError) throw teamError;
-
-    const membership = {
-      user_id: userId,
-      entity_id: teamData.id,
-      entity_type: 'team',
-      role: 'owner'
-    };
-
-    const { error: membershipError } = await supabase
-      .from('user_memberships')
-      .insert(membership);
-
-    if (membershipError) throw membershipError;
-
-    return teamData;
-  },
 
   async updateTeam(teamId: string, updates: Partial<Omit<Team, 'id' | 'created_at'>>) {
     const { data, error } = await supabase
@@ -193,22 +186,14 @@ export const teamUtils = {
 
 export const membershipUtils = {
 	async addMember(
-		email: string,
+		userId: string,
 		entityId: string,
 		entityType: "team" | "organization",
 		role: string,
 	) {
-		// First get user ID from email
-		const { data: userData, error: userError } = await supabase
-			.from("user_memberships")
-			.select("user_id")
-			.eq("email", email)
-			.single();
-
-		if (userError) throw userError;
 
 		const membership = {
-			user_id: userData.user_id,
+			user_id: userId,
 			entity_id: entityId,
 			entity_type: entityType,
 			role,
