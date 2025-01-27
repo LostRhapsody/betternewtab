@@ -310,7 +310,13 @@ impl Supabase {
             .await?;
 
         println!("response: {:?}", response);
-        Ok(response.json().await?)
+
+        if response.status().is_success() {
+            let links: Vec<Link> = response.json().await.unwrap_or_else(|_| vec![]);
+            Ok(links)
+        } else {
+            Err(anyhow::anyhow!("Failed to get links: {}", response.status()))
+        }
     }
 
     pub async fn create_link(
