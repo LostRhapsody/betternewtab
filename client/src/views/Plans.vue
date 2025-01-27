@@ -87,11 +87,7 @@
             </v-list>
           </v-card-item>
           <v-card-actions class="pa-4">
-            <v-btn block color="primary" variant="flat" @click="handleUpgrade({
-              id: 'price_team_monthly',
-              name: 'Team',
-              price: 8
-            })">Start Team Trial</v-btn>
+            <a class="w-full" color="primary" :href=TeamPlanUrl><v-btn block variant="flat" color="primary">Upgrade to Teams</v-btn></a>
           </v-card-actions>
         </v-card>
 
@@ -148,6 +144,7 @@ const selectedPlan = ref({
   price: 0
 });
 const PlusPlanUrl = import.meta.env.VITE_PLUS_PLAN_URL;
+const TeamPlanUrl = import.meta.env.VITE_TEAM_PLAN_URL;
 
 const handleBack = () => {
   router.go(-1);

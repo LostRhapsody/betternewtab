@@ -2,53 +2,27 @@
   <div v-if="isLoading" class="h-screen flex items-center justify-center">
     <v-progress-circular indeterminate />
   </div>
-  <div v-else>
-    <div v-if="isLoggedIn" class="mt-16">
+  <v-container v-else>
+    <div v-if="isLoggedIn">
       <v-container class="bg-primary">
         <v-row class="items-center">
           <v-col>
-            Plan:{{ userPlan?.name }} <br /> Max pins:{{ userPlan?.max_pins }} <br /> Role:{{ currentRole }}
+            <h1 class="text-3xl">
+              Better New Tab
+            </h1>
           </v-col>
-          <v-col class="justify-end flex items-center">
-            <v-btn id="user-button"></v-btn>
-            <!-- Show Create Team button if on team plan and no teams exist -->
-            <v-btn v-if="userPlan?.name === 'team' && currentRole !== 'member' && userTeams.length === 0"
-              @click="showTeamManageModal = true; selectedTeamId = ''" class="ml-2">
-              Create Team
-            </v-btn>
-            <v-btn class="ml-2" v-if="userPlan?.name === 'free'" @click="router.push('/plans');">Upgrade</v-btn>
-            <!-- Show Manage Teams dropdown if teams exist -->
-            <template v-if="userTeams.length > 0">
-              <v-menu v-if="isOrganization">
-                <template v-slot:activator="{ props }">
-                  <v-btn v-bind="props" class="ml-2">
-                    Manage Teams
-                    <v-icon right>mdi-chevron-down</v-icon>
-                  </v-btn>
-                </template>
-                <v-list v-if=isOrganization>
-                  <v-list-item v-for="team in userTeams" :key="team.id"
-                    @click="selectedTeamId = team.id; showTeamManageModal = true">
-                    <v-list-item-title>{{ team.name }}</v-list-item-title>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
-              <v-btn v-else @click="showTeamManageModal = true; selectedTeamId = userTeams[0].id" class="ml-2">
-                Manage Team
-              </v-btn>
-            </template>
+          <v-col class="flex justify-end">
+            <div class="flex justify-evenly w-1/2">
+              <button id="user-button"></button>
+              <v-btn icon="mdi-cog" @click="router.push('/settings');" class="!w-[42px] !h-[42px]" />
+              <v-btn icon="mdi-help" @click="showHelpDialog = true" class="!w-[42px] !h-[42px]"></v-btn>
+            </div>
           </v-col>
         </v-row>
       </v-container>
 
       <!-- Rest of the template remains unchanged -->
-      <div class="header">
-        <h1 class="mt-16 text-3xl">
-          <v-icon icon="mdi-rocket" size="24" />
-          Better New Tab
-        </h1>
-        <v-btn icon="mdi-help" @click="showHelpDialog = true"></v-btn>
-      </div>
+
       <SearchBar :tools="tools" :docs="docs" />
       <LinkColumns v-if="userPlan" :tools="tools" :docs="docs" :userId="userId" :maxPins="userPlan.max_pins"
         :canAddLinks="canShowAddLink" @tool-added="handleToolAdded" @doc-added="handleDocAdded"
@@ -104,9 +78,7 @@
         </div>
       </v-dialog>
     </div>
-  </div>
-  <TeamManageModal v-model="showTeamManageModal" :teamId="selectedTeamId" :userId="userId" :planId="userPlan?.id"
-    @linkAdded="loadUserData" />
+  </v-container>
   <div class="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg z-50">
     <div class="mb-4">
       <h3 class="text-sm font-semibold mb-2">Plans:</h3>
@@ -139,7 +111,9 @@ import type { Tables } from '../types/Database';
 import SearchBar from '../components/SearchBar.vue';
 import LinkColumns from '../components/LinkColumns.vue';
 import LandingPage from '../components/LandingPage.vue';
-import TeamManageModal from '../components/TeamManageModal.vue';
+import {useUserStore} from '../stores/user';
+
+const userStore = useUserStore()
 
 type Link = Tables<'links'>;
 
@@ -154,7 +128,6 @@ const isLoggedIn = ref(false);
 const isLoading = ref(true);
 const showSignIn = ref(false);
 const showHelpDialog = ref(false);
-const showTeamManageModal = ref(false);
 const selectedTeamId = ref<string>('');
 const isOrganization = ref(false);
 
@@ -219,11 +192,19 @@ const loadUserData = async () => {
       throw new Error('No user email found');
     }
 
+    const email = clerk.user.emailAddresses[0].emailAddress;
+
+    // Set user in store
+    userStore.setUserId(clerk.user.id);
+    userStore.setFirstName(clerk.user.firstName);
+    userStore.setLastName(clerk.user.lastName);
+    userStore.setEmail(email);
+
     // Get subscription status from backend
     const subscriptionData = await api('/confirm', {
       method: 'POST',
       body: JSON.stringify({
-        email: clerk.user.emailAddresses[0].emailAddress
+        email: email
       })
     });
 
@@ -231,9 +212,13 @@ const loadUserData = async () => {
     const userPlanData = await api(`/plan/${subscriptionData.plan_id}`);
     userPlan.value = userPlanData;
 
+    // Set user plan in store
+    userStore.setPlan(userPlan.value)
+
+
     // Load user links
-    const { data: linksData } = await api(`/links/${clerk.user.id}`);
-    if(linksData !== undefined) for (const link of linksData) {
+    const linksData = await api(`/links/${clerk.user.id}`);
+    if (linksData !== undefined) for (const link of linksData) {
       if (link.column_type === 'tools') {
         handleToolAdded(link);
       } else {
@@ -288,7 +273,13 @@ onMounted(async () => {
     nextTick(() => {
       const userButtonDiv = document.getElementById('user-button');
       if (userButtonDiv) {
-        clerk.mountUserButton(userButtonDiv as HTMLDivElement);
+        clerk.mountUserButton(userButtonDiv as HTMLDivElement, {
+          appearance: {
+            elements: {
+              rootBox: "scale-150 items-center"
+            }
+          }
+        });
       }
     });
   }

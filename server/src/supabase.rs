@@ -59,9 +59,9 @@ pub struct Subscription {
     pub entity_type: String,
     pub plan_id: String,
     pub status: String,
-    pub stripe_subscription_id: Option<String>,
-    pub current_period_end: Option<String>,
-    pub created_at: Option<String>,
+    pub stripe_subscription_id: String,
+    pub current_period_end: String,
+    pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -93,16 +93,14 @@ impl Supabase {
     fn build_headers(&self) -> Result<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert("apikey", self.api_key.parse()?);
-        headers.insert(
-            "Authorization",
-            format!("Bearer {}", self.api_key).parse()?,
-        );
+        headers.insert("Authorization", format!("Bearer {}", self.api_key).parse()?);
         Ok(headers)
     }
 
     // Users
     pub async fn get_users(&self) -> Result<Vec<User>> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/users", self.url))
             .headers(self.build_headers()?)
             .send()
@@ -112,7 +110,8 @@ impl Supabase {
     }
 
     pub async fn get_user(&self, id: &str) -> Result<User> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/users?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .send()
@@ -123,7 +122,8 @@ impl Supabase {
     }
 
     pub async fn get_user_by_email(&self, email: &str) -> Result<User> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/users?email=eq.{}", self.url, email))
             .headers(self.build_headers()?)
             .send()
@@ -134,8 +134,12 @@ impl Supabase {
     }
 
     pub async fn get_plan_by_stripe_id(&self, stripe_id: &str) -> Result<Plan> {
-        let response = self.client
-            .get(format!("{}/rest/v1/plans?stripe_id=eq.{}", self.url, stripe_id))
+        let response = self
+            .client
+            .get(format!(
+                "{}/rest/v1/plans?stripe_id=eq.{}",
+                self.url, stripe_id
+            ))
             .headers(self.build_headers()?)
             .send()
             .await?;
@@ -149,7 +153,8 @@ impl Supabase {
             "email": email,
         });
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/rest/v1/users", self.url))
             .headers(self.build_headers()?)
             .json(&user)
@@ -159,8 +164,13 @@ impl Supabase {
         Ok(response.json().await?)
     }
 
-    pub async fn update_user(&self, id: &str, updates: HashMap<String, serde_json::Value>) -> Result<User> {
-        let response = self.client
+    pub async fn update_user(
+        &self,
+        id: &str,
+        updates: HashMap<String, serde_json::Value>,
+    ) -> Result<User> {
+        let response = self
+            .client
             .patch(format!("{}/rest/v1/users?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .json(&updates)
@@ -182,7 +192,8 @@ impl Supabase {
 
     // Teams
     pub async fn get_teams(&self) -> Result<Vec<Team>> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/teams", self.url))
             .headers(self.build_headers()?)
             .send()
@@ -192,7 +203,8 @@ impl Supabase {
     }
 
     pub async fn get_team(&self, id: &str) -> Result<Team> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/teams?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .send()
@@ -202,7 +214,13 @@ impl Supabase {
         teams.pop().ok_or_else(|| anyhow::anyhow!("Team not found"))
     }
 
-    pub async fn create_team(&self, name: &str, owner_id: &str, plan_id: &str, org_id: Option<&str>) -> Result<Team> {
+    pub async fn create_team(
+        &self,
+        name: &str,
+        owner_id: &str,
+        plan_id: &str,
+        org_id: Option<&str>,
+    ) -> Result<Team> {
         let mut params = vec![
             ("team_name", name.to_string()),
             ("owner_id", owner_id.to_string()),
@@ -213,7 +231,8 @@ impl Supabase {
             params.push(("org_id", org_id.to_string()));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/rest/v1/rpc/create_team", self.url))
             .headers(self.build_headers()?)
             .form(&params)
@@ -223,8 +242,13 @@ impl Supabase {
         Ok(response.json().await?)
     }
 
-    pub async fn update_team(&self, id: &str, updates: HashMap<String, serde_json::Value>) -> Result<Team> {
-        let response = self.client
+    pub async fn update_team(
+        &self,
+        id: &str,
+        updates: HashMap<String, serde_json::Value>,
+    ) -> Result<Team> {
+        let response = self
+            .client
             .patch(format!("{}/rest/v1/teams?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .json(&updates)
@@ -246,9 +270,12 @@ impl Supabase {
 
     // Links
     pub async fn get_links(&self, owner_id: &str, owner_type: &str) -> Result<Vec<Link>> {
-        let response = self.client
-            .get(format!("{}/rest/v1/links?owner_id=eq.{}&owner_type=eq.{}",
-                self.url, owner_id, owner_type))
+        let response = self
+            .client
+            .get(format!(
+                "{}/rest/v1/links?owner_id=eq.{}&owner_type=eq.{}",
+                self.url, owner_id, owner_type
+            ))
             .headers(self.build_headers()?)
             .send()
             .await?;
@@ -257,7 +284,8 @@ impl Supabase {
     }
 
     pub async fn create_link(&self, link: Link) -> Result<Link> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/rest/v1/links", self.url))
             .headers(self.build_headers()?)
             .json(&link)
@@ -267,8 +295,13 @@ impl Supabase {
         Ok(response.json().await?)
     }
 
-    pub async fn update_link(&self, id: &str, updates: HashMap<String, serde_json::Value>) -> Result<Link> {
-        let response = self.client
+    pub async fn update_link(
+        &self,
+        id: &str,
+        updates: HashMap<String, serde_json::Value>,
+    ) -> Result<Link> {
+        let response = self
+            .client
             .patch(format!("{}/rest/v1/links?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .json(&updates)
@@ -290,7 +323,8 @@ impl Supabase {
 
     // Organizations
     pub async fn get_organizations(&self) -> Result<Vec<Organization>> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/organizations", self.url))
             .headers(self.build_headers()?)
             .send()
@@ -299,14 +333,20 @@ impl Supabase {
         Ok(response.json().await?)
     }
 
-    pub async fn create_organization(&self, org_name: &str, owner_id: &str, plan_id: &str) -> Result<Organization> {
+    pub async fn create_organization(
+        &self,
+        org_name: &str,
+        owner_id: &str,
+        plan_id: &str,
+    ) -> Result<Organization> {
         let params = vec![
             ("org_name", org_name.to_string()),
             ("owner_id", owner_id.to_string()),
             ("plan_id", plan_id.to_string()),
         ];
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/rest/v1/rpc/create_organization", self.url))
             .headers(self.build_headers()?)
             .form(&params)
@@ -316,8 +356,13 @@ impl Supabase {
         Ok(response.json().await?)
     }
 
-    pub async fn update_organization(&self, id: &str, updates: HashMap<String, serde_json::Value>) -> Result<Organization> {
-        let response = self.client
+    pub async fn update_organization(
+        &self,
+        id: &str,
+        updates: HashMap<String, serde_json::Value>,
+    ) -> Result<Organization> {
+        let response = self
+            .client
             .patch(format!("{}/rest/v1/organizations?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .json(&updates)
@@ -339,8 +384,12 @@ impl Supabase {
 
     // User Memberships
     pub async fn get_user_memberships(&self, user_id: &str) -> Result<Vec<UserMembership>> {
-        let response = self.client
-            .get(format!("{}/rest/v1/user_memberships?user_id=eq.{}", self.url, user_id))
+        let response = self
+            .client
+            .get(format!(
+                "{}/rest/v1/user_memberships?user_id=eq.{}",
+                self.url, user_id
+            ))
             .headers(self.build_headers()?)
             .send()
             .await?;
@@ -349,7 +398,8 @@ impl Supabase {
     }
 
     pub async fn add_member(&self, membership: UserMembership) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/rest/v1/user_memberships", self.url))
             .headers(self.build_headers()?)
             .json(&membership)
@@ -365,14 +415,23 @@ impl Supabase {
         Ok(())
     }
 
-    pub async fn update_member_role(&self, user_id: &str, entity_id: &str, role: &str) -> Result<UserMembership> {
-        let updates = HashMap::from([
-            ("role".to_string(), serde_json::Value::String(role.to_string())),
-        ]);
+    pub async fn update_member_role(
+        &self,
+        user_id: &str,
+        entity_id: &str,
+        role: &str,
+    ) -> Result<UserMembership> {
+        let updates = HashMap::from([(
+            "role".to_string(),
+            serde_json::Value::String(role.to_string()),
+        )]);
 
-        let response = self.client
-            .patch(format!("{}/rest/v1/user_memberships?user_id=eq.{}&entity_id=eq.{}",
-                self.url, user_id, entity_id))
+        let response = self
+            .client
+            .patch(format!(
+                "{}/rest/v1/user_memberships?user_id=eq.{}&entity_id=eq.{}",
+                self.url, user_id, entity_id
+            ))
             .headers(self.build_headers()?)
             .json(&updates)
             .send()
@@ -383,8 +442,10 @@ impl Supabase {
 
     pub async fn remove_member(&self, user_id: &str, entity_id: &str) -> Result<()> {
         self.client
-            .delete(format!("{}/rest/v1/user_memberships?user_id=eq.{}&entity_id=eq.{}",
-                self.url, user_id, entity_id))
+            .delete(format!(
+                "{}/rest/v1/user_memberships?user_id=eq.{}&entity_id=eq.{}",
+                self.url, user_id, entity_id
+            ))
             .headers(self.build_headers()?)
             .send()
             .await?;
@@ -394,7 +455,8 @@ impl Supabase {
 
     // Plans
     pub async fn get_plans(&self) -> Result<Vec<Plan>> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/plans", self.url))
             .headers(self.build_headers()?)
             .send()
@@ -404,7 +466,8 @@ impl Supabase {
     }
 
     pub async fn get_plan(&self, id: &str) -> Result<Plan> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/rest/v1/plans?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .send()
@@ -417,9 +480,12 @@ impl Supabase {
     // Subscriptions
     pub async fn get_user_subscription(&self, user_id: &str) -> Result<Subscription> {
         println!("get_user_subscription");
-        let response = self.client
-            .get(format!("{}/rest/v1/subscriptions?entity_id=eq.{}&entity_type=eq.user",
-                self.url, user_id))
+        let response = self
+            .client
+            .get(format!(
+                "{}/rest/v1/subscriptions?entity_id=eq.{}&entity_type=eq.user",
+                self.url, user_id
+            ))
             .headers(self.build_headers()?)
             .send()
             .await?;
@@ -427,22 +493,38 @@ impl Supabase {
         println!("response: {:?}", response);
         let mut subscriptions: Vec<Subscription> = response.json().await?;
         println!("subscriptions: {:?}", subscriptions);
-        subscriptions.pop().ok_or_else(|| anyhow::anyhow!("Subscription not found"))
+        subscriptions
+            .pop()
+            .ok_or_else(|| anyhow::anyhow!("Subscription not found"))
     }
 
     pub async fn create_subscription(&self, subscription: Subscription) -> Result<Subscription> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/rest/v1/subscriptions", self.url))
             .headers(self.build_headers()?)
             .json(&subscription)
             .send()
             .await?;
 
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            return Err(anyhow::anyhow!(
+                "Failed to create subscription: {}",
+                error_text
+            ));
+        }
+
         Ok(response.json().await?)
     }
 
-    pub async fn update_subscription(&self, id: &str, updates: HashMap<String, serde_json::Value>) -> Result<Subscription> {
-        let response = self.client
+    pub async fn update_subscription(
+        &self,
+        id: &str,
+        updates: HashMap<String, serde_json::Value>,
+    ) -> Result<Subscription> {
+        let response = self
+            .client
             .patch(format!("{}/rest/v1/subscriptions?id=eq.{}", self.url, id))
             .headers(self.build_headers()?)
             .json(&updates)
@@ -451,5 +533,4 @@ impl Supabase {
 
         Ok(response.json().await?)
     }
-
 }

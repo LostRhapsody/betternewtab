@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use stripe_client::StripeClient;
 use supabase::Supabase;
 use tower_http::cors::{Any, CorsLayer};
+use chrono::TimeZone;
 
 #[derive(Serialize)]
 pub struct SubscriptionResponse {
@@ -70,6 +71,8 @@ async fn confirm_handler(
     Json(payload): Json<CustomerRequest>,
 ) -> Result<Json<SubscriptionResponse>, StatusCode> {
     println!("Received request for email: {}", payload.email);
+    let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
+
     // Initialize Supabase client
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
@@ -82,20 +85,33 @@ async fn confirm_handler(
     // Get Stripe customer
     let customer = match StripeClient::get_customer(&payload.email).await {
         Some(customer) => customer,
-        None => return Err(StatusCode::NOT_FOUND),
+        None => {
+            return Ok(Json(SubscriptionResponse {
+                plan_id: free_plan_id,
+                current_period_end: 0,
+            }))
+        }
     };
 
     println!("Got customer from Stripe");
     // Get Stripe subscription
     let subscription = match StripeClient::get_subscription(&customer).await {
         Some(sub) => sub,
-        None => return Err(StatusCode::NOT_FOUND),
+        None => {
+            return Ok(Json(SubscriptionResponse {
+                plan_id: free_plan_id,
+                current_period_end: 0,
+            }))
+        }
     };
 
     println!("Got subscription from Stripe");
     // Check if subscription is active
     if !subscription.status.eq(&stripe::SubscriptionStatus::Active) {
-        return Err(StatusCode::PAYMENT_REQUIRED);
+        return Ok(Json(SubscriptionResponse {
+            plan_id: free_plan_id,
+            current_period_end: 0,
+        }));
     }
 
     println!("Subscription is active");
@@ -175,9 +191,13 @@ async fn confirm_handler(
                 entity_type: "user".to_string(),
                 plan_id: supabase_plan.clone().id,
                 status: "active".to_string(),
-                stripe_subscription_id: Some(subscription.id.to_string()),
-                current_period_end: Some(subscription.current_period_end.to_string()),
-                created_at: Some(Utc::now().to_rfc3339()),
+                stripe_subscription_id: subscription.id.to_string(),
+                current_period_end:
+                    Utc.timestamp_opt(subscription.current_period_end, 0)
+                       .single()
+                       .expect("Invalid timestamp")
+                       .to_rfc3339(),
+                created_at: Utc::now().to_rfc3339(),
             };
 
             println!("new_sub: {:?}", new_sub);
