@@ -139,19 +139,10 @@ async fn confirm_handler(
         }
         Err(_) => {
             println!(
-                "User not found, creating new user for email: {}",
+                "User not found, can't create new user for: {} because signup was supposed to be done through Clerk",
                 payload.email
             );
-            match supabase.create_user(&payload.email).await {
-                Ok(new_user) => {
-                    println!("Successfully created new user: {:?}", new_user);
-                    new_user
-                }
-                Err(e) => {
-                    println!("Failed to create user: {:?}", e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            }
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);            
         }
     };
 
