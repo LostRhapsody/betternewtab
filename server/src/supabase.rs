@@ -33,12 +33,12 @@ pub struct Link {
     pub id: String,
     pub title: String,
     pub url: String,
-    pub icon: String,
+    pub icon: Option<String>,
     pub order_index: i32,
     pub owner_type: String,
     pub owner_id: String,
     pub created_at: String,
-    pub description: String,
+    pub description: Option<String>,
     pub column_type: String,
 }
 
@@ -294,6 +294,8 @@ impl Supabase {
     // Links
     pub async fn get_links(&self, owner_id: &str, owner_type: &str) -> Result<Vec<Link>> {
         println!("get_links");
+        println!("owner_id: {:?}", owner_id);
+        println!("owner_type: {:?}", owner_type);
         let response = self
             .client
             .get(format!(
@@ -303,17 +305,19 @@ impl Supabase {
             .headers(self.build_headers()?)
             .send()
             .await?;
-
-        println!("response: {:?}", response);
-
+    
         if response.status().is_success() {
-            let links: Vec<Link> = response.json().await.unwrap_or_else(|_| vec![]);
+            let links: Vec<Link> = response.json().await?;
             Ok(links)
         } else {
             Err(anyhow::anyhow!("Failed to get links: {}", response.status()))
         }
     }
 
+    // todo - not using this yet, BUT, looks like link 
+    // creation on client-side got a bit messed up and 
+    // evanr@fdm4 got a bunch of evan.roberton's links
+    // so that's something to watch out for.
     pub async fn create_link(
         &self,
         title: &str,
@@ -329,12 +333,12 @@ impl Supabase {
             id: uuid::Uuid::new_v4().to_string(),
             title: title.to_string(),
             url: url.to_string(),
-            icon: icon.to_string(),
+            icon: Some(icon.to_string()),
             order_index: order_index,
             owner_type: owner_type.to_string(),
             owner_id: owner_id.to_string(),
             created_at: chrono::Utc::now().to_rfc3339(),
-            description: description.to_string(),
+            description: Some(description.to_string()),
             column_type: column_type.to_string(),
         };
 
