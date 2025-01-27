@@ -507,6 +507,7 @@ impl Supabase {
             .send()
             .await?;
 
+        // TODO - fix this, error decoding response body
         if !response.status().is_success() {
             let error_text = response.text().await?;
             return Err(anyhow::anyhow!(
