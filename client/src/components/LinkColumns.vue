@@ -59,11 +59,13 @@ const handleNewDoc = (doc: Link) => {
 const handleDeleteLink = (type: string, index: number) => {
   if (type === 'tool') {
     if (confirm(`Are you sure you want to delete the link "${props.tools[index].title}"?`)) {
+      // todo switch to backend call
       linkUtils.deleteLink(props.tools[index].id);
       props.tools.splice(index, 1);
     }
   } else {
     if (confirm(`Are you sure you want to delete the link "${props.docs[index].title}"?`)) {
+      // todo switch to backend call
       linkUtils.deleteLink(props.docs[index].id);
       props.docs.splice(index, 1);
     }

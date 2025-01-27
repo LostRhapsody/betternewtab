@@ -164,6 +164,7 @@
             order_index: props.columnType === 'tools' ? props.tools.length : props.docs.length
         };
 
+        // todo switch to backend call
         return await linkUtils.createLink(link);
     };
 

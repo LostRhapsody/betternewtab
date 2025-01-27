@@ -148,13 +148,8 @@ impl Supabase {
         plans.pop().ok_or_else(|| anyhow::anyhow!("Plan not found"))
     }
 
-    pub async fn create_user(&self, email: &str) -> Result<User> {
-        let user: User = User {
-            id: uuid::Uuid::new_v4().to_string(),
-            email: email.to_string(),
-            created_at: chrono::Utc::now().to_rfc3339(),
-        };
-
+    pub async fn create_user(&self, user:User) -> Result<User> {
+        
         println!("Creating user with payload: {:?}", user);
 
         let response = self

@@ -123,6 +123,7 @@ const handleSubmit = async () => {
 
     try {
         isLoading.value = true;
+        // todo switch to backend call
         const updatedLink = await linkUtils.updateLink(props.link.id, {
             url: formData.value.url,
             title: formData.value.title || new URL(formData.value.url).hostname,

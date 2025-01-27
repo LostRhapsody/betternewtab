@@ -2,18 +2,12 @@ mod stripe_client;
 mod supabase;
 
 use axum::{
-    extract::{
-        Path,
-        Json
-    },
+    extract::{Json, Path},
     http::StatusCode,
     routing::{get, post},
     Router,
 };
-use chrono::{
-    TimeZone,
-    Utc,
-};
+use chrono::{TimeZone, Utc};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -38,6 +32,17 @@ pub struct CustomerResponse {
     session_id: String,
 }
 
+#[derive(Deserialize)]
+pub struct CreateUserRequest {
+    user_id: String,
+    email: String,
+}
+
+#[derive(Serialize)]
+pub struct CreateUserResponse {
+    message: String,
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -52,6 +57,7 @@ async fn main() {
         .route("/confirm", post(confirm_handler))
         .route("/links/{user_id}", get(move |path| links_handler(path)))
         .route("/plan/{plan_id}", get(move |path| plan_handler(path)))
+        .route("/create_user", post(create_user_handler))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -62,6 +68,41 @@ async fn main() {
 
 async fn hello_handler() -> &'static str {
     "hello!"
+}
+
+async fn create_user_handler(
+    Json(payload): Json<CreateUserRequest>,
+) -> Result<Json<CreateUserResponse>, StatusCode> {
+    let supabase = Supabase::new(
+        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
+        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Check if user already exists
+    match supabase.get_user_by_email(&payload.email).await {
+        Ok(_) => {
+            return Ok(Json(CreateUserResponse {
+                message: "User already exists".to_string(),
+            }))
+        }
+        Err(_) => {
+            let user = supabase::User {
+                id: payload.user_id.clone(),
+                email: payload.email.clone(),
+                created_at: Utc::now().to_rfc3339(),
+            };
+
+            if let Err(e) = supabase.create_user(user).await {
+                println!("Error creating user: {:?}", e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+
+            Ok(Json(CreateUserResponse {
+                message: "User created successfully".to_string(),
+            }))
+        }
+    }
 }
 
 async fn confirm_handler(
@@ -142,7 +183,7 @@ async fn confirm_handler(
                 "User not found, can't create new user for: {} because signup was supposed to be done through Clerk",
                 payload.email
             );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);            
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
@@ -201,14 +242,17 @@ async fn confirm_handler(
             };
 
             println!("new_sub: {:?}", new_sub);
-            if let Err(e) = supabase.create_subscription(
-                &new_sub.entity_id,
-                &new_sub.entity_type,
-                &new_sub.plan_id,
-                &new_sub.status,
-                &new_sub.stripe_subscription_id,
-                &new_sub.current_period_end,
-            ).await {
+            if let Err(e) = supabase
+                .create_subscription(
+                    &new_sub.entity_id,
+                    &new_sub.entity_type,
+                    &new_sub.plan_id,
+                    &new_sub.status,
+                    &new_sub.stripe_subscription_id,
+                    &new_sub.current_period_end,
+                )
+                .await
+            {
                 println!("Error creating subscription: {:?}", e);
                 return Err(StatusCode::INTERNAL_SERVER_ERROR);
             }

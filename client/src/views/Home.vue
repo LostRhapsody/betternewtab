@@ -194,6 +194,22 @@ const loadUserData = async () => {
 
     const email = clerk.user.emailAddresses[0].emailAddress;
 
+    const createUserResponse: {message:string} = await api('/create_user', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: clerk.user.id,
+        email: email
+      })
+    });
+
+    if (createUserResponse.message === 'User created successfully') {
+      console.log('User created successfully');
+    } else if (createUserResponse.message === 'User already exists') {
+      console.log('User already exists');
+    } else {
+      throw new Error('Unexpected response from create_user endpoint');
+    }
+
     // Set user in store
     userStore.setUserId(clerk.user.id);
     userStore.setFirstName(clerk.user.firstName);
@@ -236,7 +252,7 @@ const loadUserData = async () => {
     // })).filter((t: any) => t.role === 'admin' || t.role === 'owner');
 
     // Update organization status
-    isOrganization.value = userTeams.value.some(team => team.organization_id.length > 0);
+    // isOrganization.value = userTeams.value.some(team => team.organization_id.length > 0);
 
     // Set current role if teams exist
     if (userTeams.value[0]) {
