@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import type { Tables } from '../types/Database'
+import type { Subscription } from '@/types/Subscription'
 
 interface UserState {
   userId: string | null
   firstName: string | null
   lastName: string | null
   email: string | null
-  userPlan: Tables<'plans'> | null
+  userPlan: Subscription | null
 }
 
 export const useUserStore = defineStore('user', {
@@ -35,8 +36,8 @@ export const useUserStore = defineStore('user', {
       this.email = email
     },
 
-    setPlan(plan: Tables<'plans'>) {
-      this.userPlan = plan
+    setPlan(plan: Subscription) {
+      this.userPlan = plan;
     }
   }
 })

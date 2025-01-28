@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import vuetify from 'vite-plugin-vuetify'
+import compression from 'vite-plugin-compression';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,6 +14,10 @@ export default defineConfig({
     vueJsx(),
     vueDevTools(),
     vuetify({ autoImport: true }),
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
   ],
   resolve: {
     alias: {

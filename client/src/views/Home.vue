@@ -112,10 +112,9 @@ import SearchBar from '../components/SearchBar.vue';
 import LinkColumns from '../components/LinkColumns.vue';
 import LandingPage from '../components/LandingPage.vue';
 import { useUserStore } from '../stores/user';
-
+import type { Subscription, SubscriptionResponse } from '@/types/Subscription';
+import type { Link } from '@/types/Link';
 const userStore = useUserStore()
-
-type Link = Tables<'links'>;
 
 // Initialize services
 const { api } = useApi();
@@ -133,7 +132,7 @@ const isOrganization = ref(false);
 
 // User and data state
 const userId = ref<string | null>(null);
-const userPlan = ref<Tables<'plans'> | null>(null);
+const userPlan = ref<Subscription | null>(null);
 const currentRole = ref('member');
 const userTeams = ref<Array<{ id: string; name: string; role: string; organization_id: string; }>>([]);
 const tools = ref<Link[]>([]);
@@ -231,8 +230,8 @@ const loadUserData = async () => {
 
     // Set user in store
     userStore.setUserId(clerk.user.id);
-    userStore.setFirstName(clerk.user.firstName);
-    userStore.setLastName(clerk.user.lastName);
+    userStore.setFirstName(clerk.user.firstName || "");
+    userStore.setLastName(clerk.user.lastName || "");
     userStore.setEmail(email);
 
     // Get subscription status from backend
@@ -241,18 +240,18 @@ const loadUserData = async () => {
       body: JSON.stringify({
         email: email
       })
-    });
+    }) as SubscriptionResponse;
 
     // Load user plan data
-    const userPlanData = await api(`/plan/${subscriptionData.plan_id}`);
+    const userPlanData: Subscription = await api(`/plan/${subscriptionData.plan_id}`);
     userPlan.value = userPlanData;
 
     // Set user plan in store
-    userStore.setPlan(userPlan.value)
+    userStore.setPlan(userPlan.value);
 
 
     // Load user links
-    const linksData = await api(`/user/${clerk.user.id}/links`);
+    const linksData: Link[] = await api(`/user/${clerk.user.id}/links`);
     if (linksData !== undefined) for (const link of linksData) {
       if (link.column_type === 'tools') {
         handleToolAdded(link);
@@ -320,7 +319,7 @@ onMounted(async () => {
   }
 });
 
-const plans: Tables<'plans'>[] = [
+const plans: Subscription[] = [
   {
     name: 'free',
     max_pins: 6,

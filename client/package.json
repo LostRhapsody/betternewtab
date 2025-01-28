@@ -15,7 +15,7 @@
     "tailwind:watch": "tailwindcss -i ./src/assets/css/main.css -o ./src/assets/css/tailwind.css --watch",
     "tailwind:build": "tailwindcss -i ./src/assets/css/main.css -o ./src/assets/css/tailwind.css --minify",
     "dev:all": "run-p dev tailwind:watch",
-    "build:all": "run-s tailwind:build build"
+    "build:all": "NODE_ENV=production run-s tailwind:build \"build-only --mode production --minify\""
   },
   "dependencies": {
     "@clerk/clerk-js": "^5.47.0",
@@ -47,6 +47,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.3",
     "vite": "^6.0.5",
+    "vite-plugin-compression": "^0.5.1",
     "vite-plugin-vue-devtools": "^7.6.8",
     "vitest": "^2.1.8",
     "vue-tsc": "^2.1.10"

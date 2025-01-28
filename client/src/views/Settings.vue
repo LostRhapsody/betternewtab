@@ -204,8 +204,7 @@
 <script setup lang="ts">
 import { ref, computed, type ComputedRef } from 'vue';
 import { useRouter } from 'vue-router';
-import { membershipUtils, teamUtils } from '@/composables/useDatabase';
-import type { Tables, Json } from '../types/Database';
+import type { Features } from '../types/Features';
 import { useUserStore } from '../stores/user';
 
 // In Settings.vue setup
@@ -218,7 +217,7 @@ const fullName = computed(() => `${firstName.value} ${lastName.value}`);
 const email = computed(() => userStore.email);
 const userPlan = computed(() => userStore.userPlan) as ComputedRef<{
     created_at: string | null;
-    features: Json;
+    features: Features;
     id: string;
     max_pins: number;
     name: string;
@@ -340,13 +339,14 @@ const removeMember = async (userId: string) => {
 const loadTeamData = async () => {
   try {
     if(!userId.value) return;
-    const userTeams = await teamUtils.getUserTeams(userId.value);
-    if (userTeams.length > 0) {
-      selectedTeamId.value = userTeams[0].teams?.id || "";
+      // todo add team creation/update logic to backend and call here
+    // const userTeams = await teamUtils.getUserTeams(userId.value);
+    // if (userTeams.length > 0) {
+      // selectedTeamId.value = userTeams[0].teams?.id || "";
       // todo add team creation/update logic to backend and call here
       // const members = await teamUtils.getTeamMembers(selectedTeamId.value);
       // teamMembers.value = members;
-    }
+    // }
   } catch (error) {
     console.error('Error loading team data:', error);
   }

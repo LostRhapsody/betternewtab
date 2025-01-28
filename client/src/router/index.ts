@@ -3,11 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { Clerk } from "@clerk/clerk-js";
 import { useUserStore } from "../stores/user";
 import { useApi } from "../composables/useApi";
-import Home from "../views/Home.vue";
-import Plans from "../views/Plans.vue";
-import Test from "../views/Test.vue";
-import Confirm from "../views/Confirm.vue";
-import Settings from "../views/Settings.vue";
+import type { Subscription, SubscriptionResponse } from "@/types/Subscription";
 
 const router = createRouter({
 	history: createWebHistory(),
@@ -15,53 +11,53 @@ const router = createRouter({
 		{
 			path: "/",
 			name: "home",
-			component: Home,
+			component: () => import("../views/Home.vue"),
 		},
 		{
 			path: "/plans",
 			name: "plans",
-			component: Plans,
+			component: () => import("../views/Plans.vue"),
 		},
 		{
 			path: "/test",
 			name: "test",
-			component: Test,
+			component: () => import("../views/Test.vue"),
 		},
 		{
 			path: "/confirm",
 			name: "confirm",
-			component: Confirm,
+			component: () => import("../views/Confirm.vue"),
 		},
 		{
 			path: "/settings",
 			name: "settings",
-			component: Settings,
+			component: () => import("../views/Settings.vue"),
 			beforeEnter: async (to, from, next) => {
 				const userStore = useUserStore();
-        const { api } = useApi();
+				const { api } = useApi();
 				if (!userStore.userId) {
 					const clerk = new Clerk(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 					await clerk.load();
 
 					if (clerk.user) {
-            if (!clerk.user?.emailAddresses[0]) {
-              throw new Error('No user email found');
-            }
+						if (!clerk.user?.emailAddresses[0]) {
+							throw new Error("No user email found");
+						}
 
 						const email = clerk.user.emailAddresses[0].emailAddress;
 
-            // Set user in store
-            userStore.setUserId(clerk.user.id);
-            userStore.setFirstName(clerk.user.firstName);
-            userStore.setLastName(clerk.user.lastName);
-            userStore.setEmail(email);
-            const subscriptionData = await api('/confirm', {
-              method: 'POST',
-              body: JSON.stringify({
-                email: email
-              })
-            });
-						const userPlan = await api(`/plan/${subscriptionData.plan_id}`);
+						// Set user in store
+						userStore.setUserId(clerk.user.id);
+						userStore.setFirstName(clerk.user.firstName || "");
+						userStore.setLastName(clerk.user.lastName || "");
+						userStore.setEmail(email);
+						const subscriptionData = await api("/confirm", {
+							method: "POST",
+							body: JSON.stringify({
+								email: email,
+							}),
+						}) as SubscriptionResponse;
+						const userPlan: Subscription = await api(`/plan/${subscriptionData.plan_id}`);
 						userStore.setPlan(userPlan);
 						next();
 					} else {

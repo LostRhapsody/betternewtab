@@ -1,14 +1,27 @@
-import { fileURLToPath } from 'node:url'
-import { mergeConfig, defineConfig, configDefaults } from 'vitest/config'
-import viteConfig from './vite.config'
+import { fileURLToPath } from "node:url";
+import { mergeConfig, defineConfig, configDefaults } from "vitest/config";
+import viteConfig from "./vite.config";
 
 export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      exclude: [...configDefaults.exclude, 'e2e/**'],
-      root: fileURLToPath(new URL('./', import.meta.url)),
-    },
-  }),
-)
+	viteConfig,
+	defineConfig({
+		test: {
+			environment: "jsdom",
+			exclude: [...configDefaults.exclude, "e2e/**"],
+			root: fileURLToPath(new URL("./", import.meta.url)),
+		},
+		build: {
+			target: 'esnext',
+			rollupOptions: {
+				output: {
+					manualChunks: {
+						'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          				'vendor-clerk': ['@clerk/clerk-js'],
+          				'vendor-ui': ['vuetify', '@mdi/font'],
+					},
+				},
+			},
+			chunkSizeWarningLimit: 600
+		},
+	}),
+);
