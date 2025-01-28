@@ -61,13 +61,11 @@ const handleNewDoc = (doc: Link) => {
 const handleDeleteLink = async (type: string, index: number) => {
   if (type === 'tool') {
     if (confirm(`Are you sure you want to delete the link "${props.tools[index].title}"?`)) {
-      // todo switch to backend call
       await api(`/link/${props.tools[index].id}`, { method: 'DELETE'});
       emit('linkDeleted', 'tool', index); // Emit event
     }
   } else {
     if (confirm(`Are you sure you want to delete the link "${props.docs[index].title}"?`)) {
-      // todo switch to backend call
       await api(`/link/${props.docs[index].id}`, { method: 'DELETE'});
       emit('linkDeleted', 'doc', index); // Emit event
     }

@@ -123,7 +123,6 @@ const handleSubmit = async () => {
 
     try {
         isLoading.value = true;
-        // todo switch to backend call
         const { api } = useApi();
         const response = await api('/link', {
             method: 'PUT',

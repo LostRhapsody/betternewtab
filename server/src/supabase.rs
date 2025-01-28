@@ -329,10 +329,6 @@ impl Supabase {
         links.pop().ok_or_else(|| anyhow::anyhow!("Link not found"))
     }
 
-    // todo - not using this yet, BUT, looks like link
-    // creation on client-side got a bit messed up and
-    // evanr@fdm4 got a bunch of evan.roberton's links
-    // so that's something to watch out for.
     pub async fn create_link(&self,link:Link) -> Result<Link> {
 
         println!("Creating link with payload: {:?}", link);
