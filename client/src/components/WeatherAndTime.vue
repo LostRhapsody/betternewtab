@@ -21,7 +21,6 @@
 </template>
 
 <script setup lang="ts">
-import axios from "axios";
 import { onMounted, ref, watch } from "vue";
 
 interface WeatherData {
@@ -40,18 +39,7 @@ const error = ref("");
 const useWeatherAPI = false;
 
 const fetchWeatherData = async (location: string) => {
-	try {
-		const response = await axios.get(
-			`https://api.weatherapi.com/v1/current.json?key=YOUR_API_KEY&q=${location}`,
-		);
-		const data = response.data;
-		weather.value = {
-			description: data.current.condition.text,
-			temperature: data.current.temp_c,
-		};
-	} catch (err) {
-		error.value = "Failed to fetch weather data";
-	}
+// todo, weather api
 };
 
 const getOfficeTime = () => {
