@@ -55,7 +55,7 @@ const copyToClipboard = (text: string) => {
       </div>
       <div>
         <div class="text-h6">{{ title }}</div>
-        <div class="text-body-2 text-medium-emphasis">{{ description }}</div>
+        <div class="text-body-2 text-medium-emphasis description-text">{{ description }}</div>
       </div>
     </div>
     <v-menu>
@@ -162,5 +162,15 @@ a:hover {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
+}
+
+.description-text {
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

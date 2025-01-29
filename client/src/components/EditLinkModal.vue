@@ -1,52 +1,48 @@
-# EditLinkModal.vue
 <template>
-    <v-dialog v-model="isModalOpen" width="500">
-        <v-card>
-            <v-card-title>Edit Link</v-card-title>
+	<v-dialog v-model="isModalOpen" width="500">
+		<v-card>
+			<v-card-title>Edit Link</v-card-title>
 
-            <v-card-text>
-                <v-form @submit.prevent="handleSubmit" ref="form">
-                    <v-text-field
-                        v-model="formData.url"
-                        :rules="[v => !!v || 'URL is required', validateUrl]"
-                        label="URL"
-                        required
-                        type="url"
-                    ></v-text-field>
+			<v-card-text>
+				<v-form @submit.prevent="handleSubmit" ref="form">
+					<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', validateUrl]"
+						label="URL" required type="url" @keyup.enter="handleSubmit"></v-text-field>
 
-                    <v-text-field
-                        v-model="formData.title"
-                        label="Title"
-                    ></v-text-field>
+					<v-text-field v-model="formData.title" label="Title"
+						@keyup.enter="(e: Event) => { e.preventDefault(); handleSubmit() }"></v-text-field>
 
-                    <v-textarea
-                        v-model="formData.description"
-                        label="Description"
-                        rows="3"
-                    ></v-textarea>
-                </v-form>
-            </v-card-text>
+					<v-textarea @keydown.enter.prevent="(e: KeyboardEvent) => {
+						if (e.shiftKey && e.target !== null) {
+							(e.target as HTMLTextAreaElement).value += '\n'
+						} else {
+							handleSubmit()
+						}
+					}" v-model="formData.description" label="Description" rows="3"></v-textarea>
+				</v-form>
+			</v-card-text>
 
-            <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn
-                    color="grey-darken-1"
-                    variant="text"
-                    @click="closeModal"
-                >
-                    Cancel
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    variant="text"
-                    :loading="isLoading"
-                    @click="handleSubmit"
-                >
-                    Save Changes
-                </v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
+			<v-card-actions>
+				<div class="text-xs text-gray-500 grid grid-cols-3 gap-2 ps-4 pb-4">
+					<span class="col-span-1 text-start">Submit:</span>
+					<span class="col-span-2">
+						<span class="kbd">enter<v-icon size="18">mdi-keyboard-return</v-icon></span>
+					</span>
+					<span class="col-span-1 text-start">New line:</span>
+					<span class="col-span-2">
+						<span class="kbd">shift<v-icon size="18">mdi-arrow-up</v-icon></span> + <span
+							class="kbd">enter<v-icon size="18">mdi-keyboard-return</v-icon></span>
+					</span>
+				</div>
+				<v-spacer></v-spacer>
+				<v-btn color="grey-darken-1" variant="text" @click="closeModal">
+					Cancel
+				</v-btn>
+				<v-btn color="primary" variant="text" :loading="isLoading" @click="handleSubmit">
+					Save Changes
+				</v-btn>
+			</v-card-actions>
+		</v-card>
+	</v-dialog>
 </template>
 
 <script setup lang="ts">
