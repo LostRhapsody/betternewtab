@@ -8,21 +8,13 @@
             Your Team's Universal Starting Point
           </h1>
           <p class="text-h5 mb-8 text-white">
-            Transform every new tab into your team's command center. Launch tools, find documents, and stay updated - all in one place.
+            Transform every new tab into your team's command center. Launch tools, find documents, and stay updated -
+            all in one place.
           </p>
-          <v-btn
-            size="x-large"
-            color="secondary"
-            class="me-4"
-            variant="flat"
-          >
+          <v-btn size="x-large" color="secondary" class="me-4" variant="flat">
             Start Free Trial
           </v-btn>
-          <v-btn
-            size="x-large"
-            color="white"
-            variant="outlined"
-          >
+          <v-btn size="x-large" color="white" variant="outlined">
             Watch Demo
           </v-btn>
         </v-col>
@@ -43,15 +35,13 @@
           <v-card class="h-100">
             <v-card-item>
               <template v-slot:prepend>
-                <v-icon
-                  color="primary"
-                  size="x-large"
-                  icon="mdi-rocket-launch"
-                ></v-icon>
+                <v-icon color="primary" size="x-large" icon="mdi-rocket-launch"></v-icon>
               </template>
               <v-card-title class="text-h5">Quick Launch</v-card-title>
               <v-card-text>
-                Access your tools and documents instantly with keyboard shortcuts or quick search. Your most-used resources, just a keystroke away.
+                Access your tools and documents instantly with keyboard shortcuts or quick search. Your most-used
+                resources, just a
+                keystroke away.
               </v-card-text>
             </v-card-item>
           </v-card>
@@ -61,15 +51,13 @@
           <v-card class="h-100">
             <v-card-item>
               <template v-slot:prepend>
-                <v-icon
-                  color="primary"
-                  size="x-large"
-                  icon="mdi-account-group"
-                ></v-icon>
+                <v-icon color="primary" size="x-large" icon="mdi-account-group"></v-icon>
               </template>
               <v-card-title class="text-h5">Team Sync</v-card-title>
               <v-card-text>
-                Share important links and documents with your team. Keep everyone on the same page with shared launch pages and team-wide search history.
+                Share important links and documents with your team. Keep everyone on the same page with shared launch
+                pages and
+                team-wide search history.
               </v-card-text>
             </v-card-item>
           </v-card>
@@ -79,15 +67,13 @@
           <v-card class="h-100">
             <v-card-item>
               <template v-slot:prepend>
-                <v-icon
-                  color="primary"
-                  size="x-large"
-                  icon="mdi-cog"
-                ></v-icon>
+                <v-icon color="primary" size="x-large" icon="mdi-cog"></v-icon>
               </template>
               <v-card-title class="text-h5">Custom Workflow</v-card-title>
               <v-card-text>
-                Choose your search engine, customize your layout, and organize your tools exactly how you want them. Your workflow, your way.
+                Choose your search engine, customize your layout, and organize your tools exactly how you want them.
+                Your
+                workflow, your way.
               </v-card-text>
             </v-card-item>
           </v-card>
@@ -101,16 +87,13 @@
         <v-col cols="12" md="6" class="text-center">
           <h2 class="text-h3 font-weight-bold mb-6">Powerful Integrations</h2>
           <p class="text-h6 mb-8">
-            Connect with your favorite tools like Jira, Google Workspace, and more. Get instant access to tasks, documents, and updates.
+            Connect with your favorite tools like Jira, Google Workspace, and more. Get instant access to tasks,
+            documents,
+            and updates.
           </p>
           <v-row justify="center" class="mt-4">
             <v-col cols="auto">
-              <v-img
-                src="/images/jira-logo.png"
-                alt="Jira"
-                width="100"
-                class="mx-4"
-              ></v-img>
+              <v-img src="/images/jira-logo.png" alt="Jira" width="100" class="mx-4"></v-img>
             </v-col>
             <!-- Add more integration logos here -->
           </v-row>
@@ -149,11 +132,7 @@
               </v-list>
             </v-card-text>
             <v-card-actions class="justify-center pa-4">
-              <v-btn
-                color="primary"
-                variant="flat"
-                block
-              >
+              <v-btn color="primary" variant="flat" block>
                 Get Started
               </v-btn>
             </v-card-actions>
@@ -181,11 +160,7 @@
               </v-list>
             </v-card-text>
             <v-card-actions class="justify-center pa-4">
-              <v-btn
-                color="white"
-                variant="flat"
-                block
-              >
+              <v-btn color="white" variant="flat" block>
                 Start Free Trial
               </v-btn>
             </v-card-actions>
@@ -204,11 +179,7 @@
           <p class="text-h6 mb-8 text-white">
             Join thousands of teams who've made BNT their starting point for productivity.
           </p>
-          <v-btn
-            size="x-large"
-            color="secondary"
-            variant="flat"
-          >
+          <v-btn size="x-large" color="secondary" variant="flat">
             Start Free Trial
           </v-btn>
         </v-col>
@@ -218,17 +189,17 @@
 </template>
 
 <style scoped>
-.hero-section {
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-}
+  .hero-section {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+  }
 
-.v-card {
-  transition: transform 0.2s;
-}
+  .v-card {
+    transition: transform 0.2s;
+  }
 
-.v-card:hover {
-  transform: translateY(-5px);
-}
+  .v-card:hover {
+    transform: translateY(-5px);
+  }
 </style>

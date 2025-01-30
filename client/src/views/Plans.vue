@@ -63,7 +63,8 @@
             </v-list>
           </v-card-item>
           <v-card-actions class="pa-4">
-            <a class="w-full" color="primary" :href=PlusPlanUrl><v-btn block variant="flat" color="primary">Upgrade to Plus</v-btn></a>
+            <a class="w-full" color="primary" :href=PlusPlanUrl><v-btn block variant="flat" color="primary">Upgrade to
+                Plus</v-btn></a>
           </v-card-actions>
         </v-card>
 
@@ -135,8 +136,10 @@
         </a>
       </div>
       <div class="text-center mt-8 p-4 border rounded-lg">
-        <p class="text-white">Thanks for considering upgrading. Paid plans help support infrastructure cost to run BNT.</p>
-        <p class="text-white">Reach out to <a href="mailto:evan.robertson77@gmail.com" class="underline">Evan Robertson</a> if you have any questions.</p>
+        <p class="text-white">Thanks for considering upgrading. Paid plans help support infrastructure cost to run BNT.
+        </p>
+        <p class="text-white">Reach out to <a href="mailto:evan.robertson77@gmail.com" class="underline">Evan
+            Robertson</a> if you have any questions.</p>
         <div class="flex justify-center gap-4 mt-4">
           <a href="https://www.buymeacoffee.com/evanrobertson" target="_blank" class="text-white hover:text-gray-300">
             <v-icon icon="mdi-coffee" class="mr-1"></v-icon>
@@ -153,55 +156,51 @@
       </div>
     </div>
   </div>
-  <StripeCheckout
-    v-model="showCheckout"
-    :plan-id="selectedPlan.id"
-    :plan-name="selectedPlan.name"
-    :price="selectedPlan.price"
-  />
+  <StripeCheckout v-model="showCheckout" :plan-id="selectedPlan.id" :plan-name="selectedPlan.name"
+    :price="selectedPlan.price" />
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import StripeCheckout from "../components/StripeCheckout.vue";
+  import { ref } from "vue";
+  import { useRouter } from "vue-router";
+  import StripeCheckout from "../components/StripeCheckout.vue";
 
-const router = useRouter();
-const showCheckout = ref(false);
-const selectedPlan = ref({
-	id: "",
-	name: "",
-	price: 0,
-});
-const PlusPlanUrl = import.meta.env.VITE_PLUS_PLAN_URL;
-const TeamPlanUrl = import.meta.env.VITE_TEAM_PLAN_URL;
+  const router = useRouter();
+  const showCheckout = ref(false);
+  const selectedPlan = ref({
+    id: "",
+    name: "",
+    price: 0,
+  });
+  const PlusPlanUrl = import.meta.env.VITE_PLUS_PLAN_URL;
+  const TeamPlanUrl = import.meta.env.VITE_TEAM_PLAN_URL;
 
-const handleBack = () => {
-	router.go(-1);
-};
+  const handleBack = () => {
+    router.go(-1);
+  };
 
-const handleUpgrade = (plan: { id: string; name: string; price: number }) => {
-	selectedPlan.value = plan;
-	showCheckout.value = true;
-};
+  const handleUpgrade = (plan: { id: string; name: string; price: number }) => {
+    selectedPlan.value = plan;
+    showCheckout.value = true;
+  };
 </script>
 
 <style scoped>
-.plan-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s;
-  justify-content: space-between;
-}
+  .plan-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s;
+    justify-content: space-between;
+  }
 
-.plan-card:hover {
-  transform: translateY(-5px);
-}
+  .plan-card:hover {
+    transform: translateY(-5px);
+  }
 
-div {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-}
+  div {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
 </style>
