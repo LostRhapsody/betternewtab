@@ -39,7 +39,7 @@ const error = ref("");
 const useWeatherAPI = false;
 
 const fetchWeatherData = async (location: string) => {
-// todo, weather api
+	// todo, weather api
 };
 
 const getOfficeTime = () => {

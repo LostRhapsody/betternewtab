@@ -113,7 +113,7 @@ import LinkColumns from "../components/LinkColumns.vue";
 import SearchBar from "../components/SearchBar.vue";
 import { useApi } from "../composables/useApi";
 import { useUserStore } from "../stores/user";
-import type { Tables } from "../types/Database";
+import type {ClerkUser} from "@/types/User";
 const userStore = useUserStore();
 
 // Initialize services
@@ -121,6 +121,7 @@ const { api } = useApi();
 const router = useRouter();
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerk = new Clerk(clerkPubKey);
+let clerkUser: ClerkUser;
 
 // State management
 const isLoggedIn = ref(false);
@@ -222,35 +223,11 @@ const loadUserData = async () => {
 			throw new Error("No user email found");
 		}
 
-		const email = clerk.user.emailAddresses[0].emailAddress;
-
-		const createUserResponse: { message: string } = await api("/create_user", {
-			method: "POST",
-			body: JSON.stringify({
-				user_id: clerk.user.id,
-				email: email,
-			}),
-		});
-
-		if (createUserResponse.message === "User created successfully") {
-			console.log("User created successfully");
-		} else if (createUserResponse.message === "User already exists") {
-			console.log("User already exists");
-		} else {
-			throw new Error("Unexpected response from create_user endpoint");
-		}
-
-		// Set user in store
-		userStore.setUserId(clerk.user.id);
-		userStore.setFirstName(clerk.user.firstName || "");
-		userStore.setLastName(clerk.user.lastName || "");
-		userStore.setEmail(email);
-
 		// Get subscription status from backend
 		const subscriptionData = (await api("/confirm", {
 			method: "POST",
 			body: JSON.stringify({
-				email: email,
+				email: userStore.email,
 			}),
 		})) as SubscriptionResponse;
 
@@ -305,7 +282,16 @@ onMounted(async () => {
 		isLoggedIn.value = !!clerk.user;
 
 		if (isLoggedIn.value && clerk.user) {
-			userId.value = clerk.user.id;
+			clerkUser = {
+				id: clerk.user.id,
+				firstName: clerk.user.firstName || "",
+				lastName: clerk.user.lastName || "",
+				email: clerk.user.emailAddresses[0].emailAddress,
+			}
+			const gotUser = userStore.fetchUserData(clerkUser);
+			if(!gotUser) {
+				throw new Error("Error fetching user data");
+			}
 			await loadUserData();
 		}
 	} catch (error) {

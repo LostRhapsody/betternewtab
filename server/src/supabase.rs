@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // Type definitions matching Database.ts
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
     pub id: String,
     pub email: String,
@@ -118,7 +118,7 @@ impl Supabase {
             .await?;
 
         let mut users: Vec<User> = response.json().await?;
-        users.pop().ok_or_else(|| anyhow::anyhow!("User not found"))
+        users.pop().ok_or_else(|| anyhow::anyhow!("404"))
     }
 
     pub async fn get_user_by_email(&self, email: &str) -> Result<User> {
@@ -149,6 +149,14 @@ impl Supabase {
     }
 
     pub async fn create_user(&self, user:User) -> Result<User> {
+        // TODO - I think if the user exists in supabase already we get a good
+        // error back, we can just check that and handle it correctly, not
+        // send a second request
+        // Check if user exists
+        let existing_user = self.get_user_by_email(&user.email).await;
+        if existing_user.is_ok() {
+            return Err(anyhow::anyhow!("409"));
+        }
 
         println!("Creating user with payload: {:?}", user);
 

@@ -4,7 +4,7 @@ mod supabase;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Router,
 };
 use chrono::{TimeZone, Utc};
@@ -85,22 +85,23 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
-
         // confirm subscription
         .route("/confirm", post(confirm_handler))
-
         // create and update links
         .route("/link", post(create_link).put(update_link))
         // read links
-        .route("/user/{user_id}/links", get(move |path| links_handler(path)))
+        .route(
+            "/user/{user_id}/links",
+            get(move |path| links_handler(path)),
+        )
         // delete link
         .route("/link/{link_id}", delete(move |path| delete_link(path)))
-
         // get plan
         .route("/plan/{plan_id}", get(move |path| plan_handler(path)))
-
         // create user
         .route("/create_user", post(create_user_handler))
+        // get user
+        .route("/user/{user_id}", get(move |path| get_user_handler(path)))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -111,36 +112,25 @@ async fn main() {
 
 async fn create_user_handler(
     Json(payload): Json<CreateUserRequest>,
-) -> Result<Json<CreateUserResponse>, StatusCode> {
+) -> Result<Json<supabase::User>, StatusCode> {
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
     )
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Check if user already exists
-    match supabase.get_user_by_email(&payload.email).await {
-        Ok(_) => {
-            return Ok(Json(CreateUserResponse {
-                message: "User already exists".to_string(),
-            }))
-        }
-        Err(_) => {
-            let user = supabase::User {
-                id: payload.user_id.clone(),
-                email: payload.email.clone(),
-                created_at: Utc::now().to_rfc3339(),
-            };
+    let user = supabase::User {
+        id: payload.user_id,
+        email: payload.email,
+        created_at: Utc::now().to_rfc3339(),
+    };
 
-            if let Err(e) = supabase.create_user(user).await {
-                println!("Error creating user: {:?}", e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-
-            Ok(Json(CreateUserResponse {
-                message: "User created successfully".to_string(),
-            }))
-        }
+    match supabase.create_user(user.clone()).await {
+        Ok(_) => Ok(Json(user)),
+        Err(e) => match e.to_string().as_str() {
+            "409" => Err(StatusCode::BAD_REQUEST),
+            _ => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        },
     }
 }
 
@@ -236,7 +226,7 @@ async fn confirm_handler(
 
     // Verify subscription record
     let sub_result = supabase.get_user_subscription(&user.id).await;
-    
+
     // verify we got the subcription
     match sub_result {
         Ok(sub) => {
@@ -318,11 +308,11 @@ async fn confirm_handler(
                 }
                 println!("Membership created successfully");
             }
-        },
+        }
         Err(_) => {
             println!("Error getting membership vector from Supabase");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        } 
+        }
     }
 
     println!("Returning response");
@@ -447,4 +437,22 @@ async fn plan_handler(Path(plan_id): Path<String>) -> Result<Json<supabase::Plan
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(plan))
+}
+
+async fn get_user_handler(Path(user_id): Path<String>) -> Result<Json<supabase::User>, StatusCode> {
+    let supabase = Supabase::new(
+        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
+        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = supabase
+        .get_user(&user_id)
+        .await
+        .map_err(|e| match e.to_string().as_str() {
+            "404" => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(user))
 }
