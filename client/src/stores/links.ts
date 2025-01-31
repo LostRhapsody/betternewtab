@@ -1,6 +1,6 @@
-import { defineStore } from "pinia";
-import type { Link, CreateLinkRequest } from "@/types/Link";
 import { API } from "@/constants/api";
+import type { CreateLinkRequest, Link, UpdateLinkRequest } from "@/types/Link";
+import { defineStore } from "pinia";
 
 interface LinksState {
 	links: Link[];
@@ -35,7 +35,7 @@ export const useLinksStore = defineStore("links", {
                 */
 				switch (response.status) {
 					case 200: {
-                        this.links = await response.json();
+						this.links = await response.json();
 						break;
 					}
 					default: {
@@ -44,63 +44,119 @@ export const useLinksStore = defineStore("links", {
 				}
 			} catch (error) {
 				this.error = error as string;
-                throw new Error("Failed to fetch user link data");
+				throw new Error("Failed to fetch user link data");
 			} finally {
 				this.isLoading = false;
 			}
 		},
 
-        async postLink(link: CreateLinkRequest) {
-            this.isLoading = true;
-            try {
-                const response = await fetch(API.CREATE_LINK, {
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    method: "POST",
-                    body: JSON.stringify(link),
-                });
-                if (response.status !== 201) {
-                    throw new Error(`Failed to create link ${response.status}`);
-                }
-                const newLink = await response.json() as Link;
-                if(!this.isLink(newLink)) {
-                    throw new Error("Invalid link data");
-                }
-                this.addLink(newLink);
-            } catch (error) {
-                this.error = error as string;
-                this.isLoading = false;
-                return false;
-            } finally {
-                this.isLoading = false;
-            }
-            return true;
-        },
+		async postLink(link: CreateLinkRequest) {
+			this.isLoading = true;
+			try {
+				const response = await fetch(API.CREATE_LINK, {
+					headers: {
+						"Content-Type": "application/json",
+					},
+					method: "POST",
+					body: JSON.stringify(link),
+				});
+				if (response.status !== 201) {
+					throw new Error(`Failed to create link ${response.status}`);
+				}
+				const newLink = (await response.json()) as Link;
+				if (!this.isLink(newLink)) {
+					throw new Error("Invalid link data");
+				}
+				this.addLink(newLink);
+			} catch (error) {
+				this.error = error as string;
+				this.isLoading = false;
+				return false;
+			} finally {
+				this.isLoading = false;
+			}
+			return true;
+		},
 
 		addLink(link: Link) {
 			this.links = [...this.links, link];
 		},
 
-		removeLink(linkId: string) {
+		async removeLink(linkId: string) {
+      this.isLoading = true;
 			this.links = this.links.filter((link) => link.id !== linkId);
+      try{
+        const response = await fetch(API.DELETE_LINK(linkId), {
+          method: "DELETE"
+        });
+        if(!response.ok) {
+          throw new Error(`Failed to delete link ${response.status}`);
+        }
+      } catch (error) {
+        this.error = error as string;
+        this.isLoading = false;
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+
+      return true;
+
 		},
 
-        isLink(obj: Link): obj is Link {
-            return (
-            typeof obj === "object" &&
-            obj !== null &&
-            typeof obj.id === "string" &&
-            typeof obj.title === "string" &&
-            typeof obj.url === "string" &&
-            (typeof obj.icon === "string" || obj.icon === null) &&
-            typeof obj.order_index === "number" &&
-            typeof obj.owner_type === "string" &&
-            typeof obj.owner_id === "string" &&
-            typeof obj.created_at === "string" &&
-            (typeof obj.description === "string" || obj.description === null) &&
-            typeof obj.column_type === "string"
-            );
-        }
+		async updateLink(link: Link) {
+      this.isLoading = true;
+			this.links = this.links.map((l) => (l.id === link.id ? link : l));
+      // because all the fields are technically optional on the backend,
+      // use a new type to keep it simple
+			const updateLink: UpdateLinkRequest = {
+				id: link.id,
+				url: link.url,
+				description: link.description,
+				title: link.title,
+				icon: link.icon,
+				column_type: link.column_type,
+			};
+      /*
+        if 200, link was updated, nothing else to do
+        if not 200, something went wrong
+      */
+			try {
+				const response = await fetch(API.UPDATE_LINK, {
+					headers: {
+						"Content-Type": "application/json",
+					},
+					method: "PUT",
+					body: JSON.stringify(updateLink),
+				});
+				if (!response.ok) {
+					throw new Error(`Failed to update link ${response.status}`);
+				}
+			} catch (error) {
+				this.error = error as string;
+				this.isLoading = false;
+				return false;
+			} finally {
+				this.isLoading = false;
+			}
+			return true;
+		},
+
+		isLink(obj: Link): obj is Link {
+			return (
+				typeof obj === "object" &&
+				obj !== null &&
+				typeof obj.id === "string" &&
+				typeof obj.title === "string" &&
+				typeof obj.url === "string" &&
+				(typeof obj.icon === "string" || obj.icon === null) &&
+				typeof obj.order_index === "number" &&
+				typeof obj.owner_type === "string" &&
+				typeof obj.owner_id === "string" &&
+				typeof obj.created_at === "string" &&
+				(typeof obj.description === "string" || obj.description === null) &&
+				typeof obj.column_type === "string"
+			);
+		},
 	},
 });

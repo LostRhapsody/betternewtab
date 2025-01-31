@@ -5,8 +5,8 @@
 
 			<v-card-text>
 				<v-form @submit.prevent="handleSubmit" ref="form">
-					<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', validateUrl]"
-						label="URL" required type="url" @keyup.enter="handleSubmit"></v-text-field>
+					<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', validateUrl]" label="URL"
+						required type="url" @keyup.enter="handleSubmit"></v-text-field>
 
 					<v-text-field v-model="formData.title" label="Title"
 						@keyup.enter="(e: Event) => { e.preventDefault(); handleSubmit() }"></v-text-field>
@@ -29,8 +29,8 @@
 					</span>
 					<span class="col-span-1 text-start">New line:</span>
 					<span class="col-span-2">
-						<span class="kbd">shift<v-icon size="18">mdi-arrow-up</v-icon></span> + <span
-							class="kbd">enter<v-icon size="18">mdi-keyboard-return</v-icon></span>
+						<span class="kbd">shift<v-icon size="18">mdi-arrow-up</v-icon></span> + <span class="kbd">enter<v-icon
+								size="18">mdi-keyboard-return</v-icon></span>
 					</span>
 				</div>
 				<v-spacer></v-spacer>
@@ -46,110 +46,93 @@
 </template>
 
 <script setup lang="ts">
-	import { useApi } from "@/composables/useApi";
-	import { ref, watch } from "vue";
-	import type { Tables } from "../types/Database";
-	type Link = Tables<"links">;
+import { useApi } from "@/composables/useApi";
+import { ref, watch } from "vue";
+import type { Link } from "@/types/Link";
+import { useLinksStore } from "../stores/links";
+const linkStore = useLinksStore();
 
-	const props = defineProps<{
-		modelValue: boolean;
-		link?: Link;
-	}>();
+const props = defineProps<{
+	modelValue: boolean;
+	link?: Link;
+}>();
 
-	const emit = defineEmits<{
-		(e: "update:modelValue", value: boolean): void;
-		(e: "linkUpdated", link: Link): void;
-	}>();
+const emit = defineEmits<(e: "update:modelValue", value: boolean) => void>();
 
-	const isModalOpen = ref(props.modelValue);
-	const isLoading = ref(false);
-	const form = ref<HTMLFormElement | null>(null);
+const isModalOpen = ref(props.modelValue);
+const isLoading = ref(false);
+const form = ref<HTMLFormElement | null>(null);
 
-	const formData = ref({
+const formData = ref({
+	url: "",
+	title: "",
+	description: "",
+});
+
+watch(
+	() => props.modelValue,
+	(newValue) => {
+		isModalOpen.value = newValue;
+		if (newValue && props.link) {
+			formData.value = {
+				url: props.link.url,
+				title: props.link.title,
+				description: props.link.description || "",
+			};
+		}
+	},
+);
+
+watch(
+	() => isModalOpen.value,
+	(newValue) => {
+		emit("update:modelValue", newValue);
+	},
+);
+
+const validateUrl = (url: string): boolean | string => {
+	try {
+		new URL(url);
+		return true;
+	} catch {
+		return "Please enter a valid URL";
+	}
+};
+
+const closeModal = () => {
+	isModalOpen.value = false;
+	resetForm();
+};
+
+const resetForm = () => {
+	formData.value = {
 		url: "",
 		title: "",
 		description: "",
-	});
-
-	watch(
-		() => props.modelValue,
-		(newValue) => {
-			isModalOpen.value = newValue;
-			if (newValue && props.link) {
-				formData.value = {
-					url: props.link.url,
-					title: props.link.title,
-					description: props.link.description || "",
-				};
-			}
-		},
-	);
-
-	watch(
-		() => isModalOpen.value,
-		(newValue) => {
-			emit("update:modelValue", newValue);
-		},
-	);
-
-	const validateUrl = (url: string): boolean | string => {
-		try {
-			new URL(url);
-			return true;
-		} catch {
-			return "Please enter a valid URL";
-		}
 	};
+	if (form.value) {
+		form.value.resetValidation();
+	}
+};
 
-	const closeModal = () => {
-		isModalOpen.value = false;
-		resetForm();
-	};
+const handleSubmit = async () => {
+	if (!form.value || !props.link) return;
 
-	const resetForm = () => {
-		formData.value = {
-			url: "",
-			title: "",
-			description: "",
-		};
-		if (form.value) {
-			form.value.resetValidation();
-		}
-	};
+	const { valid } = await form.value.validate();
+	if (!valid) return;
 
-	const handleSubmit = async () => {
-		if (!form.value || !props.link) return;
+	try {
+		isLoading.value = true;
+		props.link.url = formData.value.url;
+		props.link.title = formData.value.title || new URL(formData.value.url).hostname;
+		props.link.description = formData.value.description;
 
-		const { valid } = await form.value.validate();
-		if (!valid) return;
-
-		try {
-			isLoading.value = true;
-			const { api } = useApi();
-			const response = await api("/link", {
-				method: "PUT",
-				body: JSON.stringify({
-					id: props.link.id,
-					url: formData.value.url,
-					title: formData.value.title || new URL(formData.value.url).hostname,
-					description: formData.value.description,
-				}),
-			});
-			const updatedLink = {
-				...props.link,
-				url: formData.value.url,
-				title: formData.value.title || new URL(formData.value.url).hostname,
-				description: formData.value.description,
-			};
-
-			if (updatedLink) {
-				emit("linkUpdated", updatedLink as Link);
-			}
-			closeModal();
-		} catch (error) {
-			console.error("Error updating link:", error);
-		} finally {
-			isLoading.value = false;
-		}
-	};
+		await linkStore.updateLink(props.link);
+		closeModal();
+	} catch (error) {
+		console.error("Error updating link:", error);
+	} finally {
+		isLoading.value = false;
+	}
+};
 </script>

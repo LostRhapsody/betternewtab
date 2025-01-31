@@ -405,7 +405,7 @@ async fn create_link(
 
 async fn update_link(
     Json(payload): Json<UpdateLinkRequest>,
-) -> Result<Json<UpdateLinkResponse>, StatusCode> {
+) -> Result<StatusCode, StatusCode> {
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
@@ -434,9 +434,7 @@ async fn update_link(
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    Ok(Json(UpdateLinkResponse {
-        message: "Link updated successfully".to_string(),
-    }))
+    Ok(StatusCode::OK)
 }
 
 async fn delete_link(Path(link_id): Path<String>) -> Result<StatusCode, StatusCode> {
