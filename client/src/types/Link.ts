@@ -22,10 +22,10 @@ export type CreateLinkRequest = {
 };
 
 export type UpdateLinkRequest = {
-  id: string,
-  url: string | null,
-  description: string | null,
-  title: string | null,
-  icon: string | null,
-  column_type: string | null,
-}
+  id: string;
+  url: string | null;
+  description: string | null;
+  title: string | null;
+  icon: string | null;
+  column_type: string | null;
+};

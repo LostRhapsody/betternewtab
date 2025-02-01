@@ -10,6 +10,7 @@
     <div v-else-if="error" class="text-center">
       <v-icon icon="mdi-alert-circle" color="error" size="64" class="mb-4"></v-icon>
       <p class="text-h6 text-error mb-4">Something went wrong</p>
+      <p class="text-h6 text-error mb-4">{{ error_message }}</p>
       <v-btn color="primary" @click="retryConfirmation">
         Retry
       </v-btn>
@@ -40,29 +41,53 @@
 <script setup lang="ts">
   import { onMounted, ref } from "vue";
   import { useRouter } from "vue-router";
-  import { useApi } from "../composables/useApi";
+  import { useUserStore } from "@/stores/user";
+  import { Clerk } from "@clerk/clerk-js";
 
   const router = useRouter();
-  const { api } = useApi();
+  const userStore = useUserStore();
+
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const clerk = new Clerk(clerkPubKey);
 
   const isLoading = ref(true);
+  const isLoggedIn = ref(false);
   const error = ref(false);
+  const error_message = ref("");
   const showSnackbar = ref(false);
 
   const confirmSubscription = async () => {
     try {
+      await clerk.load();
+      isLoggedIn.value = !!clerk.user;
       isLoading.value = true;
       error.value = false;
+      let gotUser = false;
 
-      await api("/confirm", {
-        method: "POST",
-        body: JSON.stringify({ email: "evan.robertson77@gmail.com" }), // Replace with actual email
+      if (!isLoggedIn.value || !clerk.user) {
+        throw new Error("User not logged in");
+      }
+
+      gotUser = await userStore.fetchUserData({
+        id: clerk.user.id,
+        firstName: clerk.user.firstName || "",
+        lastName: clerk.user.lastName || "",
+        email: clerk.user.emailAddresses[0].emailAddress,
       });
+
+      if (!gotUser) {
+        throw new Error("Failed to fetch user data");
+      }
+
+      if(userStore.userPlan?.name === "free") {
+        throw new Error("Subscription not active");
+      }
 
       isLoading.value = false;
       showSnackbar.value = true;
     } catch (err) {
       console.error("Error confirming subscription:", err);
+      error_message.value = err as string;
       error.value = true;
       isLoading.value = false;
     }
