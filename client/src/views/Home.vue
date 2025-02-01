@@ -175,7 +175,7 @@ const clerk = new Clerk(clerkPubKey);
 const isLoggedIn = ref(false);
 const isLoading = ref(true);
 const showSignIn = ref(false);
-const showHelpDialog = ref(true);
+const showHelpDialog = ref(false);
 
 // User and data state
 const userId = ref<string | null>(null);

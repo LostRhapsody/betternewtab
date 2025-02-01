@@ -1,10 +1,10 @@
 <template>
-	<div class="mt-16 mx-16 search-bar">
+	<div class="mt-16 mx-16">
 		<v-row>
-			<v-col cols="9" class="cols">
-				<v-text-field v-model="searchQuery" :placeholder="placeholder" variant="plain" hide-details
+			<v-col cols="10">
+				<v-text-field v-model="searchQuery" :label="placeholder" hide-details
 					@keyup.enter="performSearch" @keydown="handleKeydown" @mouseover="focusedIndex = -1"
-					prepend-inner-icon="mdi-magnify" ref="searchInput" @focus="handleFocus" @blur="handleBlur" />
+					prepend-inner-icon="mdi-magnify" ref="searchInput" @focus="handleFocus" @blur="handleBlur"/>
 				<div v-if="fuzzyResults.length || (getFilteredHistory.length && searchQuery)"
 					class="dropdown-menu">
 					<!-- History Section -->
@@ -21,7 +21,7 @@
 							<v-icon icon="mdi-history" size="small" class="mr-2" />
 							{{ result.item }}
 						</div>
-						<v-divider v-if="fuzzyResults.length || isCSQuery" class="my-2"></v-divider>
+						<v-divider v-if="fuzzyResults.length" class="my-2"></v-divider>
 					</div>					 -->
 					<div>
 						<!-- Tool section -->
@@ -33,7 +33,7 @@
 					</div>
 				</div>
 			</v-col>
-			<v-col cols="3" class="cols">
+			<v-col cols="2">
 				<v-select v-model="selectedEngine" :items="searchEngines" item-title="name" item-value="url" variant="plain"
 					hide-details @update:modelValue="updateSelectedEngine">
 					<!-- For the selected value display -->
@@ -391,21 +391,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.cols {
-	padding: 1rem;
-}
-
-.search-bar {
-	display: flex;
-	align-items: center;
-	border: 1px solid dimgray;
-	border-radius: 12px;
-	margin: 0rem 8rem;
-}
-
-.search-bar:focus-within {
-	border: 1px solid rgb(170, 170, 170) !important;
-}
 
 .v-field__input,
 .v-field__prepend-inner,
@@ -461,10 +446,7 @@ onUnmounted(() => {
 	width: 36px;
 	height: 36px;
 	margin-right: 8px;
-	/* Add right margin to match mr-2 */
 	vertical-align: middle;
-	/* Ensure vertical alignment with text */
-
 }
 
 .history-header {
