@@ -79,6 +79,7 @@ import type { FuseResult } from "fuse.js";
 import { computed, defineProps, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Link } from "../types/Link";
 import { debounce } from "lodash";
+import { searchEngines } from "../data/SearchEngines";
 
 // interfaces
 interface Props {
@@ -100,23 +101,7 @@ const searchQuery = ref("");
 const searchHistory = ref<string[]>([]);
 const showHistory = ref(false);
 const searchInput = ref<HTMLElement | null>(null);
-const searchEngines = [
-	{
-		icon: "mdi-google",
-		name: "Google",
-		url: "https://www.google.com/search?q=",
-	},
-	{
-		icon: "mdi-microsoft-bing",
-		name: "Bing",
-		url: "https://www.bing.com/search?q=",
-	},
-	{
-		icon: "icons/perplexity.png",
-		name: "Perplexity",
-		url: "https://www.perplexity.ai/search?q=",
-	},
-];
+
 const selectedEngine = ref(
 	localStorage.getItem("defaultSearchEngine") || searchEngines[0].url,
 );
