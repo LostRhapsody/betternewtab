@@ -4,6 +4,8 @@ export const API = {
   CREATE_USER: "http://localhost:3000/create_user",
   CONFIRM_SUBSCRIPTION: (userEmail: string, userId: string) =>
     `http://localhost:3000/confirm/${userEmail}/${userId}`,
+  CANCEL_SUBSCRIPTION: (userEmail: string, userId: string) =>
+    `http://localhost:3000/cancel/${userEmail}/${userId}`,
   GET_USER: (userId: string) => `http://localhost:3000/user/${userId}`,
   GET_USER_PLAN: (planId: string) => `http://localhost:3000/plan/${planId}`,
   GET_USER_LINKS: (userId: string) =>

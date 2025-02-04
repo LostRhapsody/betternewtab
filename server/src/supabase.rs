@@ -557,7 +557,7 @@ impl Supabase {
         println!("subscriptions: {:?}", subscriptions);
         subscriptions
             .pop()
-            .ok_or_else(|| anyhow::anyhow!("Subscription not found"))
+            .ok_or_else(|| anyhow::anyhow!("404"))
     }
     pub async fn create_subscription(
         &self,
@@ -601,7 +601,7 @@ impl Supabase {
         &self,
         id: &str,
         updates: HashMap<String, serde_json::Value>,
-    ) -> Result<Subscription> {
+    ) -> Result<()> {
         let response = self
             .client
             .patch(format!("{}/rest/v1/subscriptions?id=eq.{}", self.url, id))
@@ -610,6 +610,11 @@ impl Supabase {
             .send()
             .await?;
 
-        Ok(response.json().await?)
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            return Err(anyhow::anyhow!("Failed to update subscription: {}", error_text));
+        }
+
+        Ok(())
     }
 }

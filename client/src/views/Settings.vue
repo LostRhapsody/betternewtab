@@ -159,10 +159,23 @@
             </v-card-text>
             <v-card-actions>
               <v-btn variant="elevated" color="primary" @click="router.push('/plans')">Change Plan</v-btn>
-              <v-btn variant="elevated" color="red" @click="router.push('/plans')">Cancel Plan</v-btn>
+              <v-btn v-if="userPlan?.name !== 'free'" variant="elevated" color="red" @click="showCancelDialog=true">Cancel Plan</v-btn>
             </v-card-actions>
           </v-card-item>
         </v-card>
+        <v-dialog v-model="showCancelDialog" max-width="400">
+          <v-card>
+            <v-card-title>Cancel Subscription</v-card-title>
+            <v-card-text>
+              Are you sure you want to cancel your subscription? You will have access to your plus features until the end of your current billing period.
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="grey" variant="text" @click="showCancelDialog = false">No, Keep It</v-btn>
+              <v-btn color="error" @click="cancelSubHandler">Yes, Cancel</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
       </div>
     </div>
 
@@ -209,6 +222,7 @@
   import { useRouter } from "vue-router";
   import { useUserStore } from "../stores/user";
   import type { Features } from "../types/Features";
+  import { API } from "../constants/api";
 
   // In Settings.vue setup
   const userStore = useUserStore();
@@ -289,6 +303,8 @@
     );
   });
 
+  const showCancelDialog = ref(false);
+
   // Methods
   const handleTeamSubmit = async () => {
     try {
@@ -362,6 +378,50 @@
   const contactSales = () => {
     window.location.href = "mailto:sales@example.com";
   };
+
+  const cancelSubHandler = async () => {
+    showCancelDialog.value = false;
+    if (!userStore.userId) {
+      throw new Error("User ID not found");
+    }
+    if (!userStore.email) {
+      throw new Error("User email not found");
+    }
+    try {
+      const response = await fetch(API.CANCEL_SUBSCRIPTION(userStore.userId, userStore.email));
+      /*
+        200 If unsubscribed successfully
+        400 if request is incorrect
+        401 if the user is not subscribed at all yet we're here somehow
+        404 if the user or sub is not found (how are you here)
+        500/default some unknown error
+      */
+      switch (response.status) {
+        case 200:
+          // this updates the user store with the new data so the billing details are up to date
+          userStore.fetchUserData({
+            id: userStore.userId,
+            email: userStore.email,
+            firstName: userStore.firstName || "",
+            lastName: userStore.lastName || "",
+          });
+          alert("Subscription cancelled successfully");
+          break;
+        case 400:
+          throw new Error("Invalid request: The cancel subscription request was incorrect.");
+        case 401:
+          throw new Error("Unauthorized: This user does not have an active subscription, using this button is a bug.");
+        case 404:
+          throw new Error("User not found: This user was not found, using this button is a bug.");
+        default:
+          throw new Error("An error occurred: An unknown error occurred while cancelling your subscription.");
+      }
+    } catch (err) {
+      console.error("Error cancelling subscription:", err);
+      alert(`An error occurred while cancelling your subscription:\n\n${err}\n\nPlease contact support at evan.robertson77@gmail.com.`);
+    }
+
+  }
 </script>
 
 <style scoped>

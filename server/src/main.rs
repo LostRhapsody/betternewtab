@@ -82,6 +82,8 @@ async fn main() {
     let app = Router::new()
         // confirm subscription
         .route("/confirm/{user_email}/{user_id}", get( move | path | confirm_handler(path)))
+        // cancel subscription
+        .route("/cancel/{user_email}/{user_id}", get( move | path | cancel_handler(path)))
         // create and update links
         .route("/link", post(create_link).put(update_link))
         // read links
@@ -195,6 +197,8 @@ async fn confirm_handler(
 
     println!("Got customer from Stripe, getting subscription");
     // Get Stripe subscription - if one is not returned, they have not subscribed (or subscription is inactive)
+    // TODO - cleanup task, if the subscription EXISTS in Supbase but NOT stripe, then the customer probably
+    // unsubscribed somehow. We should cancel the subscription in Supabase as well.
     let subscription = match StripeClient::get_subscription(&customer).await {
         Some(sub) => sub,
         None => {
@@ -486,4 +490,123 @@ async fn get_user_handler(Path(user_id): Path<String>) -> Result<Json<supabase::
         })?;
 
     Ok(Json(user))
+}
+
+/// Handles the cancellation of a user's subscription.
+///
+/// This function performs the following steps:
+/// 1. Validates the user email and user ID inputs
+/// 2. Verifies the user exists in Supabase
+/// 3. Confirms the user has an active Stripe subscription
+/// 4. Cancels the subscription in Stripe
+///
+/// # Arguments
+///
+/// * `Path((user_email, user_id))` - A tuple containing the user's email and user ID
+/// * sent to the server as `/cancel/{user_email}/{user_id}`
+///
+/// # Returns
+///
+/// * `Result<StatusCode, StatusCode>` - Returns OK (200) if cancellation is successful
+///
+/// # Errors
+///
+/// This function returns an appropriate `StatusCode` in case of errors:
+/// * `StatusCode::BAD_REQUEST` (400) - If email or user ID is empty
+/// * `StatusCode::NOT_FOUND` (404) - If user doesn't exist in Supabase
+/// * `StatusCode::UNAUTHORIZED` (401) - If user has no active subscription
+/// * `StatusCode::INTERNAL_SERVER_ERROR` (500) - For any other errors
+///
+/// # Example
+///
+/// ```rust
+/// let response = cancel_handler(Path(("user@example.com".to_string(), "user_id".to_string()))).await;
+/// match response {
+///     Ok(_) => println!("Subscription cancelled successfully"),
+///     Err(status) => println!("Error cancelling subscription: {:?}", status),
+/// }
+/// ```
+async fn cancel_handler(
+    Path((user_id, user_email)): Path<(String, String)>,
+) -> Result<StatusCode, StatusCode> {
+
+    println!("Cancelling email: {}", user_email);
+    println!("Cancelling user id: {}", user_id);
+
+    // confirm the user email and user id are present and formatted well else throw a 400
+    if user_email.is_empty() || user_id.is_empty() {
+        println!("User email or user id is empty");
+        return Err(StatusCode::BAD_REQUEST)
+    }
+
+    // first confirm if user exists, if not throw a 404
+    let supabase = Supabase::new(
+        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
+        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
+    ).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let _user = supabase.get_user(&user_id).await.map_err(|e| match e.to_string().as_str() {
+        "404" => StatusCode::NOT_FOUND,
+        _ => StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+    println!("Got user: {:?}", _user);
+
+    // then get the supabase subscription
+    let supa_sub = supabase.get_user_subscription(&user_id).await.map_err(|e| match e.to_string().as_str() {
+        "404" => StatusCode::NOT_FOUND,
+        _ => StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+    println!("Got supabase subscription: {:?}", supa_sub);
+
+    // then confirm the user's subscription is active, if not throw a 401
+    let customer = match StripeClient::get_customer(&user_email).await {
+        Some(customer) => customer,
+        None => {
+            return Err(StatusCode::UNAUTHORIZED)
+        }
+    };
+
+    println!("Got customer: {:?}", customer);
+
+    let subscription = match StripeClient::get_subscription(&customer).await {
+        Some(sub) => sub,
+        None => {
+            return Err(StatusCode::UNAUTHORIZED)
+        }
+    };
+
+    println!("Got subscription: {:?}", subscription);
+
+    if !subscription.status.eq(&stripe::SubscriptionStatus::Active) {
+        return Err(StatusCode::UNAUTHORIZED)
+    }
+
+    // let's try and cancel the subscription with Stripe
+    let sub = match StripeClient::cancel_subscription(&user_email).await {
+        Some(sub) => sub,
+        None => {
+            println!("No subscription found");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    println!("Cancelled subscription: {:?}", sub);
+
+    // If that worked, update the subscription records in supabase
+    let mut updates = HashMap::new();
+    updates.insert("status".to_string(), json!("cancelled"));
+    updates.insert("stripe_subscription_id".to_string(), json!(""));
+    updates.insert("current_period_end".to_string(), json!(Utc::now().to_rfc3339()));
+
+    println!("updates: {:?}", updates);
+
+    if let Err(e) = supabase.update_subscription(&supa_sub.id, updates).await {
+        println!("Error occurred updating the sub in supabase: {:?}", e);
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    return Ok(StatusCode::OK)
+
 }
