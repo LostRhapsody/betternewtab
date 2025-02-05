@@ -1,8 +1,5 @@
 <template>
 	<div class="mt-16 mx-16">
-		<!-- <v-text-field v-model="searchQuery" :label="placeholder" hide-details
-			@keyup.enter="performSearch" @keydown="handleKeydown" @mouseover="focusedIndex = -1"
-			prepend-inner-icon="mdi-magnify" ref="searchInput" @focus="handleFocus" @blur="handleBlur"/> -->
 		<div class="searchBarContainer">
 			<v-container>
 				<v-row>
