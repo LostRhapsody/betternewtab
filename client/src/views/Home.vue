@@ -23,6 +23,7 @@
       <!-- Rest of the template remains unchanged -->
 
       <SearchBar :tools="tools" :docs="docs" />
+      <v-btn @click="testSuggest" class="mb-4">Test Suggestion</v-btn>
       <LinkColumns :tools="toolLinks" :docs="docLinks" :userId="userId" :maxPins="userStore.userPlan?.max_pins || 6"
         :canAddLinks="canShowAddLink" @link-deleted="handleDeleteLink"
         :isPlanFree="userStore.userPlan?.name === 'free'" />
@@ -159,6 +160,7 @@ import { useUserStore } from "../stores/user";
 import { useLinksStore } from "../stores/links";
 import { storeToRefs } from "pinia";
 import { searchEngines } from "../data/SearchEngines";
+import { API } from "../constants/api";
 
 const userStore = useUserStore();
 const linksStore = useLinksStore();
@@ -258,6 +260,17 @@ const handleShowSignIn = () => {
     }
   });
 };
+
+// todo - move to search bar, extract suggestions, display them, and use them in the search query
+const testSuggest = () => {
+  console.log("Test suggestion");
+  try {
+    const response = fetch(API.SUGGEST("rust lang"));
+    console.log(response);
+  } catch (error) {
+    console.error("Error fetching suggestion:", error);
+  }
+}
 
 // Lifecycle hooks
 onMounted(async () => {

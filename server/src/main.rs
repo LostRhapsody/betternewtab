@@ -1,3 +1,4 @@
+mod brave;
 mod stripe_client;
 mod supabase;
 
@@ -7,22 +8,22 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
+use brave::Brave;
 use chrono::{TimeZone, Utc};
 use dotenv::dotenv;
+use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 use stripe_client::StripeClient;
 use supabase::Supabase;
 use tower_http::cors::{Any, CorsLayer};
-use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 
 #[derive(Serialize)]
 pub struct SubscriptionResponse {
     plan_id: String,
     current_period_end: i64,
 }
-
 
 #[derive(Deserialize)]
 pub struct CreateUserRequest {
@@ -58,6 +59,11 @@ pub struct Metadata {
     favicon: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct SuggestionResponse {
+    suggestions: Vec<brave::Suggestion>,
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -67,11 +73,18 @@ async fn main() {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    // Reminder! Anything you return must be serializable
     let app = Router::new()
         // confirm subscription
-        .route("/confirm/{user_email}/{user_id}", get( move | path | confirm_handler(path)))
+        .route(
+            "/confirm/{user_email}/{user_id}",
+            get(move |path| confirm_handler(path)),
+        )
         // cancel subscription
-        .route("/cancel/{user_email}/{user_id}", get( move | path | cancel_handler(path)))
+        .route(
+            "/cancel/{user_email}/{user_id}",
+            get(move |path| cancel_handler(path)),
+        )
         // create and update links
         .route("/link", post(create_link).put(update_link))
         // read links
@@ -87,6 +100,8 @@ async fn main() {
         .route("/create_user", post(create_user_handler))
         // get user
         .route("/user/{user_id}", get(move |path| get_user_handler(path)))
+        // get suggestion
+        .route("/suggest/{query}", get(move |path| suggest_handler(path)))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -158,7 +173,6 @@ async fn create_user_handler(
 async fn confirm_handler(
     Path((user_email, user_id)): Path<(String, String)>,
 ) -> Result<Json<SubscriptionResponse>, StatusCode> {
-
     println!("Confirming email: {}", user_email);
 
     let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
@@ -380,18 +394,23 @@ async fn create_link(
         payload.url
     };
 
-    let metadata = get_metadata(&url).await.map_err(|e| {
-        println!("Error getting metadata: {:?}", e);
-    }).unwrap_or_else(|_| Metadata {
-        title: Some(url.clone()),
-        description: None,
-        favicon: None,
-    });
+    let metadata = get_metadata(&url)
+        .await
+        .map_err(|e| {
+            println!("Error getting metadata: {:?}", e);
+        })
+        .unwrap_or_else(|_| Metadata {
+            title: Some(url.clone()),
+            description: None,
+            favicon: None,
+        });
 
     let title = if payload.title.as_deref() == Some("") {
         metadata.title.unwrap_or_else(|| "".to_string())
     } else {
-        payload.title.unwrap_or_else(|| metadata.title.unwrap().clone())
+        payload
+            .title
+            .unwrap_or_else(|| metadata.title.unwrap().clone())
     };
 
     let favicon = metadata.favicon.unwrap_or_else(|| "".to_string());
@@ -399,7 +418,9 @@ async fn create_link(
     let description = if payload.description.as_deref() == Some("") {
         metadata.description.unwrap_or_else(|| "".to_string())
     } else {
-        payload.description.unwrap_or_else(|| metadata.description.unwrap().clone())
+        payload
+            .description
+            .unwrap_or_else(|| metadata.description.unwrap().clone())
     };
 
     let link = supabase::Link {
@@ -423,9 +444,7 @@ async fn create_link(
     Ok((StatusCode::CREATED, Json(link)))
 }
 
-async fn update_link(
-    Json(payload): Json<UpdateLinkRequest>,
-) -> Result<StatusCode, StatusCode> {
+async fn update_link(Json(payload): Json<UpdateLinkRequest>) -> Result<StatusCode, StatusCode> {
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
@@ -545,58 +564,60 @@ async fn get_user_handler(Path(user_id): Path<String>) -> Result<Json<supabase::
 async fn cancel_handler(
     Path((user_id, user_email)): Path<(String, String)>,
 ) -> Result<StatusCode, StatusCode> {
-
     println!("Cancelling email: {}", user_email);
     println!("Cancelling user id: {}", user_id);
 
     // confirm the user email and user id are present and formatted well else throw a 400
     if user_email.is_empty() || user_id.is_empty() {
         println!("User email or user id is empty");
-        return Err(StatusCode::BAD_REQUEST)
+        return Err(StatusCode::BAD_REQUEST);
     }
 
     // first confirm if user exists, if not throw a 404
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    ).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let _user = supabase.get_user(&user_id).await.map_err(|e| match e.to_string().as_str() {
-        "404" => StatusCode::NOT_FOUND,
-        _ => StatusCode::INTERNAL_SERVER_ERROR,
-    })?;
+    let _user = supabase
+        .get_user(&user_id)
+        .await
+        .map_err(|e| match e.to_string().as_str() {
+            "404" => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
 
     println!("Got user: {:?}", _user);
 
     // then get the supabase subscription
-    let supa_sub = supabase.get_user_subscription(&user_id).await.map_err(|e| match e.to_string().as_str() {
-        "404" => StatusCode::NOT_FOUND,
-        _ => StatusCode::INTERNAL_SERVER_ERROR,
-    })?;
+    let supa_sub = supabase
+        .get_user_subscription(&user_id)
+        .await
+        .map_err(|e| match e.to_string().as_str() {
+            "404" => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
 
     println!("Got supabase subscription: {:?}", supa_sub);
 
     // then confirm the user's subscription is active, if not throw a 401
     let customer = match StripeClient::get_customer(&user_email).await {
         Some(customer) => customer,
-        None => {
-            return Err(StatusCode::UNAUTHORIZED)
-        }
+        None => return Err(StatusCode::UNAUTHORIZED),
     };
 
     println!("Got customer: {:?}", customer);
 
     let subscription = match StripeClient::get_subscription(&customer).await {
         Some(sub) => sub,
-        None => {
-            return Err(StatusCode::UNAUTHORIZED)
-        }
+        None => return Err(StatusCode::UNAUTHORIZED),
     };
 
     println!("Got subscription: {:?}", subscription);
 
     if !subscription.status.eq(&stripe::SubscriptionStatus::Active) {
-        return Err(StatusCode::UNAUTHORIZED)
+        return Err(StatusCode::UNAUTHORIZED);
     }
 
     // let's try and cancel the subscription with Stripe
@@ -614,7 +635,10 @@ async fn cancel_handler(
     let mut updates = HashMap::new();
     updates.insert("status".to_string(), json!("cancelled"));
     updates.insert("stripe_subscription_id".to_string(), json!(""));
-    updates.insert("current_period_end".to_string(), json!(Utc::now().to_rfc3339()));
+    updates.insert(
+        "current_period_end".to_string(),
+        json!(Utc::now().to_rfc3339()),
+    );
 
     println!("updates: {:?}", updates);
 
@@ -623,33 +647,51 @@ async fn cancel_handler(
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    return Ok(StatusCode::OK)
-
+    return Ok(StatusCode::OK);
 }
 
 async fn get_metadata(url: &str) -> Result<Metadata, StatusCode> {
     let mut headers = HeaderMap::new();
-    headers.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0 (compatible; BetterNewTab_Bot/1.0; +http://betternewtab.com/bot)"));
+    headers.insert(
+        USER_AGENT,
+        HeaderValue::from_static(
+            "Mozilla/5.0 (compatible; BetterNewTab_Bot/1.0; +http://betternewtab.com/bot)",
+        ),
+    );
 
     let client = reqwest::Client::builder()
         .default_headers(headers)
         .build()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let response = client.get(url).send().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if !response.status().is_success() {
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    let document = response.text().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let document = response
+        .text()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let document = scraper::Html::parse_document(&document);
 
     let title_selector = scraper::Selector::parse("title").unwrap();
-    let title = document.select(&title_selector).next().map(|t| t.inner_html());
+    let title = document
+        .select(&title_selector)
+        .next()
+        .map(|t| t.inner_html());
 
     let description_selector = scraper::Selector::parse("meta[name='description']").unwrap();
-    let description = document.select(&description_selector).next().and_then(|d| d.value().attr("content")).map(|d| d.to_string());
+    let description = document
+        .select(&description_selector)
+        .next()
+        .and_then(|d| d.value().attr("content"))
+        .map(|d| d.to_string());
 
     let favicon = Some(format!("{}/favicon.ico", url.trim_end_matches('/')));
 
@@ -658,4 +700,30 @@ async fn get_metadata(url: &str) -> Result<Metadata, StatusCode> {
         description,
         favicon,
     })
+}
+
+async fn suggest_handler(Path(query): Path<String>) -> Result<Json<SuggestionResponse>, StatusCode> {
+
+    println!("Suggesting: {}", query);
+
+    let brave = Brave::new(
+        std::env::var("BRAVE_SUGGEST_URL").expect("BRAVE_URL must be set"),
+        std::env::var("BRAVE_TEST_KEY").expect("BRAVE_API_KEY must be set"),
+    )
+    .map_err(|e| {
+        println!("Error initializing Brave client: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let response = brave
+        .get_suggestions(&query)
+        .await
+        .map_err(|e| {
+            println!("Error getting suggestions: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(SuggestionResponse {
+        suggestions: response.results,
+    }))
 }
