@@ -1,10 +1,13 @@
 <template>
 	<div class="mt-16 mx-16">
-		<v-row>
-			<v-col cols="10">
-				<v-text-field v-model="searchQuery" :label="placeholder" hide-details
+		<v-row class="align-center">
+			<v-col cols="9">
+				<!-- <v-text-field v-model="searchQuery" :label="placeholder" hide-details
 					@keyup.enter="performSearch" @keydown="handleKeydown" @mouseover="focusedIndex = -1"
-					prepend-inner-icon="mdi-magnify" ref="searchInput" @focus="handleFocus" @blur="handleBlur"/>
+					prepend-inner-icon="mdi-magnify" ref="searchInput" @focus="handleFocus" @blur="handleBlur"/> -->
+				<input v-model="searchQuery" :placeholder="placeholder" type="search" 
+					@keyup.enter="performSearch" @keydown="handleKeydown" @mouseover="focusedIndex = -1"
+					ref="searchInput" @focus="handleFocus" @blur="handleBlur" class="focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none searchBar"/>
 				<div v-if="fuzzyResults.length || (getFilteredHistory.length && searchQuery)"
 					class="dropdown-menu">
 					<!-- History Section -->
@@ -33,7 +36,7 @@
 					</div>
 				</div>
 			</v-col>
-			<v-col cols="2">
+			<v-col cols="3">
 				<v-select v-model="selectedEngine" :items="searchEngines" item-title="name" item-value="url" variant="plain"
 					hide-details @update:modelValue="updateSelectedEngine">
 					<!-- For the selected value display -->
@@ -468,5 +471,47 @@ onUnmounted(() => {
 
 .history-item:hover {
 	background-color: rgba(128, 128, 128, 0.1);
+}
+
+.searchBar {
+	display: flex;
+	align-items: center;
+	padding: 0.75rem;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background-color: var(--color-background);
+	transition: border-color 0.2s, box-shadow 0.2s;
+	width: 100%;
+	margin-top: 1rem;
+}
+
+.searchBar:hover {
+	border-color: var(--color-border-hover);
+}
+
+.searchBar:focus-within, .searchBar:focus-visible {
+	border-color: var(--color-border-hover);
+	box-shadow: 0 0 8px rgba(0, 123, 255, 0.25);
+}
+
+.searchBar input {
+	flex: 1;
+	border: none;
+	outline: none;
+	padding: 0.75rem;
+	background-color: transparent;
+	color: var(--color-text);
+}
+
+.searchBar button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0.75rem;
+	color: var(--color-text);
+}
+
+.searchBar button:hover {
+	color: var(--color-text-hover);
 }
 </style>

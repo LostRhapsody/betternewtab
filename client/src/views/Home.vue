@@ -23,7 +23,6 @@
       <!-- Rest of the template remains unchanged -->
 
       <SearchBar :tools="tools" :docs="docs" />
-      <new_search_bar />
       <LinkColumns :tools="toolLinks" :docs="docLinks" :userId="userId" :maxPins="userStore.userPlan?.max_pins || 6"
         :canAddLinks="canShowAddLink" @link-deleted="handleDeleteLink"
         :isPlanFree="userStore.userPlan?.name === 'free'" />
@@ -156,7 +155,6 @@ import { useRouter } from "vue-router";
 import LandingPage from "../components/LandingPage.vue";
 import LinkColumns from "../components/LinkColumns.vue";
 import SearchBar from "../components/SearchBar.vue";
-import new_search_bar from "@/components/new_search_bar.vue";
 import { useUserStore } from "../stores/user";
 import { useLinksStore } from "../stores/links";
 import { storeToRefs } from "pinia";

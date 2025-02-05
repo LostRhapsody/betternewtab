@@ -23,20 +23,11 @@ pub struct SubscriptionResponse {
     current_period_end: i64,
 }
 
-#[derive(Serialize)]
-pub struct CustomerResponse {
-    session_id: String,
-}
 
 #[derive(Deserialize)]
 pub struct CreateUserRequest {
     user_id: String,
     email: String,
-}
-
-#[derive(Serialize)]
-pub struct CreateUserResponse {
-    message: String,
 }
 
 #[derive(Deserialize)]
@@ -50,12 +41,6 @@ pub struct CreateLinkRequest {
     column_type: String,
 }
 
-#[derive(Serialize)]
-pub struct CreateLinkResponse {
-    link: supabase::Link,
-    message: String,
-}
-
 #[derive(Deserialize)]
 pub struct UpdateLinkRequest {
     id: String,
@@ -64,11 +49,6 @@ pub struct UpdateLinkRequest {
     title: Option<String>,
     icon: Option<String>,
     column_type: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct UpdateLinkResponse {
-    message: String,
 }
 
 #[derive(Deserialize, Clone, Debug)]
