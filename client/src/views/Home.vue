@@ -87,9 +87,27 @@
                 </v-col>
               </v-row>
             </div>
+            <h4 class="text-xl mb-4">Display Shortcuts</h4>
+            <div class="border p-4 rounded-lg mb-4">
+              <v-row>
+                <v-col>
+                  <ul>
+                    <li>
+                      <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-2">
+                          Show Keyboard Shortcuts
+                        </div>
+                        <div class="col-span-1">
+                          <span class="kbd">?</span>
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+                </v-col>
+              </v-row>
+            </div>
           </v-card-text>
           <v-card-actions>
-            <v-spacer></v-spacer>
             <v-btn variant="tonal" @click="showHelpDialog = false">Close</v-btn>
           </v-card-actions>
         </v-card>
@@ -148,256 +166,256 @@
 
 </template>
 <script setup lang="ts">
-import type { Link } from "@/types/Link";
-import { Clerk } from "@clerk/clerk-js";
-import { computed, nextTick, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import LandingPage from "../components/LandingPage.vue";
-import LinkColumns from "../components/LinkColumns.vue";
-import SearchBar from "../components/SearchBar.vue";
-import { useUserStore } from "../stores/user";
-import { useLinksStore } from "../stores/links";
-import { storeToRefs } from "pinia";
-import { searchEngines } from "../data/SearchEngines";
-import { API } from "../constants/api";
+  import type { Link } from "@/types/Link";
+  import { Clerk } from "@clerk/clerk-js";
+  import { computed, nextTick, onMounted, ref } from "vue";
+  import { useRouter } from "vue-router";
+  import LandingPage from "../components/LandingPage.vue";
+  import LinkColumns from "../components/LinkColumns.vue";
+  import SearchBar from "../components/SearchBar.vue";
+  import { useUserStore } from "../stores/user";
+  import { useLinksStore } from "../stores/links";
+  import { storeToRefs } from "pinia";
+  import { searchEngines } from "../data/SearchEngines";
 
-const userStore = useUserStore();
-const linksStore = useLinksStore();
-// Convert store properties to refs for reactivity
-const { toolLinks, docLinks } = storeToRefs(linksStore)
-const { links } = storeToRefs(linksStore)
+  const userStore = useUserStore();
+  const linksStore = useLinksStore();
+  // Convert store properties to refs for reactivity
+  const { toolLinks, docLinks } = storeToRefs(linksStore)
+  const { links } = storeToRefs(linksStore)
 
-// Initialize services
-const router = useRouter();
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerk = new Clerk(clerkPubKey);
+  // Initialize services
+  const router = useRouter();
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const clerk = new Clerk(clerkPubKey);
 
-// State management
-const isLoggedIn = ref(false);
-const isLoading = ref(true);
-const showSignIn = ref(false);
-const showHelpDialog = ref(false);
+  // State management
+  const isLoggedIn = ref(false);
+  const isLoading = ref(true);
+  const showSignIn = ref(false);
+  const showHelpDialog = ref(false);
 
-// User and data state
-const userId = ref<string | null>(null);
-const currentRole = ref("member");
-const tools = ref<Link[]>([]);
-const docs = ref<Link[]>([]);
+  // User and data state
+  const userId = ref<string | null>(null);
+  const currentRole = ref("member");
+  const tools = ref<Link[]>([]);
+  const docs = ref<Link[]>([]);
 
-// just for sorting shortcuts
-const links_by_column_type = computed(() => {
-  return [...links.value].sort((a, b) => {
-    if (a.column_type !== b.column_type) {
-      return b.column_type.localeCompare(a.column_type);
-    }
-    return a.order_index - b.order_index;
-  })
-});
-
-// Computed properties
-const linkShortcuts = computed(() =>
-  links_by_column_type.value.map((link, index) => ({
-    command: link.column_type === "tools" ? "Ctrl" : "Alt",
-    index: `${index + 1}`,
-    description: `Open ${link.title}`,
-  })),
-);
-
-const docShortcuts = computed(() =>
-  docLinks.value.map((doc, index) => ({
-    command: "Alt",
-    index: `${index + 1}`,
-    description: `Open ${doc.title}`,
-  })),
-);
-
-const canShowAddLink = computed(() => {
-  if (userStore.userPlan?.name === "free" || userStore.userPlan?.name === "plus") {
-    return true;
-  }
-
-  if (
-    userStore.userPlan?.name === "team" &&
-    (currentRole.value === "admin" || currentRole.value === "owner")
-  ) {
-    return true;
-  }
-
-  if (
-    userStore.userPlan?.name === "enterprise" &&
-    (currentRole.value === "admin" || currentRole.value === "owner")
-  ) {
-    return true;
-  }
-
-  return false;
-});
-
-const handleDeleteLink = (type: string, index: number) => {
-  console.log("Deleting link", type, index);
-  if (type === "tool") {
-    tools.value.splice(index, 1);
-    // Reorder remaining tools
-    tools.value.forEach((tool, idx) => {
-      tool.order_index = idx;
-    });
-  } else {
-    docs.value.splice(index, 1);
-    // Reorder remaining docs
-    docs.value.forEach((doc, idx) => {
-      doc.order_index = idx;
-    });
-  }
-};
-
-const handleShowSignIn = () => {
-  showSignIn.value = true;
-  nextTick(() => {
-    const signInDiv = document.getElementById("sign-in");
-    if (signInDiv) {
-      clerk.mountSignIn(signInDiv as HTMLDivElement);
-    }
+  // just for sorting shortcuts
+  const links_by_column_type = computed(() => {
+    return [...links.value].sort((a, b) => {
+      if (a.column_type !== b.column_type) {
+        return b.column_type.localeCompare(a.column_type);
+      }
+      return a.order_index - b.order_index;
+    })
   });
-};
 
-// Lifecycle hooks
-onMounted(async () => {
-  isLoading.value = true;
+  // Computed properties
+  const linkShortcuts = computed(() =>
+    links_by_column_type.value.map((link, index) => ({
+      command: link.column_type === "tools" ? "Ctrl" : "Alt",
+      index: `${index + 1}`,
+      description: `Open ${link.title}`,
+    })),
+  );
 
-  try {
-    await clerk.load();
-    isLoggedIn.value = !!clerk.user;
-
-    if (isLoggedIn.value && clerk.user) {
-      let gotUser = false;
-      try {
-
-        // if user store is already initialized, no need to fetch user data
-        if (!userStore.userId) {
-          // pass clerk data to fetch user data
-          gotUser = await userStore.fetchUserData({
-            id: clerk.user.id,
-            firstName: clerk.user.firstName || "",
-            lastName: clerk.user.lastName || "",
-            email: clerk.user.emailAddresses[0].emailAddress,
-          });
-        } else gotUser = true;
-
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-      if (!gotUser) {
-        throw new Error("Error fetching user data");
-      }
-
-      // this is def not gonna happen but for type errors
-      if (!userStore.userId) {
-        throw new Error("User ID not found");
-      }
-      linksStore.fetchLinks(userStore.userId);
-
+  const canShowAddLink = computed(() => {
+    if (userStore.userPlan?.name === "free" || userStore.userPlan?.name === "plus") {
+      return true;
     }
-  } catch (error) {
-    console.error("Error during initialization:", error);
-    // Handle error appropriately
-  } finally {
-    isLoading.value = false;
-  }
 
-  // Mount Clerk user button if logged in (has nothing to do with user data above)
-  if (isLoggedIn.value) {
+    if (
+      userStore.userPlan?.name === "team" &&
+      (currentRole.value === "admin" || currentRole.value === "owner")
+    ) {
+      return true;
+    }
+
+    if (
+      userStore.userPlan?.name === "enterprise" &&
+      (currentRole.value === "admin" || currentRole.value === "owner")
+    ) {
+      return true;
+    }
+
+    return false;
+  });
+
+  const handleDeleteLink = (type: string, index: number) => {
+    console.log("Deleting link", type, index);
+    if (type === "tool") {
+      tools.value.splice(index, 1);
+      // Reorder remaining tools
+      tools.value.forEach((tool, idx) => {
+        tool.order_index = idx;
+      });
+    } else {
+      docs.value.splice(index, 1);
+      // Reorder remaining docs
+      docs.value.forEach((doc, idx) => {
+        doc.order_index = idx;
+      });
+    }
+  };
+
+  const handleShowSignIn = () => {
+    showSignIn.value = true;
     nextTick(() => {
-      const userButtonDiv = document.getElementById("user-button");
-      if (userButtonDiv) {
-        clerk.mountUserButton(userButtonDiv as HTMLDivElement, {
-          appearance: {
-            elements: {
-              rootBox: "scale-150 items-center",
-            },
-          },
-        });
+      const signInDiv = document.getElementById("sign-in");
+      if (signInDiv) {
+        clerk.mountSignIn(signInDiv as HTMLDivElement);
       }
     });
-  }
-});
+  };
+
+  const handleShowKeyboardShortcuts = (event: KeyboardEvent) => {
+    if (event.key === "?") {
+      showHelpDialog.value = true;
+    }
+  };
+
+  // Lifecycle hooks
+  onMounted(async () => {
+    isLoading.value = true;
+
+    try {
+      await clerk.load();
+      isLoggedIn.value = !!clerk.user;
+
+      if (isLoggedIn.value && clerk.user) {
+        let gotUser = false;
+        try {
+
+          // if user store is already initialized, no need to fetch user data
+          if (!userStore.userId) {
+            // pass clerk data to fetch user data
+            gotUser = await userStore.fetchUserData({
+              id: clerk.user.id,
+              firstName: clerk.user.firstName || "",
+              lastName: clerk.user.lastName || "",
+              email: clerk.user.emailAddresses[0].emailAddress,
+            });
+          } else gotUser = true;
+
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+        if (!gotUser) {
+          throw new Error("Error fetching user data");
+        }
+
+        // this is def not gonna happen but for type errors
+        if (!userStore.userId) {
+          throw new Error("User ID not found");
+        }
+        linksStore.fetchLinks(userStore.userId);
+
+      }
+    } catch (error) {
+      console.error("Error during initialization:", error);
+      // Handle error appropriately
+    } finally {
+      isLoading.value = false;
+    }
+
+    // Mount Clerk user button if logged in (has nothing to do with user data above)
+    if (isLoggedIn.value) {
+      nextTick(() => {
+        const userButtonDiv = document.getElementById("user-button");
+        if (userButtonDiv) {
+          clerk.mountUserButton(userButtonDiv as HTMLDivElement, {
+            appearance: {
+              elements: {
+                rootBox: "scale-150 items-center",
+              },
+            },
+          });
+        }
+      });
+    }
+
+    // mount event listenrs
+    window.addEventListener('keydown', handleShowKeyboardShortcuts);
+  });
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-img {
-  width: 100%;
-  height: auto;
-  border: 1px solid transparent;
-  border-radius: 12px;
-}
-
-.WeatherAndTime {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  margin-bottom: 0.5rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
+  .header {
     display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+    justify-content: space-between;
+    align-items: baseline;
   }
 
   .logo {
-    margin: 0 2rem 0 0;
+    display: block;
+    margin: 0 auto 2rem;
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+    border: 1px solid transparent;
+    border-radius: 12px;
+  }
+
+  .WeatherAndTime {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
   }
 
   nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-    padding: 1rem 0;
-    margin-top: 1rem;
+    width: 100%;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 2rem;
   }
-}
+
+  nav a.router-link-exact-active {
+    color: var(--color-text);
+  }
+
+  nav a.router-link-exact-active:hover {
+    background-color: transparent;
+  }
+
+  nav a {
+    display: inline-block;
+    padding: 0 1rem;
+    border-left: 1px solid var(--color-border);
+  }
+
+  nav a:first-of-type {
+    border: 0;
+  }
+
+  @media (min-width: 1024px) {
+    header {
+      display: flex;
+      place-items: center;
+      padding-right: calc(var(--section-gap) / 2);
+    }
+
+    .logo {
+      margin: 0 2rem 0 0;
+    }
+
+    nav {
+      text-align: left;
+      margin-left: -1rem;
+      font-size: 1rem;
+      padding: 1rem 0;
+      margin-top: 1rem;
+    }
+  }
 </style>
