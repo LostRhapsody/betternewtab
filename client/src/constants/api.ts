@@ -13,5 +13,5 @@ export const API = {
   CREATE_LINK: "http://localhost:3000/link",
   UPDATE_LINK: "http://localhost:3000/link",
   DELETE_LINK: (linkId: string) => `http://localhost:3000/link/${linkId}`,
-  SUGGEST: (query: string) =>  `http://localhost:3000/suggest/${query}`,
+  SUGGEST: (query: string) => `http://localhost:3000/suggest/${query}`,
 } as const;
