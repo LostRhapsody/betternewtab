@@ -14,13 +14,16 @@
 				<v-row>
 					<v-col>
 						<v-row class="flex justify-between">
-							<v-col cols="3 flex justify-start">
+							<v-col cols="2">
 								<v-select v-model="selectedEngine" :items="searchEngines" item-title="name"
 									item-value="url" variant="solo-inverted" hide-details
 									@update:modelValue="updateSelectedEngine">
 									<!-- For the selected value display -->
 									<template v-slot:selection="{ item }">
-										{{ item.raw.name }}
+										<div class="d-flex align-center">
+											<v-icon v-if="item.raw.icon.startsWith('mdi-')" :icon="item.raw.icon" size="36" class="mr-2" />
+											<img v-else :src="item.raw.icon" :alt="item.raw.name" class="custom-icon" />
+										</div>
 									</template>
 
 									<!-- For each item in the dropdown -->
@@ -38,7 +41,7 @@
 									</template>
 								</v-select>
 							</v-col>
-							<v-col cols="3" class="flex justify-end items-end">
+							<v-col cols="2" class="flex justify-end items-end">
 								<v-btn icon="mdi-arrow-right" @click="performSearch">
 								</v-btn>
 							</v-col>

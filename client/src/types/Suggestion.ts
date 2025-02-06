@@ -4,4 +4,4 @@ export type Suggestions = {
 
 export type SuggestionsResponse = {
   suggestions: Suggestions[];
-}
+};
