@@ -14,5 +14,6 @@ export const API = {
   UPDATE_LINK: "http://localhost:3000/link",
   DELETE_LINK: (linkId: string) => `http://localhost:3000/link/${linkId}`,
   SUGGEST: (query: string) => `http://localhost:3000/suggest/${query}`,
-  FEEDBACK: (userId:string, userEmail:string) => `http://localhost:3000/feedback/${userId}/${userEmail}`,
+  FEEDBACK: (userId: string, userEmail: string) =>
+    `http://localhost:3000/feedback/${userId}/${userEmail}`,
 } as const;

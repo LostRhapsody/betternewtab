@@ -40,7 +40,7 @@
 							Cancel
 						</v-btn>
 						<v-btn color="primary" variant="text" :loading="isLoading" @click="handleSubmit">
-							Add Link
+							Save Link
 						</v-btn>
 					</div>
 					<div class="flex justify-end">

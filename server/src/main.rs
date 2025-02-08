@@ -4,16 +4,16 @@ mod stripe_client;
 mod supabase;
 
 use axum::{
-    extract::{Json, Path},
+    extract::{Json, Path, State},
     http::StatusCode,
     routing::{delete, get, post},
     Router,
 };
+use base64::prelude::*;
 use brave::Brave;
-use resend::ResendClient;
 use chrono::{TimeZone, Utc};
 use dotenv::dotenv;
-use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use resend::ResendClient;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ use stripe_client::StripeClient;
 use supabase::Supabase;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::prelude::*;
-use base64::prelude::*;
+use url::Url;
 
 #[derive(Serialize)]
 pub struct SubscriptionResponse {
@@ -35,7 +35,7 @@ pub struct CreateUserRequest {
     email: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CreateLinkRequest {
     url: String,
     description: Option<String>,
@@ -61,6 +61,7 @@ pub struct Metadata {
     title: Option<String>,
     description: Option<String>,
     favicon: Option<String>,
+    mime_type: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -75,7 +76,6 @@ pub struct FeedbackRequest {
 }
 
 fn main() {
-
     let _guard = sentry::init(("https://dacfc75c4bbf7f8a70134067d078c21a@o4508773394153472.ingest.us.sentry.io/4508773395857408", sentry::ClientOptions {
         release: sentry::release_name!(),
 
@@ -111,17 +111,24 @@ async fn runtime() {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    let client = reqwest::Client::new();
 
     // Reminder! Anything you return must be serializable
     let app = Router::new()
         // confirm subscription
-        .route("/confirm/{user_email}/{user_id}",get(move |path| confirm_handler(path)),)
+        .route(
+            "/confirm/{user_email}/{user_id}",
+            get(move |path| confirm_handler(path)),
+        )
         // cancel subscription
-        .route("/cancel/{user_email}/{user_id}",post(cancel_handler),)
+        .route("/cancel/{user_email}/{user_id}", post(cancel_handler))
         // create and update links
         .route("/link", post(create_link).put(update_link))
         // read links
-        .route("/user/{user_id}/links",get(move |path| links_handler(path)),)
+        .route(
+            "/user/{user_id}/links",
+            get(move |path| links_handler(path)),
+        )
         // delete link
         .route("/link/{link_id}", delete(move |path| delete_link(path)))
         // get plan
@@ -133,6 +140,7 @@ async fn runtime() {
         // get suggestion
         .route("/suggest/{query}", get(move |path| suggest_handler(path)))
         .route("/feedback/{user_id}/{user_email}", post(feedback_handler))
+        .with_state(client)
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -425,6 +433,7 @@ async fn links_handler(
 }
 
 async fn create_link(
+    State(client): State<reqwest::Client>,
     Json(payload): Json<CreateLinkRequest>,
 ) -> Result<(StatusCode, Json<supabase::Link>), StatusCode> {
     let supabase = Supabase::new(
@@ -439,7 +448,7 @@ async fn create_link(
         payload.url
     };
 
-    let metadata = get_metadata(&url)
+    let metadata = get_metadata(State(client.clone()), &url)
         .await
         .map_err(|e| {
             println!("Error getting metadata: {:?}", e);
@@ -448,6 +457,7 @@ async fn create_link(
             title: Some(url.clone()),
             description: None,
             favicon: None,
+            mime_type: None,
         });
 
     let title = if payload.title.as_deref() == Some("") {
@@ -458,7 +468,17 @@ async fn create_link(
             .unwrap_or_else(|| metadata.title.unwrap().clone())
     };
 
-    let favicon = metadata.favicon.unwrap_or_else(|| "".to_string());
+    let favicon = get_favicon(
+        State(client),
+        &url,
+        metadata.favicon.clone(),
+        metadata.mime_type.clone(),
+    )
+        .await
+        .map_err(|e| {
+            println!("Error getting favicon: {:?}", e);
+        })
+        .unwrap_or_else(|_| "".to_string());
 
     let description = if payload.description.as_deref() == Some("") {
         metadata.description.unwrap_or_else(|| "".to_string())
@@ -672,7 +692,9 @@ async fn cancel_handler(
         user_email,
         payload.feedback_comment,
         payload.reasons,
-    ).await {
+    )
+    .await
+    {
         Some(sub) => sub,
         None => {
             println!("No subscription found");
@@ -701,20 +723,7 @@ async fn cancel_handler(
     return Ok(StatusCode::OK);
 }
 
-async fn get_metadata(url: &str) -> Result<Metadata, StatusCode> {
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        USER_AGENT,
-        HeaderValue::from_static(
-            "Mozilla/5.0 (compatible; BetterNewTab_Bot/1.0; +http://betternewtab.com/bot)",
-        ),
-    );
-
-    let client = reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
+async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metadata, StatusCode> {
     let response = client
         .get(url)
         .send()
@@ -744,41 +753,94 @@ async fn get_metadata(url: &str) -> Result<Metadata, StatusCode> {
         .and_then(|d| d.value().attr("content"))
         .map(|d| d.to_string());
 
-    let favicon_urls = vec![
-        format!("{}/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/images/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/assets/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/static/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/public/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/icon/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/icons/favicon.ico", url.trim_end_matches('/')),
-        format!("{}/icon.svg", url.trim_end_matches('/')),
-        format!("{}/favicon-32x32.png", url.trim_end_matches('/')),
-    ];
+    let icon_selector = scraper::Selector::parse("link[rel='icon']").unwrap();
+    let favicon = document
+        .select(&icon_selector)
+        .next()
+        .and_then(|i| i.value().attr("href"))
+        .map(|i| i.to_string());
 
-    let mut favicon: Option<String> = None;
+    let mime_type = document
+        .select(&icon_selector)
+        .next()
+        .and_then(|i| i.value().attr("type"))
+        .map(|i| i.to_string());
 
-    // todo this block throws an error for some reason.
-    // for favicon_url in favicon_urls {
-    //     if let Ok(favicon_response) = client.get(&favicon_url).send().await {
-    //         if favicon_response.status().is_success() {
-    //             if let Ok(favicon_bytes) = favicon_response.bytes().await {
-    //                 favicon = Some(BASE64_STANDARD.encode(favicon_bytes));
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
-
-    if favicon.is_none() {
-        favicon = Some("".to_string());
-    }
+    println!("favicon source: {:?}", favicon);
 
     Ok(Metadata {
         title,
         description,
         favicon,
+        mime_type
     })
+}
+
+async fn get_favicon(
+    client: State<reqwest::Client>,
+    url: &str,
+    favicon_source: Option<String>,
+    mime_type: Option<String>,
+) -> Result<String, StatusCode> {
+    let parsed_url = Url::parse(url).expect("Invalid URL");
+    let domain = parsed_url.host_str().unwrap_or("").to_string();
+
+    let domain = if !domain.starts_with("https://") {
+        format!("https://{}", domain)
+    } else {
+        domain
+    };
+
+    let favicon_urls = vec![
+        format!("{}/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/images/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/assets/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/static/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/public/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/icon/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/icons/favicon.ico", domain.trim_end_matches('/')),
+        format!("{}/icon.svg", domain.trim_end_matches('/')),
+        format!("{}/favicon-32x32.png", domain.trim_end_matches('/')),
+    ];
+
+    println!("Favicon urls: {:?}", favicon_urls);
+
+    let mut favicon: Option<String> = None;
+
+    // if we found a source link tag while parsing the page's document, grab that
+    // otherwise we just try some backups
+    if favicon_source.is_some() {
+
+        let favicon_url = format!("{}{}", domain.trim_end_matches('/'),&favicon_source.unwrap());
+        let fav_response = client.get(favicon_url).send().await;
+
+        if let Ok(fav_response) = fav_response {
+            if fav_response.status().is_success() {
+                if let Ok(fav_bytes) = fav_response.bytes().await {
+                    favicon = Some(format!("data:{};base64,{}", mime_type.unwrap_or_else(|| "unknown".to_string()), BASE64_STANDARD.encode(fav_bytes)));
+                }
+            }
+        }
+    } else {
+        for favicon_url in favicon_urls {
+            if let Ok(fav_response) = client.get(&favicon_url).send().await {
+                if fav_response.status().is_success() {
+                    if let Ok(fav_bytes) = fav_response.bytes().await {
+                        favicon = Some(format!("data:{};base64,{}", mime_type.unwrap_or_else(|| "unknown".to_string()), BASE64_STANDARD.encode(fav_bytes)));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if favicon.is_none() {
+        favicon = Some("".to_string());
+    }
+
+    println!("Favicon: {:?}", favicon);
+
+    Ok(favicon.unwrap())
 }
 
 async fn suggest_handler(
@@ -818,10 +880,13 @@ async fn feedback_handler(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Check if the user has sent feedback in the last 24 hours
-    let can_send_feedback = supabase.check_feedback_timestamp(&user_id).await.map_err(|e| {
-        println!("Error checking feedback timestamp: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let can_send_feedback = supabase
+        .check_feedback_timestamp(&user_id)
+        .await
+        .map_err(|e| {
+            println!("Error checking feedback timestamp: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     if !can_send_feedback {
         return Err(StatusCode::TOO_MANY_REQUESTS);
@@ -829,26 +894,36 @@ async fn feedback_handler(
 
     let resend_service = ResendClient::new();
 
-    let customer_support_email = std::env::var("CUSTOMER_SUPPORT_EMAIL").expect("CUSTOMER_SUPPORT_EMAIL must be set");
+    let customer_support_email =
+        std::env::var("CUSTOMER_SUPPORT_EMAIL").expect("CUSTOMER_SUPPORT_EMAIL must be set");
 
     let email_body = format!(
         "<p>Feedback from user: {} | {}<br/><br/>Reasons: {:?}<br/><br/>Feedback: {}</p>",
-        user_id, user_email, payload.reasons, payload.feedback_comment.unwrap_or_else(|| "".to_string())
+        user_id,
+        user_email,
+        payload.reasons,
+        payload.feedback_comment.unwrap_or_else(|| "".to_string())
     );
 
     let subject = format!("Feedback from: {}", user_email);
 
-    resend_service.send_email(&customer_support_email, &subject, &email_body).await.map_err(|e| {
-        println!("Error sending email: {:?}", e);
-        tracing::error!("Error sending email: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    resend_service
+        .send_email(&customer_support_email, &subject, &email_body)
+        .await
+        .map_err(|e| {
+            println!("Error sending email: {:?}", e);
+            tracing::error!("Error sending email: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     // Create a feedback timestamp record
-    supabase.create_feedback_timestamp(&user_id, &Utc::now().to_rfc3339()).await.map_err(|e| {
-        println!("Error creating feedback timestamp: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    supabase
+        .create_feedback_timestamp(&user_id, &Utc::now().to_rfc3339())
+        .await
+        .map_err(|e| {
+            println!("Error creating feedback timestamp: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     Ok(StatusCode::OK)
 }

@@ -214,6 +214,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid 1.12.1",
 ]
 
