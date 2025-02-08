@@ -65,6 +65,12 @@ pub struct SuggestionResponse {
     suggestions: Vec<brave::Suggestion>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct FeedbackRequest {
+    reasons: Option<stripe::CancellationDetailsFeedback>,
+    feedback_comment: Option<String>,
+}
+
 fn main() {
 
     let _guard = sentry::init(("https://dacfc75c4bbf7f8a70134067d078c21a@o4508773394153472.ingest.us.sentry.io/4508773395857408", sentry::ClientOptions {
@@ -87,6 +93,9 @@ fn main() {
         .block_on(async {
             runtime().await;
         });
+
+    println!("Ending request");
+    tracing::info!("Ending request");
 }
 
 async fn runtime() {
@@ -99,25 +108,17 @@ async fn runtime() {
         .allow_methods(Any)
         .allow_headers(Any);
 
+
     // Reminder! Anything you return must be serializable
     let app = Router::new()
         // confirm subscription
-        .route(
-            "/confirm/{user_email}/{user_id}",
-            get(move |path| confirm_handler(path)),
-        )
+        .route("/confirm/{user_email}/{user_id}",get(move |path| confirm_handler(path)),)
         // cancel subscription
-        .route(
-            "/cancel/{user_email}/{user_id}",
-            get(move |path| cancel_handler(path)),
-        )
+        .route("/cancel/{user_email}/{user_id}",post(cancel_handler),)
         // create and update links
         .route("/link", post(create_link).put(update_link))
         // read links
-        .route(
-            "/user/{user_id}/links",
-            get(move |path| links_handler(path)),
-        )
+        .route("/user/{user_id}/links",get(move |path| links_handler(path)),)
         // delete link
         .route("/link/{link_id}", delete(move |path| delete_link(path)))
         // get plan
@@ -134,7 +135,6 @@ async fn runtime() {
     println!("Server running on http://0.0.0.0:3000");
 
     axum::serve(listener, app).await.unwrap();
-    tracing::info!("Ending request");
 }
 
 async fn create_user_handler(
@@ -604,9 +604,11 @@ async fn get_user_handler(Path(user_id): Path<String>) -> Result<Json<supabase::
 /// ```
 async fn cancel_handler(
     Path((user_id, user_email)): Path<(String, String)>,
+    Json(payload): Json<FeedbackRequest>,
 ) -> Result<StatusCode, StatusCode> {
     println!("Cancelling email: {}", user_email);
     println!("Cancelling user id: {}", user_id);
+    println!("Feedback: {:?}", payload);
 
     // confirm the user email and user id are present and formatted well else throw a 400
     if user_email.is_empty() || user_id.is_empty() {
@@ -662,7 +664,11 @@ async fn cancel_handler(
     }
 
     // let's try and cancel the subscription with Stripe
-    let sub = match StripeClient::cancel_subscription(&user_email).await {
+    let sub = match StripeClient::cancel_subscription(
+        user_email,
+        payload.feedback_comment,
+        payload.reasons,
+    ).await {
         Some(sub) => sub,
         None => {
             println!("No subscription found");

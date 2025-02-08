@@ -1,7 +1,10 @@
 export const cancelReasons = [
-  { label: 'Too slow', value: 'slow' },
-  { label: 'Missing features', value: 'missing_features' },
-  { label: 'Bugs/crashes', value: 'bugs' },
-  { label: 'Found better alternative', value: 'alternative' },
-  { label: 'Other', value: 'other' }
+  { label: "Better New Tab Is Not The High Quality Experience I Expected", value: "low_quality" },
+  { label: "Key Features I Need Are Missing", value: "missing_features" },
+  { label: "I Switched to Another Service", value: "switched_service" },
+  { label: "Better New Tab Is Too Complex", value: "too_complex" },
+  { label: "It's Too Expensive", value: "too_expensive" },
+  { label: "I No Longer Use It", value: "unused" },
+  { label: "Can't Contact Customer Service Or Poor Experience", value: "customer_service" },
+  { label: "Other", value: "other" },
 ];

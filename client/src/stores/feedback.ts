@@ -1,29 +1,29 @@
-import { defineStore } from 'pinia';
+import { defineStore } from "pinia";
 
 type FeedbackState = {
-  reasons: string[];
+  reasons: string;
   feedbackComment: string;
 };
 
-export const useFeedbackStore = defineStore('feedbackStore', {
+export const useFeedbackStore = defineStore("feedbackStore", {
   state: (): FeedbackState => ({
-    reasons: [],
-    feedbackComment: ''
+    reasons: "",
+    feedbackComment: "",
   }),
   actions: {
     addReason(reason: string) {
-      this.reasons.push(reason);
+      this.reasons = reason;
     },
     setFeedbackComment(comment: string) {
       this.feedbackComment = comment;
     },
-    storeFeedback(reasons: string[], comment: string) {
+    storeFeedback(reasons: string, comment: string) {
       this.reasons = reasons;
       this.feedbackComment = comment;
     },
     clearFeedback() {
-      this.reasons = [];
-      this.feedbackComment = '';
-    }
-  }
+      this.reasons = "";
+      this.feedbackComment = "";
+    },
+  },
 });

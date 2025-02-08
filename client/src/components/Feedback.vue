@@ -6,16 +6,14 @@
       </v-card-title>
       <v-card-text>
         <p>Would you mind telling us why you're cancelling?</p>
-        <!-- <v-checkbox-group v-model="feedbackData.reasons" multiple> -->
-          <div v-for="reason in cancelReasons" :key="reason.value">
-            <v-checkbox
-            v-model="feedbackData.reasons"
-            :label="reason.label"
-            :value="reason.value"
-            ></v-checkbox>
-          </div>
-        <!-- </v-checkbox-group> -->
-
+            <v-radio-group v-model="feedbackData.reasons">
+            <v-radio
+              v-for="reason in cancelReasons"
+              :key="reason.value"
+              :label="reason.label"
+              :value="reason.value"
+            ></v-radio>
+            </v-radio-group>
         <v-textarea
           v-model="feedbackData.additionalComments"
           label="Additional comments (optional)"
@@ -60,7 +58,7 @@ const emit = defineEmits(['update:modelValue'])
 const feedbackStore = useFeedbackStore()
 
 const feedbackData = reactive({
-  reasons: [],
+  reasons: '',
   additionalComments: ''
 })
 
@@ -74,17 +72,22 @@ watch(dialog, (newVal) => {
 })
 
 const noThanks = () => {
-  feedbackData.reasons = []
+  feedbackData.reasons = ''
   feedbackData.additionalComments = ''
   dialog.value = false
 }
 
 const submitFeedback = () => {
-  feedbackStore.storeFeedback({
-    reasons: feedbackData.reason,
-    feedbackComment: feedbackData.additionalComments
-  })
-  dialog.value = false
+  if(feedbackData.reasons === '' && feedbackData.additionalComments === '') {
+    return
+  }
+  feedbackStore.storeFeedback(
+    feedbackData.reasons,
+    feedbackData.additionalComments
+  );
+  dialog.value = false;
+  feedbackData.reasons = '';
+  feedbackData.additionalComments = '';
 }
 </script>
 

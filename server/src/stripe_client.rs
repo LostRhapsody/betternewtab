@@ -38,22 +38,40 @@ impl StripeClient {
         }
     }
 
-    pub async fn cancel_subscription(email: &str) -> Option<stripe::Subscription> {
+    pub async fn cancel_subscription(
+        email: String,
+        reason: Option<String>,
+        feedback: Option<stripe::CancellationDetailsFeedback>
+    ) -> Option<stripe::Subscription> {
         let secret_key = std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
         let client = Client::new(secret_key);
 
         // First get the customer
-        let customer = Self::get_customer(email).await?;
+        let customer = Self::get_customer(&email).await?;
 
         // Then get their subscription
         let subscription = Self::get_subscription(&customer).await?;
 
+        let cancel_options = if reason.is_some() || feedback.is_some() {
+            let cancellation_details = stripe::CancellationDetails {
+                comment: reason,
+                feedback,
+                reason: None,
+            };
+            stripe::CancelSubscription {
+                cancellation_details: Some(cancellation_details),
+                invoice_now: None,
+                prorate: None,
+            }
+        } else {
+            stripe::CancelSubscription::new()
+        };
+
         // Cancel the subscription
-        // todo - add a feedback field to front-end and pass here to collect "reasons" for cancellation
         match stripe::Subscription::cancel(
             &client,
             &subscription.id,
-            stripe::CancelSubscription::new(),
+            cancel_options,
         )
         .await
         {

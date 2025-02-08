@@ -189,7 +189,37 @@
             <v-card-actions>
               <v-spacer></v-spacer>
               <v-btn color="grey" variant="text" @click="showCancelDialog = false">No, Keep It</v-btn>
-              <v-btn color="error" @click="cancelSubHandler">Yes, Cancel</v-btn>
+              <v-btn color="error" @click="collectedFeedback">Yes, Cancel</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <!-- Subscription Canceled Modal -->
+        <v-dialog v-model="showSubscriptionCanceledDialog" max-width="400">
+          <v-card>
+            <v-card-title>Subscription Canceled</v-card-title>
+            <v-card-text>
+              <template v-if="subscriptionCanceledSuccess">
+                <div class="text-center">
+                  <v-icon color="green" size="64">mdi-check-circle</v-icon>
+                  <br />
+                  <p>Your subscription has been successfully canceled.</p>
+                </div>
+              </template>
+              <template v-else>
+                <div class="text-center">
+                  <v-icon color="red" size="64">mdi-close-circle</v-icon>
+                  <p>An error occurred while canceling your subscription:</p>
+                  <v-divider class="my-4" />
+                  <p>{{ subscriptionCanceledError }}</p>
+                  <v-divider class="my-4" />
+                  <v-btn color="error" @click="reportError">Report Error</v-btn>
+                </div>
+              </template>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="primary" @click="showSubscriptionCanceledDialog = false">Close</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -233,7 +263,7 @@
     </v-dialog>
 
     <!-- Feedback Form -->
-    <Feedback v-model="showFeedbackDialog" />
+    <Feedback v-model="showFeedbackDialog" @update:modelValue="handleFeedbackDialogClose"/>
   </div>
 </template>
 
@@ -244,9 +274,12 @@
   import type { Features } from "../types/Features";
   import { API } from "../constants/api";
   import Feedback from "../components/Feedback.vue";
+  import { useFeedbackStore } from "../stores/feedback";
+  import type { CancellationReason } from "../types/CancellationReasons";
 
   // In Settings.vue setup
   const userStore = useUserStore();
+  const feedbackStore = useFeedbackStore();
 
   const userId = computed(() => userStore.userId);
   const firstName = computed(() => userStore.firstName);
@@ -270,6 +303,9 @@
   const memberSearch = ref("");
   const showPaymentTooltip = ref(false);
   const showFeedbackDialog = ref(false);
+  const showSubscriptionCanceledDialog = ref(false);
+  const subscriptionCanceledSuccess = ref(false);
+  const subscriptionCanceledError = ref("");
 
   // Team management data
   const teamForm = ref({
@@ -402,10 +438,20 @@
     window.location.href = "mailto:sales@example.com";
   };
 
+  const collectedFeedback = async () => {
+    showFeedbackDialog.value = true;
+  }
+
+  const handleFeedbackDialogClose = (value: boolean) => {
+    if(!value) {
+      showCancelDialog.value = false;
+      cancelSubHandler();
+    }
+  }
+
   const cancelSubHandler = async () => {
     showFeedbackDialog.value = true;
     showCancelDialog.value = false;
-    return;
     if (!userStore.userId) {
       throw new Error("User ID not found");
     }
@@ -413,7 +459,16 @@
       throw new Error("User email not found");
     }
     try {
-      const response = await fetch(API.CANCEL_SUBSCRIPTION(userStore.userId, userStore.email));
+      const response = await fetch(API.CANCEL_SUBSCRIPTION(userStore.userId, userStore.email), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reasons: feedbackStore.reasons as CancellationReason,
+          feedback_comment: feedbackStore.feedbackComment,
+        }),
+      });
       /*
         200 If unsubscribed successfully
         400 if request is incorrect
@@ -423,6 +478,7 @@
       */
       switch (response.status) {
         case 200:
+          subscriptionCanceledSuccess.value = true;
           // this updates the user store with the new data so the billing details are up to date
           userStore.fetchUserData({
             id: userStore.userId,
@@ -430,7 +486,6 @@
             firstName: userStore.firstName || "",
             lastName: userStore.lastName || "",
           });
-          alert("Subscription cancelled successfully");
           break;
         case 400:
           throw new Error("Invalid request: The cancel subscription request was incorrect.");
@@ -443,10 +498,17 @@
       }
     } catch (err) {
       console.error("Error cancelling subscription:", err);
-      alert(`An error occurred while cancelling your subscription:\n\n${err}\n\nPlease contact support at evan.robertson77@gmail.com.`);
+      subscriptionCanceledSuccess.value = false;
+      subscriptionCanceledError.value = err as string;
+    } finally {
+      showSubscriptionCanceledDialog.value = true;
     }
 
   }
+
+  const reportError = () => {
+    window.location.href = "mailto:evan.robertson77@gmail.com";
+  };
 </script>
 
 <style scoped>

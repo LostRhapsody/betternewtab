@@ -25,16 +25,6 @@
         Start using Better New Tab
       </v-btn>
     </div>
-
-    <!-- Snackbar -->
-    <v-snackbar v-model="showSnackbar" :timeout="5000">
-      User created and subscription successful, start taking full advantage of Better New Tab today!
-      <template v-slot:actions>
-        <v-btn color="white" variant="text" @click="showSnackbar = false">
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
   </div>
 </template>
 
@@ -54,7 +44,6 @@
   const isLoggedIn = ref(false);
   const error = ref(false);
   const error_message = ref("");
-  const showSnackbar = ref(false);
 
   const confirmSubscription = async () => {
     try {
@@ -84,7 +73,6 @@
       }
 
       isLoading.value = false;
-      showSnackbar.value = true;
     } catch (err) {
       console.error("Error confirming subscription:", err);
       error_message.value = err as string;
