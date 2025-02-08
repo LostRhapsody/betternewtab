@@ -4,8 +4,8 @@
 			<v-container>
 				<v-row>
 					<v-col>
-						<textarea v-model="searchQuery" :placeholder="placeholder" @keyup.enter="performSearch"
-							@keydown="handleKeydown" @mouseover="focusedIndex = -1" ref="searchInput"
+						<textarea v-model="searchQuery" :placeholder="placeholder"
+							@keydown="handleKeydown" @keydown.shift.enter="addNewLine" @mouseover="focusedIndex = -1" ref="searchInput"
 							@focus="handleFocus" @blur="handleBlur"
 							class="overflow-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none searchBar mt-0 resize-none"
 							:style="{ height: textareaHeight + 'px' }" />
@@ -54,9 +54,12 @@
 						<!-- Tool section -->
 						<div v-for="(result, index) in fuzzyResults" :key="result.item.title" class="dropdown-item"
 							:class="{ focused: focusedIndex === index }" @mouseover="focusedIndex = index">
-							<div>{{ result.item.title }}</div>
-							<a :href="result.item.url" target="_blank">{{ result.item.description }} <v-icon
-									icon="mdi-link" /></a>
+							<div>
+								<a :href="result.item.url">
+									<div> <v-icon icon="mdi-link" /> {{ result.item.title }}</div>
+									<span v-if="result.item.description">{{ result.item.description }}</span>
+								</a>
+							</div>
 						</div>
 
 						<!-- Suggestions -->
@@ -271,11 +274,11 @@ const performSearch = () => {
 	if (searchQuery.value.trim()) {
 		// If there are fuzzy results, open the first result's URL
 		if (fuzzyResults.value.length > 0) {
-			window.open(fuzzyResults.value[0].item.url, "_blank");
+			window.location.href = fuzzyResults.value[0].item.url;
 		} else {
 			// Otherwise perform normal search
 			const searchUrl = selectedEngine.value + encodeURIComponent(searchQuery.value);
-			window.open(searchUrl, "_blank");
+			window.location.href = searchUrl;
 		}
 		addToHistory(searchQuery.value);
 		searchQuery.value = "";
@@ -334,12 +337,18 @@ const handleKeydown = (event: KeyboardEvent) => {
 					else {
 						// Handle fuzzy result selection
 						const fuzzyIndex = focusedIndex.value - historyLength;
-						window.open(fuzzyResults.value[fuzzyIndex].item.url, "_blank");
+						window.location.href = fuzzyResults.value[fuzzyIndex].item.url;
 						searchQuery.value = "";
 					}
 				}
+				if(!event.shiftKey){
+					performSearch();
+				}
 				return;
 		}
+	}
+	if(event.key === "Enter" && !event.shiftKey){
+		performSearch();
 	}
 	// Handle CS ticket queries
 	// else if (isCSQuery.value) {
@@ -373,12 +382,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 	// Handle complete URI
 	else if (isCompleteURI.value && event.key === "Enter") {
 		event.preventDefault();
-		window.open(
+		window.location.href =
 			searchQuery.value.startsWith("http")
 				? searchQuery.value
-				: `https://${searchQuery.value}`,
-			"_blank",
-		);
+				: `https://${searchQuery.value}`;
 		searchQuery.value = "";
 		return;
 	}
@@ -386,6 +393,19 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 const updateSelectedEngine = () => {
 	localStorage.setItem("defaultSearchEngine", selectedEngine.value);
+};
+
+const addNewLine = (event: KeyboardEvent) => {
+	if (event.shiftKey && event.key === "Enter") {
+		event.preventDefault();
+		const textarea = searchInput.value;
+		if (textarea) {
+			const start = textarea.selectionStart;
+			const end = textarea.selectionEnd;
+			searchQuery.value = searchQuery.value.substring(0, start) + "\n" + searchQuery.value.substring(end);
+			textarea.selectionStart = textarea.selectionEnd = start + 1;
+		}
+	}
 };
 
 // Create a debounced search function
@@ -593,13 +613,13 @@ onUnmounted(() => {
 }
 
 .searchBarContainer {
-	border: #808080 1px solid;
+	border: #ffffff1e 1px solid;
 	border-radius: 1em;
 	transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .searchBarContainer:focus-within {
-	border: #b4b4b4 1px solid;
-	box-shadow: 0 2px 10px 1px rgb(255 255 255 / 21%);
+	border: #ffffff1e 1px solid;
+	box-shadow: 0 2px 10px 1px rgba(255, 255, 255, 0.1);
 }
 </style>

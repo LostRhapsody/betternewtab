@@ -3,26 +3,26 @@
     <div v-if="isLoading" class="h-screen flex items-center justify-center">
       <v-progress-circular indeterminate />
     </div>
-    <v-container v-else-if="isLoggedIn && !isLoading">
-      <div v-if="isLoggedIn">
-        <v-container class="bg-primary">
+    <div v-else-if="isLoggedIn && !isLoading">
+      <div
+        class="border-b border-gray-700 bg-white/5">
+        <v-container>
           <v-row class="items-center">
             <v-col>
-              <h1 class="text-3xl">
-                Better New Tab
+              <h1 class="text-xl">
+                BetterNewTab_
               </h1>
             </v-col>
             <v-col class="flex justify-end">
-              <div class="flex justify-evenly">
+              <div class="flex rounded-full items-center">
                 <button id="user-button"></button>
-                <v-btn icon="mdi-cog" @click="router.push('/settings');" class="!w-[42px] !h-[42px] ms-4" />
+                <v-btn icon="mdi-cog" @click="router.push('/settings');" class="!w-[42px] !h-[42px] ms-8" />
               </div>
             </v-col>
           </v-row>
         </v-container>
-
-        <!-- Rest of the template remains unchanged -->
-
+      </div>
+      <v-container>
         <SearchBar :tools="tools" :docs="docs" />
         <LinkColumns :tools="toolLinks" :docs="docLinks" :userId="userId" :maxPins="userStore.userPlan?.max_pins || 6"
           :canAddLinks="canShowAddLink" @link-deleted="handleDeleteLink"
@@ -113,16 +113,16 @@
             </v-card-actions>
           </v-card>
         </v-dialog>
-      </div>
-    </v-container>
+      </v-container>
+    </div>
     <div v-else>
-        <!-- <LandingPage /> -->
-        <NewLandingPage />
-        <v-dialog v-model="showSignIn" max-width="600px">
-          <div class="m-auto">
-            <div id="sign-in"></div>
-          </div>
-        </v-dialog>
+      <!-- <LandingPage /> -->
+      <NewLandingPage />
+      <v-dialog v-model="showSignIn" max-width="600px">
+        <div class="m-auto">
+          <div id="sign-in"></div>
+        </div>
+      </v-dialog>
     </div>
 
     <Feedback v-model="showFeedbackDialog" @update:modelValue="handleFeedbackDialogClose" :cancelSubscription="false" />
