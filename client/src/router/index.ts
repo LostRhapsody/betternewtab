@@ -2,8 +2,8 @@ import type { Subscription, SubscriptionResponse } from "@/types/Subscription";
 import { Clerk } from "@clerk/clerk-js";
 // src/router/index.ts
 import { createRouter, createWebHistory } from "vue-router";
-import { useUserStore } from "../stores/user";
 import { useUserSettingsStore } from "../stores/settings";
+import { useUserStore } from "../stores/user";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -69,7 +69,6 @@ const router = createRouter({
         } else {
           next();
         }
-
       },
     },
   ],

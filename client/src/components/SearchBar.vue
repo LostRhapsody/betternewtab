@@ -1,6 +1,5 @@
 <template>
 	<div class="mt-16 mx-16">
-		{{ settingsStore.settings.new_tabs }}
 		<div class="searchBarContainer">
 			<v-container>
 				<v-row>
@@ -93,6 +92,8 @@ import { useLinksStore } from "../stores/links";
 import { useUserSettingsStore } from "../stores/settings";
 import { storeToRefs } from "pinia";
 import { API } from "../constants/api";
+import { useSearchEngineStore } from '../stores/searchEngine';
+import { openUrl } from '../utils/openUrl';
 const AUTO_SUGGEST_ON = import.meta.env.VITE_AUTO_SUGGEST_ON === 'true';
 
 interface HistoryItem {
@@ -114,9 +115,8 @@ const searchQuery = ref("");
 const searchHistory = ref<string[]>([]);
 const showHistory = ref(false);
 const searchInput = ref<HTMLElement | null>(null);
-const selectedEngine = ref(
-	localStorage.getItem("defaultSearchEngine") || searchEngines[0].url,
-);
+const searchEngineStore = useSearchEngineStore();
+const selectedEngine = computed(() => searchEngineStore.selectedEngine);
 const focusedIndex = ref(-1);
 const fuseInstance = ref<Fuse<Link> | null>(null);
 const textareaHeight = ref(50);
@@ -274,17 +274,6 @@ const clearHistory = (query: string) => {
 	localStorage.removeItem(STORAGE_KEY);
 };
 
-// New function to handle opening URLs
-const openUrl = (url: string) => {
-	if (settingsStore.settings.new_tabs) {
-		console.log("Opening in new tab:", url);
-		window.open(url, "_blank");
-	} else {
-		console.log("Opening in same tab:", url);
-		window.location.href = url;
-	}
-};
-
 // Modify your existing performSearch function
 const performSearch = () => {
 	if (searchQuery.value.trim()) {
@@ -409,7 +398,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 const updateSelectedEngine = () => {
-	localStorage.setItem("defaultSearchEngine", selectedEngine.value);
+  searchEngineStore.setSearchEngine(selectedEngine.value);
 };
 
 const addNewLine = (event: KeyboardEvent) => {
@@ -448,7 +437,7 @@ const handleSearchEngineHotkeys = (event: KeyboardEvent) => {
 		newIndex = (currentIndex + 1) % searchEngines.length;
 	}
 
-	selectedEngine.value = searchEngines[newIndex].url;
+	searchEngineStore.setSearchEngine(searchEngines[newIndex].url);
 	updateSelectedEngine();
 };
 

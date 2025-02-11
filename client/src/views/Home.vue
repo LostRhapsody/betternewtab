@@ -176,10 +176,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <CommandPalette />
   </div>
 
 </template>
 <script setup lang="ts">
+import CommandPalette from '../components/CommandPalette.vue';
 import type { Link } from "@/types/Link";
 import { Clerk } from "@clerk/clerk-js";
 import { computed, nextTick, onMounted, ref } from "vue";
@@ -308,6 +310,7 @@ const handleFeedbackDialogClose = async (value: boolean) => {
   showFeedbackDialog.value = value;
   if (!userStore.userId) return;
   if (!userStore.email) return;
+  if (!feedbackStore.reasons) return;
 
   try {
     const response = await fetch(API.FEEDBACK(userStore.userId, userStore.email), {

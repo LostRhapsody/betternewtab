@@ -35,6 +35,23 @@
 								handleSubmit()
 							}
 						}" v-model="formData.description" label="Description" rows="3"></v-textarea>
+
+						<v-select v-model="formData.columnType" :items="columnTypes" label="Column Label" required>
+							<template v-slot:append-item>
+								<v-divider class="my-4"></v-divider>
+								<v-list-item>
+									<v-text-field
+										v-model="newColumnType"
+										label="New Column Type"
+										dense
+										hide-details
+									></v-text-field>
+									<v-btn @click="addNewColumnType" color="primary" class="w-full">
+										Add
+									</v-btn>
+								</v-list-item>
+							</template>
+						</v-select>
 					</v-form>
 					<p></p>
 				</v-card-text>
@@ -96,10 +113,11 @@
 		url: string;
 		title: string;
 		description: string;
+		columnType: string;
 	};
 
 	const props = defineProps<{
-		columnType: "tools" | "docs";
+		columnType: string;
 		tools: Link[];
 		docs: Link[];
 		userId: string | null;
@@ -117,7 +135,12 @@
 		url: "",
 		title: "",
 		description: "",
+		columnType: props.columnType,
 	});
+
+	const newColumnType = ref("");
+
+	const columnTypes = computed(() => linksStore.uniqueColumnTypes);
 
 	const isAtMaxPins = computed(() => {
 		return props.tools.length + props.docs.length >= props.maxPins;
@@ -153,9 +176,19 @@
 			url: "",
 			title: "",
 			description: "",
+			columnType: props.columnType,
 		};
+		newColumnType.value = "";
 		if (form.value) {
 			form.value.resetValidation();
+		}
+	};
+
+	const addNewColumnType = () => {
+		if (newColumnType.value && !columnTypes.value.includes(newColumnType.value)) {
+			columnTypes.value.push(newColumnType.value);
+			formData.value.columnType = newColumnType.value;
+			newColumnType.value = "";
 		}
 	};
 
@@ -181,7 +214,7 @@
 					props.columnType === "tools" ? linksStore.toolLinks.length + 1 : linksStore.docLinks.length + 1,
 				owner_id: userStore.userId,
 				owner_type: "user",
-				column_type: props.columnType,
+				column_type: formData.value.columnType,
 			};
 
 			const savedLink = await linksStore.postLink(linkData);

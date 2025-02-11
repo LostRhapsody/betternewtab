@@ -1,19 +1,11 @@
 <template>
-	<div class="link-card-grid">
-		<div>
-			<h2 class="text-xl">Tools</h2>
-			<LinkCard v-for="(tool, index) in tools" :key="tool.order_index" :icon="tool.icon ?? ''" :title="tool.title"
-				:description="tool.description ?? ''" :link="tool.url" :index="index" :shortcut="ctrl" class="mb-2"
-				:onDelete="() => handleDeleteLink(tools[index])" :onEdit="() => handleEditLink(tools[index])" />
-			<AddLinkCard v-if="canAddLinks" :columnType="'tools'" :tools="props.tools" :docs="props.docs"
-				:userId="props.userId" :maxPins="props.maxPins" :isPlanFree="isPlanFree" />
-		</div>
-		<div>
-			<h2 class="text-xl">Docs</h2>
-			<LinkCard v-for="(doc, index) in docs" :key="doc.order_index" :icon="doc.icon ?? ''" :title="doc.title"
-				:description="doc.description ?? ''" :link="doc.url" :index="index" :shortcut="alt" class="mb-2"
-				:onDelete="() => handleDeleteLink(docs[index])" :onEdit="() => handleEditLink(docs[index])" />
-			<AddLinkCard v-if="canAddLinks" :columnType="'docs'" :tools="props.tools" :docs="props.docs"
+	<div class="link-card-grid" @mousedown="startDrag" @touchstart="startDrag">
+		<div v-for="columnType in uniqueColumnTypes" :key="columnType" :class="columnClass">
+			<h2 class="text-xl">{{ columnType.charAt(0).toUpperCase() + columnType.slice(1) }}</h2>
+			<LinkCard v-for="(link, index) in getLinksByColumnType(columnType)" :key="link.order_index" :icon="link.icon ?? ''" :title="link.title"
+				:description="link.description ?? ''" :link="link.url" :index="index" :shortcut="getShortcut(columnType)" class="mb-2"
+				:onDelete="() => handleDeleteLink(link)" :onEdit="() => handleEditLink(link)" />
+			<AddLinkCard v-if="canAddLinks" :columnType="columnType" :tools="props.tools" :docs="props.docs"
 				:userId="props.userId" :maxPins="props.maxPins" :isPlanFree="isPlanFree" />
 		</div>
 		<EditLinkModal v-model="showEditModal" :link="editingLink" />
@@ -21,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-	import { defineProps, onMounted, onUnmounted, ref } from "vue";
+	import { defineProps, onMounted, onUnmounted, ref, computed } from "vue";
 	import AddLinkCard from "./AddLinkCard.vue";
 	import EditLinkModal from "./EditLinkModal.vue";
 	import LinkCard from "./LinkCard.vue";
@@ -29,8 +21,6 @@
 	import { useLinksStore } from "../stores/links";
 	const linkStore = useLinksStore();
 
-	const ctrl = "ctrl";
-	const alt = "alt";
 	const showEditModal = ref(false);
 	const editingLink = ref<Link | undefined>();
 
@@ -42,6 +32,16 @@
 		maxPins: number;
 		isPlanFree: boolean;
 	}>();
+
+	const uniqueColumnTypes = computed(() => linkStore.uniqueColumnTypes);
+
+	const getLinksByColumnType = (columnType: string) => {
+		return linkStore.links.filter(link => link.column_type === columnType);
+	};
+
+	const getShortcut = (columnType: string) => {
+		return columnType === 'tools' ? 'ctrl' : 'alt';
+	};
 
 	const handleDeleteLink = async (link: Link) => linkStore.removeLink(link.id);
 
@@ -71,13 +71,110 @@
 	onUnmounted(() => {
 		window.removeEventListener("keydown", handleKeydown);
 	});
+
+	const columnClass = computed(() => {
+		const columnCount = uniqueColumnTypes.value.length;
+		if (columnCount === 1) return 'single-column';
+		if (columnCount === 2) return 'two-columns';
+		if (columnCount === 3) return 'three-columns';
+		return 'multiple-columns';
+	});
+
+	let isDragging = false;
+	let startX = 0;
+	let scrollLeft = 0;
+
+	const startDrag = (event: MouseEvent | TouchEvent) => {
+		isDragging = true;
+		startX = event instanceof MouseEvent ? event.pageX : event.touches[0].pageX;
+		scrollLeft = (event.target as HTMLElement).scrollLeft;
+		document.addEventListener('mousemove', drag);
+		document.addEventListener('mouseup', stopDrag);
+		document.addEventListener('touchmove', drag);
+		document.addEventListener('touchend', stopDrag);
+	};
+
+	const drag = (event: MouseEvent | TouchEvent) => {
+		if (!isDragging) return;
+		const x = event instanceof MouseEvent ? event.pageX : event.touches[0].pageX;
+		const walk = (x - startX) * 2; // scroll-fast
+		(event.target as HTMLElement).scrollLeft = scrollLeft - walk;
+	};
+
+	const stopDrag = () => {
+		isDragging = false;
+		document.removeEventListener('mousemove', drag);
+		document.removeEventListener('mouseup', stopDrag);
+		document.removeEventListener('touchmove', drag);
+		document.removeEventListener('touchend', stopDrag);
+	};
 </script>
 
 <style scoped>
 	.link-card-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
+		display: flex;
+		flex-wrap: nowrap;
+		overflow-x: auto;
 		margin-top: 3rem;
 		gap: 2rem;
+		padding-bottom: 2rem;
+		cursor: grab;
+	}
+
+	.link-card-grid:active {
+		cursor: grabbing;
+	}
+
+	/* Stylish and modern scroll bar */
+	::-webkit-scrollbar {
+		width: 1px;
+		height: 20px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: #181818;
+		border-radius: 10px;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: 10px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: rgba(0, 0, 0, 0.2);
+	}
+
+	.link-card-grid:has(.single-column) {
+		justify-content: center;
+	}
+
+	.link-card-grid:has(.two-columns) {
+		justify-content: center;
+	}
+
+	.link-card-grid:has(.three-columns) {
+		justify-content: center;
+	}
+
+	.link-card-grid:has(.multiple-columns) {
+		justify-content: space-evenly;
+	}
+
+	.single-column {
+		flex: 0 0 65%;
+		margin: 0 auto;
+	}
+
+	.two-columns {
+		flex: 0 0 45%;
+	}
+
+	.three-columns {
+		flex: 0 0 30%;
+	}
+
+	.multiple-columns {
+		flex: 0 0 45%;
 	}
 </style>

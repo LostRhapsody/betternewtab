@@ -11,7 +11,7 @@
             : 'We would love to hear your feedback!'
           }}
         </p>
-        <v-radio-group v-model="feedbackData.reasons">
+        <v-radio-group v-model="feedbackData.reasons" label="Feedback Reason">
         <v-radio
           v-for="reason in cancelReasons"
           :key="reason.value"
@@ -19,6 +19,9 @@
           :value="reason.value"
         ></v-radio>
         </v-radio-group>
+        <v-alert v-if="reasonRequired" type="error" class="mt-2">
+          Feedback Reason required
+        </v-alert>
         <v-textarea
           v-model="feedbackData.additionalComments"
           label="Additional comments (optional)"
@@ -33,7 +36,7 @@
           text
           @click="noThanks"
         >
-          No thanks
+        {{ cancelSubscription ? 'No Thanks' : 'Cancel' }}
         </v-btn>
         <v-btn
           color="primary"
@@ -71,6 +74,7 @@ const feedbackData = reactive({
   additionalComments: ''
 })
 
+const reasonRequired = ref(false)
 
 watch(() => props.modelValue, (newVal) => {
   dialog.value = newVal
@@ -87,16 +91,18 @@ const noThanks = () => {
 }
 
 const submitFeedback = () => {
-  if(feedbackData.reasons === '' && feedbackData.additionalComments === '') {
+  if (feedbackData.reasons === '') {
+    reasonRequired.value = true
     return
   }
+  reasonRequired.value = false
   feedbackStore.storeFeedback(
     feedbackData.reasons,
     feedbackData.additionalComments
-  );
-  dialog.value = false;
-  feedbackData.reasons = '';
-  feedbackData.additionalComments = '';
+  )
+  dialog.value = false
+  feedbackData.reasons = ''
+  feedbackData.additionalComments = ''
 }
 </script>
 

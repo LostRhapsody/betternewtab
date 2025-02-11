@@ -16,7 +16,9 @@ export const API = {
   SUGGEST: (query: string) => `http://localhost:3000/suggest/${query}`,
   FEEDBACK: (userId: string, userEmail: string) =>
     `http://localhost:3000/feedback/${userId}/${userEmail}`,
-  CREATE_SETTINGS: (userId: string) => `http://localhost:3000/settings/${userId}`,
-  UPDATE_SETTINGS: (userId: string) => `http://localhost:3000/settings/${userId}`,
+  CREATE_SETTINGS: (userId: string) =>
+    `http://localhost:3000/settings/${userId}`,
+  UPDATE_SETTINGS: (userId: string) =>
+    `http://localhost:3000/settings/${userId}`,
   GET_SETTINGS: (userId: string) => `http://localhost:3000/settings/${userId}`,
 } as const;

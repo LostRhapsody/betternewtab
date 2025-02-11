@@ -20,6 +20,10 @@ export const useLinksStore = defineStore("links", {
       state.links.filter((link) => link.column_type === "tools"),
     docLinks: (state) =>
       state.links.filter((link) => link.column_type === "docs"),
+    uniqueColumnTypes: (state) => {
+      const columnTypes = new Set(state.links.map(link => link.column_type));
+      return Array.from(columnTypes);
+    }
   },
 
   actions: {
