@@ -79,35 +79,6 @@
 		if (columnCount === 3) return 'three-columns';
 		return 'multiple-columns';
 	});
-
-	let isDragging = false;
-	let startX = 0;
-	let scrollLeft = 0;
-
-	const startDrag = (event: MouseEvent | TouchEvent) => {
-		isDragging = true;
-		startX = event instanceof MouseEvent ? event.pageX : event.touches[0].pageX;
-		scrollLeft = (event.target as HTMLElement).scrollLeft;
-		document.addEventListener('mousemove', drag);
-		document.addEventListener('mouseup', stopDrag);
-		document.addEventListener('touchmove', drag);
-		document.addEventListener('touchend', stopDrag);
-	};
-
-	const drag = (event: MouseEvent | TouchEvent) => {
-		if (!isDragging) return;
-		const x = event instanceof MouseEvent ? event.pageX : event.touches[0].pageX;
-		const walk = (x - startX) * 2; // scroll-fast
-		(event.target as HTMLElement).scrollLeft = scrollLeft - walk;
-	};
-
-	const stopDrag = () => {
-		isDragging = false;
-		document.removeEventListener('mousemove', drag);
-		document.removeEventListener('mouseup', stopDrag);
-		document.removeEventListener('touchmove', drag);
-		document.removeEventListener('touchend', stopDrag);
-	};
 </script>
 
 <style scoped>
@@ -118,7 +89,7 @@
 		margin-top: 3rem;
 		gap: 2rem;
 		padding-bottom: 2rem;
-		cursor: grab;
+		/* cursor: grab; */
 	}
 
 	.link-card-grid:active {
