@@ -55,18 +55,21 @@ const router = createRouter({
             let gotUser = false;
 
             // Fetch user data asynchronously without blocking the UI
-            userStore.fetchUserData({
-              id: clerk.user.id,
-              firstName: clerk.user.firstName || "",
-              lastName: clerk.user.lastName || "",
-              email: clerk.user.emailAddresses[0].emailAddress,
-            }).then(success => {
-              if (!success) {
-              console.error("Failed to fetch user data");
-              }
-            }).catch(err => {
-              console.error("Error fetching user data:", err);
-            });
+            userStore
+              .fetchUserData({
+                id: clerk.user.id,
+                firstName: clerk.user.firstName || "",
+                lastName: clerk.user.lastName || "",
+                email: clerk.user.emailAddresses[0].emailAddress,
+              })
+              .then((success) => {
+                if (!success) {
+                  console.error("Failed to fetch user data");
+                }
+              })
+              .catch((err) => {
+                console.error("Error fetching user data:", err);
+              });
 
             // Proceed without waiting for fetchUserData to complete
             gotUser = !!userStore.userId;

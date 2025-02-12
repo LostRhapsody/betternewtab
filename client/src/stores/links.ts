@@ -29,38 +29,37 @@ export const useLinksStore = defineStore("links", {
 
   actions: {
     async fetchLinks(userId: string) {
-      // Load from cache first
-      const cachedLinks = cache.get<Link[]>(CacheKeys.LINKS);
-      if (cachedLinks) {
-        this.links = cachedLinks;
-        this.isLoading = false;
-      }
-
-      // Then fetch fresh data
-      this.isLoading = true;
-      try {
-        const response = await fetch(API.GET_USER_LINKS(userId));
-        /*
-                if 200, set user link data
-                    200 will return empty array if no links, so no other real errors
-                Any other error is a 500 basically
-                */
-        switch (response.status) {
-          case 200: {
-            const links = await response.json();
-            this.links = links;
-            cache.set(CacheKeys.LINKS, links);
-            break;
-          }
-          default: {
-            throw new Error("Failed to fetch user link data");
-          }
+      // Only fetch if we don't have data already
+      if (this.links.length === 0) {
+        // Load from cache first
+        const cachedLinks = cache.get<Link[]>(CacheKeys.LINKS);
+        if (cachedLinks) {
+          this.links = cachedLinks;
+          this.isLoading = false;
+          return;
         }
-      } catch (error) {
-        this.error = error as string;
-        throw new Error("Failed to fetch user link data");
-      } finally {
-        this.isLoading = false;
+
+        // Then fetch fresh data
+        this.isLoading = true;
+        try {
+          const response = await fetch(API.GET_USER_LINKS(userId));
+          switch (response.status) {
+            case 200: {
+              const links = await response.json();
+              this.links = links;
+              cache.set(CacheKeys.LINKS, links);
+              break;
+            }
+            default: {
+              throw new Error("Failed to fetch user link data");
+            }
+          }
+        } catch (error) {
+          this.error = error as string;
+          throw new Error("Failed to fetch user link data");
+        } finally {
+          this.isLoading = false;
+        }
       }
     },
 

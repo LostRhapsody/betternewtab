@@ -30,7 +30,7 @@ use tracing_subscriber::prelude::*;
 use url::Url;
 use stripe::{Event, EventType, Subscription};
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct SubscriptionResponse {
     plan_id: String,
     current_period_end: i64,
@@ -90,6 +90,15 @@ pub struct UserSettingsRequest {
     confluence_api: bool,
     linear_api: bool,
     new_tabs: bool,
+}
+
+#[derive(Serialize)]
+pub struct UserDataResponse {
+    user: supabase::User,
+    subscription: Option<SubscriptionResponse>,
+    plan: Option<supabase::Plan>,
+    settings: Option<supabase::UserSettings>,
+    links: Vec<supabase::Link>,
 }
 
 fn main() {
@@ -160,6 +169,7 @@ async fn runtime() {
         .route("/settings/{user_id}", post(create_settings).put(update_settings).get(get_settings))
         // cancel subscription event listener for Stripe
         .route("/stripe_cancel_hook", post(cancel_subscription_hook))
+        .route("/user_data/{user_id}/{user_email}", get(get_user_data_handler))
         .with_state(client)
         .layer(cors);
 
@@ -1132,4 +1142,88 @@ async fn cancel_subscription_hook(
     })?;
 
     Ok(StatusCode::OK)
+}
+
+async fn get_user_data_handler(
+    Path((user_id, user_email)): Path<(String, String)>,
+) -> Result<Json<UserDataResponse>, StatusCode> {
+    let supabase = Supabase::new(
+        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
+        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Get or create user
+    let user = match supabase.get_user(&user_id).await {
+        Ok(user) => user,
+        Err(_) => {
+            // Create new user if not found
+            let new_user = supabase::User {
+                id: user_id.clone(),
+                email: user_email.clone(),
+                created_at: Utc::now().to_rfc3339(),
+            };
+            supabase.create_user(new_user.clone())
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            new_user
+        }
+    };
+
+    // Get subscription info
+    let subscription = match StripeClient::get_customer(&user_email).await {
+        Some(customer) => {
+            match StripeClient::get_subscription(&customer).await {
+                Some(sub) if sub.status.eq(&stripe::SubscriptionStatus::Active) => {
+                    let item = sub.items.data.first()
+                        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+                    let plan = item.plan.as_ref()
+                        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+                    let product_id = plan.product.as_ref()
+                        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
+                        .id();
+                    
+                    let supabase_plan = supabase.get_plan_by_stripe_id(&product_id.to_string())
+                        .await
+                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+                    Some((SubscriptionResponse {
+                        plan_id: supabase_plan.id.clone(),
+                        current_period_end: sub.current_period_end,
+                    }, supabase_plan))
+                }
+                _ => None
+            }
+        }
+        None => None
+    };
+
+    // Get user settings
+    let settings = supabase.get_user_settings(&user_id).await.ok();
+
+    // Get user links
+    let links = supabase.get_links(&user_id, "user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
+    let free_plan = if subscription.is_none() {
+        Some(supabase.get_plan(&free_plan_id)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
+    } else {
+        None
+    };
+
+    Ok(Json(UserDataResponse {
+        user,
+        subscription: subscription.as_ref().map(|(sub, _)| sub.clone())
+            .or(Some(SubscriptionResponse {
+                plan_id: free_plan_id.clone(),
+                current_period_end: 0,
+            })),
+        plan: subscription.map(|(_, plan)| plan).or(free_plan),
+        settings,
+        links,
+    }))
 }
