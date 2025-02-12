@@ -7,6 +7,7 @@ pub struct StripeClient {}
 
 impl StripeClient {
     pub async fn get_customer(email: &str) -> Option<Customer> {
+        tracing::info!("Fetching Stripe customer for email: {}", email);
         let secret_key = std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
 
         let client = Client::new(secret_key);
@@ -15,15 +16,24 @@ impl StripeClient {
         list_customers.email = Some(email);
 
         match Customer::list(&client, &list_customers).await {
-            Ok(customers) => customers.data.into_iter().next(),
+            Ok(customers) => {
+                let customer = customers.data.into_iter().next();
+                if let Some(ref c) = customer {
+                    tracing::info!("Found Stripe customer for email: {}", email);
+                } else {
+                    tracing::info!("No Stripe customer found for email: {}", email);
+                }
+                customer
+            },
             Err(err) => {
-                eprintln!("Error retrieving customer: {:?}", err);
+                tracing::error!("Error retrieving Stripe customer: {:?}", err);
                 None
             }
         }
     }
 
     pub async fn get_subscription(customer: &Customer) -> Option<stripe::Subscription> {
+        tracing::info!("Fetching Stripe subscription for customer: {}", customer.id);
         let secret_key = std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
         let client = Client::new(secret_key);
 
@@ -31,9 +41,17 @@ impl StripeClient {
         list_subscriptions.customer = Some(customer.id.clone());
 
         match stripe::Subscription::list(&client, &list_subscriptions).await {
-            Ok(subscriptions) => subscriptions.data.into_iter().next(),
+            Ok(subscriptions) => {
+                let subscription = subscriptions.data.into_iter().next();
+                if subscription.is_some() {
+                    tracing::info!("Found active subscription for customer: {}", customer.id);
+                } else {
+                    tracing::info!("No active subscription found for customer: {}", customer.id);
+                }
+                subscription
+            },
             Err(err) => {
-                eprintln!("Error retrieving subscription: {:?}", err);
+                tracing::error!("Error retrieving subscription: {:?}", err);
                 None
             }
         }
@@ -44,6 +62,8 @@ impl StripeClient {
         reason: Option<String>,
         feedback: Option<stripe::CancellationDetailsFeedback>
     ) -> Option<stripe::Subscription> {
+        tracing::info!("Cancelling subscription for email: {}", email);
+
         let secret_key = std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
         let client = Client::new(secret_key);
 
@@ -52,6 +72,8 @@ impl StripeClient {
 
         // Then get their subscription
         let subscription = Self::get_subscription(&customer).await?;
+
+        tracing::info!("Processing cancellation for subscription: {}", subscription.id);
 
         let cancel_options = if reason.is_some() || feedback.is_some() {
             let cancellation_details = stripe::CancellationDetails {
@@ -68,7 +90,6 @@ impl StripeClient {
             stripe::CancelSubscription::new()
         };
 
-        // Cancel the subscription
         match stripe::Subscription::cancel(
             &client,
             &subscription.id,
@@ -77,39 +98,39 @@ impl StripeClient {
         .await
         {
             Ok(sub) => {
-                println!("Subscription canceled: {:?}", sub);
-                // Fetch the updated subscription to get the current status
-                // match stripe::Subscription::retrieve(&client, &subscription.id, &[]).await {
-                //     Ok(updated_subscription) => Some(updated_subscription),
-                //     Err(err) => {
-                //         eprintln!("Error retrieving updated subscription: {:?}", err);
-                //         None
-                //     }
-                // }
-                return Some(sub);
+                tracing::info!("Successfully cancelled subscription: {}", sub.id);
+                Some(sub)
             },
             Err(err) => {
-                eprintln!("Error canceling subscription: {:?}", err);
+                tracing::error!("Error canceling subscription: {:?}", err);
                 None
             }
         }
     }
 
     pub async fn get_customer_email(customer_id: &str) -> Result<Option<String>> {
+        tracing::info!("Fetching email for customer: {}", customer_id);
         let secret_key = std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
         let client = Client::new(secret_key);
         let customer_id = match customer_id.parse::<stripe::CustomerId>() {
             Ok(id) => id,
             Err(err) => {
-                println!("Error parsing customer ID: {:?}", err);
+                tracing::error!("Error parsing customer ID: {:?}", err);
                 return Err(err.into());
             }
         };
 
         match Customer::retrieve(&client, &customer_id, &[]).await {
-            Ok(customer) => Ok(customer.email),
+            Ok(customer) => {
+                if let Some(ref email) = customer.email {
+                    tracing::info!("Found email for customer {}: {}", customer_id, email);
+                } else {
+                    tracing::info!("No email found for customer: {}", customer_id);
+                }
+                Ok(customer.email)
+            },
             Err(err) => {
-                println!("Error retrieving customer email: {:?}", err);
+                tracing::error!("Error retrieving customer email: {:?}", err);
                 Err(err.into())
             }
         }

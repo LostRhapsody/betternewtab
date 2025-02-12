@@ -7,7 +7,7 @@ pub struct ResendClient {
 
 impl ResendClient {
   pub fn new() -> Self {
-
+    tracing::info!("Initializing Resend client");
     ResendClient {
       client: Resend::default(),
     }
@@ -19,15 +19,22 @@ impl ResendClient {
     subject: &str,
     email_body: &str,
   ) -> Result<()> {
+    tracing::info!("Sending email to: {}", customer_support_email);
     let from = "evan@updates.betternewtab.com";
     let to = [customer_support_email];
 
     let email = CreateEmailBaseOptions::new(from, to, subject)
       .with_html(email_body);
 
-    let _email = self.client.emails.send(email).await?;
-    println!("{:?}", _email);
-
-    Ok(())
+    match self.client.emails.send(email).await {
+      Ok(_email) => {
+        tracing::info!("Successfully sent email to: {}", customer_support_email);
+        Ok(())
+      },
+      Err(e) => {
+        tracing::error!("Failed to send email: {:?}", e);
+        Err(e)
+      }
+    }
   }
 }

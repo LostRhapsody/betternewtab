@@ -182,6 +182,8 @@ async fn runtime() {
 async fn create_user_handler(
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<Json<supabase::User>, StatusCode> {
+    tracing::info!("Creating new user: {}", payload.email);
+
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
@@ -198,10 +200,16 @@ async fn create_user_handler(
     };
 
     match supabase.create_user(user.clone()).await {
-        Ok(_) => Ok(Json(user)),
-        Err(e) => match e.to_string().as_str() {
-            "409" => Err(StatusCode::BAD_REQUEST),
-            _ => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(_) => {
+            tracing::info!("Successfully created user: {}", user.email);
+            Ok(Json(user))
+        },
+        Err(e) => {
+            tracing::error!("Failed to create user: {}", e);
+            match e.to_string().as_str() {
+                "409" => Err(StatusCode::BAD_REQUEST),
+                _ => Err(StatusCode::INTERNAL_SERVER_ERROR),
+            }
         },
     }
 }
@@ -448,17 +456,26 @@ async fn confirm_handler(
 async fn links_handler(
     Path(user_id): Path<String>,
 ) -> Result<Json<Vec<supabase::Link>>, StatusCode> {
+    tracing::info!("Fetching links for user: {}", user_id);
+
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
     )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        tracing::error!("Error initializing Supabase client: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let links = supabase
         .get_links(&user_id, "user")
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            tracing::error!("Failed to fetch links for user {}: {:?}", user_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
+    tracing::info!("Successfully fetched {} links for user {}", links.len(), user_id);
     Ok(Json(links))
 }
 
@@ -466,11 +483,16 @@ async fn create_link(
     State(client): State<reqwest::Client>,
     Json(payload): Json<CreateLinkRequest>,
 ) -> Result<(StatusCode, Json<supabase::Link>), StatusCode> {
+    tracing::info!("Creating new link for owner {}: {}", payload.owner_id, payload.url);
+
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
     )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        tracing::error!("Error initializing Supabase client: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let url = if !payload.url.starts_with("https://") {
         format!("https://{}", payload.url)
@@ -481,7 +503,7 @@ async fn create_link(
     let metadata = get_metadata(State(client.clone()), &url)
         .await
         .map_err(|e| {
-            println!("Error getting metadata: {:?}", e);
+            tracing::error!("Error getting metadata: {:?}", e);
         })
         .unwrap_or_else(|_| Metadata {
             title: Some(url.clone()),
@@ -506,7 +528,7 @@ async fn create_link(
     )
         .await
         .map_err(|e| {
-            println!("Error getting favicon: {:?}", e);
+            tracing::error!("Error getting favicon: {:?}", e);
         })
         .unwrap_or_else(|_| "".to_string());
 
@@ -532,22 +554,29 @@ async fn create_link(
     };
 
     if let Err(e) = supabase.create_link(link.clone()).await {
-        println!("Error creating link: {:?}", e);
+        tracing::error!("Failed to create link in database: {:?}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+    tracing::info!("Successfully created link with ID: {}", link.id);
     Ok((StatusCode::CREATED, Json(link)))
 }
 
 async fn update_link(Json(payload): Json<UpdateLinkRequest>) -> Result<StatusCode, StatusCode> {
+    tracing::info!("Updating link: {}", payload.id);
+
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
     )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        tracing::error!("Error initializing Supabase client: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let mut updates = HashMap::new();
     if let Some(url) = payload.url {
+        tracing::info!("Updating URL for link {}", payload.id);
         updates.insert("url".to_string(), json!(url));
     }
     if let Some(description) = payload.description {
@@ -564,10 +593,11 @@ async fn update_link(Json(payload): Json<UpdateLinkRequest>) -> Result<StatusCod
     }
 
     if let Err(e) = supabase.update_link(&payload.id, updates).await {
-        println!("Error updating link: {:?}", e);
+        tracing::error!("Failed to update link {}: {:?}", payload.id, e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+    tracing::info!("Successfully updated link {}", payload.id);
     Ok(StatusCode::OK)
 }
 
@@ -767,11 +797,16 @@ async fn cancel_handler(
 }
 
 async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metadata, StatusCode> {
+    tracing::info!("Fetching metadata for URL: {}", url);
+
     let response = client
         .get(url)
         .send()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            tracing::error!("Failed to fetch URL {}: {:?}", url, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     if !response.status().is_success() {
         return Err(StatusCode::BAD_REQUEST);
@@ -811,6 +846,7 @@ async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metad
 
     println!("favicon source: {:?}", favicon);
 
+    tracing::info!("Successfully fetched metadata for URL: {}", url);
     Ok(Metadata {
         title,
         description,
@@ -1147,17 +1183,25 @@ async fn cancel_subscription_hook(
 async fn get_user_data_handler(
     Path((user_id, user_email)): Path<(String, String)>,
 ) -> Result<Json<UserDataResponse>, StatusCode> {
+    tracing::info!("Fetching user data for {}", user_email);
+
     let supabase = Supabase::new(
         std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
         std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
     )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        tracing::error!("Error initializing Supabase client: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     // Get or create user
     let user = match supabase.get_user(&user_id).await {
-        Ok(user) => user,
+        Ok(user) => {
+            tracing::info!("Found existing user: {}", user.email);
+            user
+        },
         Err(_) => {
-            // Create new user if not found
+            tracing::info!("Creating new user: {}", user_email);
             let new_user = supabase::User {
                 id: user_id.clone(),
                 email: user_email.clone(),
@@ -1165,11 +1209,15 @@ async fn get_user_data_handler(
             };
             supabase.create_user(new_user.clone())
                 .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                .map_err(|e| {
+                    tracing::error!("Failed to create user: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
             new_user
         }
     };
 
+    tracing::info!("Fetching subscription info for {}", user_email);
     // Get subscription info
     let subscription = match StripeClient::get_customer(&user_email).await {
         Some(customer) => {
@@ -1198,13 +1246,16 @@ async fn get_user_data_handler(
         None => None
     };
 
-    // Get user settings
+    tracing::info!("Fetching user settings for {}", user_id);
     let settings = supabase.get_user_settings(&user_id).await.ok();
 
-    // Get user links
+    tracing::info!("Fetching links for user {}", user_id);
     let links = supabase.get_links(&user_id, "user")
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            tracing::error!("Failed to fetch links: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
     let free_plan = if subscription.is_none() {
@@ -1215,6 +1266,7 @@ async fn get_user_data_handler(
         None
     };
 
+    tracing::info!("Successfully assembled user data response for {}", user_email);
     Ok(Json(UserDataResponse {
         user,
         subscription: subscription.as_ref().map(|(sub, _)| sub.clone())

@@ -106,6 +106,7 @@ impl Supabase {
 
     // Users
     pub async fn get_users(&self) -> Result<Vec<User>> {
+        tracing::info!("Fetching all users");
         let response = self
             .client
             .get(format!("{}/rest/v1/users", self.url))
@@ -113,10 +114,13 @@ impl Supabase {
             .send()
             .await?;
 
-        Ok(response.json().await?)
+        let users = response.json().await?;
+        tracing::info!("Successfully fetched users");
+        Ok(users)
     }
 
     pub async fn get_user(&self, id: &str) -> Result<User> {
+        tracing::info!("Fetching user by ID: {}", id);
         let response = self
             .client
             .get(format!("{}/rest/v1/users?id=eq.{}", self.url, id))
@@ -125,10 +129,20 @@ impl Supabase {
             .await?;
 
         let mut users: Vec<User> = response.json().await?;
-        users.pop().ok_or_else(|| anyhow::anyhow!("404"))
+        match users.pop() {
+            Some(user) => {
+                tracing::info!("Successfully fetched user: {}", user.email);
+                Ok(user)
+            },
+            None => {
+                tracing::error!("User not found: {}", id);
+                Err(anyhow::anyhow!("404"))
+            }
+        }
     }
 
     pub async fn get_user_by_email(&self, email: &str) -> Result<User> {
+        tracing::info!("Fetching user by email: {}", email);
         let response = self
             .client
             .get(format!("{}/rest/v1/users?email=eq.{}", self.url, email))
@@ -137,7 +151,16 @@ impl Supabase {
             .await?;
 
         let mut users: Vec<User> = response.json().await?;
-        users.pop().ok_or_else(|| anyhow::anyhow!("404"))
+        match users.pop() {
+            Some(user) => {
+                tracing::info!("Successfully fetched user by email");
+                Ok(user)
+            },
+            None => {
+                tracing::error!("User not found for email: {}", email);
+                Err(anyhow::anyhow!("404"))
+            }
+        }
     }
 
     pub async fn get_plan_by_stripe_id(&self, stripe_id: &str) -> Result<Plan> {
@@ -155,17 +178,15 @@ impl Supabase {
         plans.pop().ok_or_else(|| anyhow::anyhow!("Plan not found"))
     }
 
-    pub async fn create_user(&self, user:User) -> Result<User> {
-        // TODO - I think if the user exists in supabase already we get a good
-        // error back, we can just check that and handle it correctly, not
-        // send a second request
+    pub async fn create_user(&self, user: User) -> Result<User> {
+        tracing::info!("Creating new user: {}", user.email);
+        
         // Check if user exists
         let existing_user = self.get_user(&user.id).await;
         if existing_user.is_ok() {
+            tracing::error!("User already exists: {}", user.email);
             return Err(anyhow::anyhow!("409"));
         }
-
-        println!("Creating user with payload: {:?}", user);
 
         let response = self
             .client
@@ -177,9 +198,11 @@ impl Supabase {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
+            tracing::error!("Failed to create user: {}", error_text);
             return Err(anyhow::anyhow!("Failed to create user: {}", error_text));
         }
 
+        tracing::info!("Successfully created user: {}", user.email);
         Ok(user)
     }
 
@@ -308,9 +331,7 @@ impl Supabase {
 
     // Links
     pub async fn get_links(&self, owner_id: &str, owner_type: &str) -> Result<Vec<Link>> {
-        println!("get_links");
-        println!("owner_id: {:?}", owner_id);
-        println!("owner_type: {:?}", owner_type);
+        tracing::info!("Fetching links for owner {}: {}", owner_type, owner_id);
         let response = self
             .client
             .get(format!(
@@ -323,8 +344,10 @@ impl Supabase {
 
         if response.status().is_success() {
             let links: Vec<Link> = response.json().await?;
+            tracing::info!("Successfully fetched {} links", links.len());
             Ok(links)
         } else {
+            tracing::error!("Failed to fetch links: {}", response.status());
             Err(anyhow::anyhow!("500"))
         }
     }
@@ -344,9 +367,8 @@ impl Supabase {
         links.pop().ok_or_else(|| anyhow::anyhow!("Link not found"))
     }
 
-    pub async fn create_link(&self,link:Link) -> Result<Link> {
-
-        println!("Creating link with payload: {:?}", link);
+    pub async fn create_link(&self, link: Link) -> Result<Link> {
+        tracing::info!("Creating new link for owner {}: {}", link.owner_id, link.url);
 
         let response = self
             .client
@@ -358,9 +380,11 @@ impl Supabase {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
+            tracing::error!("Failed to create link: {}", error_text);
             return Err(anyhow::anyhow!("Failed to create link: {}", error_text));
         }
 
+        tracing::info!("Successfully created link: {}", link.id);
         Ok(link)
     }
 
@@ -560,7 +584,7 @@ impl Supabase {
 
     // Subscriptions
     pub async fn get_user_subscription(&self, user_id: &str) -> Result<Subscription> {
-        println!("get_user_subscription");
+        tracing::info!("Fetching subscription for user: {}", user_id);
         let response = self
             .client
             .get(format!(
@@ -571,13 +595,19 @@ impl Supabase {
             .send()
             .await?;
 
-        println!("response: {:?}", response);
         let mut subscriptions: Vec<Subscription> = response.json().await?;
-        println!("subscriptions: {:?}", subscriptions);
-        subscriptions
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("404"))
+        match subscriptions.pop() {
+            Some(subscription) => {
+                tracing::info!("Successfully fetched subscription for user");
+                Ok(subscription)
+            },
+            None => {
+                tracing::error!("No subscription found for user: {}", user_id);
+                Err(anyhow::anyhow!("404"))
+            }
+        }
     }
+
     pub async fn create_subscription(
         &self,
         entity_id: &str,

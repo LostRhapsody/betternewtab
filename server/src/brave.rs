@@ -28,6 +28,7 @@ pub struct Suggestion {
 
 impl Brave {
     pub fn new(url: String, api_key: String) -> Result<Self> {
+        tracing::info!("Initializing Brave API client");
         let client = Client::new();
         Ok(Self {
             client,
@@ -37,6 +38,7 @@ impl Brave {
     }
 
     pub async fn get_suggestions(&self, query: &str) -> Result<SuggestResponse> {
+        tracing::info!("Fetching suggestions for query: {}", query);
         let response = self.client
             .get(&self.url)
             .header("X-Subscription-Token", &self.api_key)
@@ -48,10 +50,10 @@ impl Brave {
             .send()
             .await?;
 
-        println!("Status: {}", response.status());
+        tracing::info!("Brave API response status: {}", response.status());
 
         let suggestions = response.json::<SuggestResponse>().await?;
-        println!("Suggestions: {:?}", suggestions);
+        tracing::info!("Successfully fetched {} suggestions", suggestions.results.len());
         Ok(suggestions)
     }
 
