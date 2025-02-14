@@ -1,6 +1,10 @@
 <template>
 	<div class="link-card-grid">
-		<div v-for="columnType in uniqueColumnTypes" :key="columnType" :class="columnClass">
+		<div v-if="uniqueColumnTypes.length === 0" class="single-column">
+			<AddLinkCard :columnType="'default'" :tools="props.tools" :docs="props.docs"
+				:userId="props.userId" :maxPins="props.maxPins" :isPlanFree="isPlanFree" />
+		</div>
+		<div v-else v-for="columnType in uniqueColumnTypes" :key="columnType" :class="columnClass">
 			<h2 class="text-xl">{{ columnType.charAt(0).toUpperCase() + columnType.slice(1) }}</h2>
 			<LinkCard v-for="(link, index) in getLinksByColumnType(columnType)" :key="link.order_index" :icon="link.icon ?? ''" :title="link.title"
 				:description="link.description ?? ''" :link="link.url" :index="index" :shortcut="getShortcut(columnType)" class="mb-2"
