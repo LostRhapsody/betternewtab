@@ -24,7 +24,7 @@ export default defineConfig({
     }),
     vueJsx(),
     vueDevTools(),
-    vuetify({ 
+    vuetify({
       autoImport: true
     }),
     compression({
@@ -40,7 +40,7 @@ export default defineConfig({
     sentryVitePlugin({
       org: "better-new-tab",
       project: "betternewtab-vue"
-    }),    
+    }),
   ],
 
   resolve: {
@@ -81,7 +81,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     // Better caching with content hash
     cssCodeSplit: true,
-    rollupOptions: { 
+    rollupOptions: {
       external: ['vue', 'vue-router', 'pinia', 'vuetify'],
       output: {
         manualChunks: (id) => {
@@ -110,7 +110,7 @@ export default defineConfig({
         chunkFileNames: 'assets/[name].[hash].js',
         entryFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]'
-      },      
+      },
     },
     minify: 'terser',
     terserOptions: {
@@ -120,8 +120,6 @@ export default defineConfig({
         pure_funcs: process.env.NODE_ENV === 'production' ? ['console.log'] : []
       }
     },
-    // Add brotli compression alongside gzip
-    brotliSize: true,
     // Improve chunk loading
     dynamicImportVarsOptions: {
       warnOnError: true,

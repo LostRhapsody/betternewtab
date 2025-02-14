@@ -114,20 +114,7 @@
           </v-card>
         </v-dialog>
       </v-container>
-    </div>
-    <div v-else>
-      <!-- <LandingPage /> -->
-      <NewLandingPage />
-      <v-dialog v-model="showSignIn" max-width="600px">
-        <div class="m-auto">
-          <div id="sign-in"></div>
-        </div>
-      </v-dialog>
-    </div>
-
-    <Feedback v-model="showFeedbackDialog" @update:modelValue="handleFeedbackDialogClose" :cancelSubscription="false" />
-
-    <div class="fixed bottom-4 right-4">
+      <div class="fixed bottom-4 right-4">
       <v-menu location="top">
         <template v-slot:activator="{ props }">
           <v-btn v-bind="props" class="!w-[42px] !h-[42px] bg-white" icon="mdi-help" variant="tonal" />
@@ -166,6 +153,18 @@
         </v-list>
       </v-menu>
     </div>
+    </div>
+    <div v-else>
+      <!-- <LandingPage /> -->
+      <NewLandingPage />
+      <v-dialog v-model="showSignIn" max-width="600px">
+        <div class="m-auto">
+          <div id="sign-in"></div>
+        </div>
+      </v-dialog>
+    </div>
+
+    <Feedback v-model="showFeedbackDialog" @update:modelValue="handleFeedbackDialogClose" :cancelSubscription="false" />
 
     <v-dialog v-model="showFeedbackMessageDialog" max-width="500px">
       <v-card>
@@ -358,33 +357,22 @@ onMounted(async () => {
     if (isLoggedIn.value && clerk.user) {
       let gotUser = false;
       try {
-
         // if user store is already initialized, no need to fetch user data
         if (!userStore.userId) {
-
-          // Fetch user data asynchronously without blocking the UI
-          userStore.fetchUserData({
+          // Fetch user data and wait for it to complete
+          gotUser = await userStore.fetchUserData({
             id: clerk.user.id,
             firstName: clerk.user.firstName || "",
             lastName: clerk.user.lastName || "",
             email: clerk.user.emailAddresses[0].emailAddress,
-          }).then(success => {
-            if (!success) {
-            console.error("Failed to fetch user data");
-            }
-          }).catch(err => {
-            console.error("Error fetching user data:", err);
           });
-
-          // Proceed without waiting for fetchUserData to complete
-          gotUser = !!userStore.userId;
-
-        } else gotUser = true;
-
+        } else {
+          gotUser = true;
+        }
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
-      
+
       if (!gotUser) {
         throw new Error("Error fetching user data");
       }
@@ -397,7 +385,6 @@ onMounted(async () => {
         throw new Error("User ID not found");
       }
       linksStore.fetchLinks(userStore.userId);
-
     }
   } catch (error) {
     console.error("Error during initialization:", error);

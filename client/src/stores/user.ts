@@ -25,15 +25,18 @@ export const useUserStore = defineStore("user", {
      * @returns true if the user data was successfully fetched, false otherwise.
      * @throws Error if the user data could not be fetched.
      */
-    async fetchUserData(clerk_user: ClerkUser) {
+    async fetchUserData(clerk_user: ClerkUser): Promise<boolean> {
+      this.isLoading = true;
+
       // Try to load from cache first
       const cachedData = cache.get<UserState>(CacheKeys.USER);
       if (cachedData) {
         Object.assign(this.$state, cachedData);
         console.log("Loaded user data from cache");
+        this.isLoading = false;
+        return true;
       }
 
-      this.isLoading = true;
       try {
         const response = await fetch(
           API.GET_USER_DATA(clerk_user.id, clerk_user.email),

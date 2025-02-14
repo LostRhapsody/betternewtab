@@ -27,15 +27,19 @@
             <a href="#" class="text-gray-300 hover:text-white transition-colors">Contact</a>
           </div>
 
-          <!-- Get Started Button -->
+          <!-- Get Started and Sign In Buttons -->
           <div class="flex items-center space-x-4">
-            <button @click="handleShowSignIn"
-              class="px-8 py-4 rounded-full backdrop-filter backdrop-blur-lg text-white hover:bg-white/5 active:bg-white/10 transition-colors flex items-center space-x-2  shadow-inner shadow-white/20">
+            <button @click="handleShowSignUp"
+              class="px-4 py-4 rounded-l-full backdrop-filter backdrop-blur-lg text-white hover:bg-white/5 active:bg-white/10 transition-colors flex items-center space-x-2 shadow-inner shadow-white/20">
               <span class="text-lg">Get Started</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
+            </button>
+            <button @click="handleShowSignIn"
+              class="px-4 py-4 rounded-r-full backdrop-filter backdrop-blur-lg text-white hover:bg-white/5 active:bg-white/10 transition-colors flex items-center space-x-2 shadow-inner shadow-white/20">
+              <span class="text-lg">Sign In</span>
             </button>
           </div>
         </div>
@@ -68,7 +72,7 @@
         <!-- Email Signup -->
         <div class="max-w-lg mx-auto">
           <div class="flex justify-center">
-            <button @click="handleShowSignIn"
+            <button @click="handleShowSignUp"
               class="px-8 py-4 rounded-full bg-white/5 backdrop-filter backdrop-blur-lg text-white hover:bg-white/5 active:bg-white/10 transition-colors flex items-center space-x-2 shadow-inner shadow-white/20">
               <span class="text-lg">Get Started</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
@@ -141,7 +145,7 @@
             </v-list>
           </v-card-item>
           <v-card-actions class="pa-4">
-            <button @click="handleShowSignIn"
+            <button @click="handleShowSignUp"
               class="px-8 py-4 rounded-full bg-blue-500/70 text-white hover:bg-blue-600 transition-colors w-full">
               Get Started
             </button>
@@ -235,6 +239,16 @@ const handleShowSignIn = () => {
     const signInDiv = document.getElementById("sign-in");
     if (signInDiv) {
       clerk.mountSignIn(signInDiv as HTMLDivElement);
+    }
+  });
+};
+
+const handleShowSignUp = () => {
+  showSignIn.value = true;
+  nextTick(() => {
+    const signInDiv = document.getElementById("sign-in");
+    if (signInDiv) {
+      clerk.mountSignUp(signInDiv as HTMLDivElement);
     }
   });
 };
