@@ -28,12 +28,11 @@ export const useUserStore = defineStore("user", {
     async fetchUserData(clerk_user: ClerkUser): Promise<boolean> {
       this.isLoading = true;
 
-      // Try to load from cache first
+      // Load from cache initially for fast page load
       const cachedData = cache.get<UserState>(CacheKeys.USER);
       if (cachedData) {
         Object.assign(this.$state, cachedData);
-        console.log("Loaded user data from cache");
-        this.isLoading = false;
+        console.log("Loaded user data from cache temporarily");
       }
 
       try {
@@ -49,31 +48,48 @@ export const useUserStore = defineStore("user", {
 
         const data = await response.json();
 
-        // Update user store
-        this.setEmail(data.user.email);
-        this.setUserId(data.user.id);
-        this.setFirstName(clerk_user.firstName);
-        this.setLastName(clerk_user.lastName);
+        // Reset all stores to ensure clean state
+        this.$reset();
+        const linksStore = useLinksStore();
+        linksStore.$reset();
+        const settingsStore = useUserSettingsStore();
+        settingsStore.$reset();
+
+        // Update stores with fresh data from DB
+        if (data.user) {
+          this.setEmail(data.user.email);
+          this.setUserId(data.user.id);
+          this.setFirstName(clerk_user.firstName);
+          this.setLastName(clerk_user.lastName);
+        }
+        
         if (data.plan) {
           this.setPlan(data.plan);
         }
 
-        // Update links store
-        const linksStore = useLinksStore();
-        linksStore.$patch({ links: data.links });
-        cache.set(CacheKeys.LINKS, data.links);
-
-        // Update settings store
-        const settingsStore = useUserSettingsStore();
-        if (data.settings) {
-          settingsStore.$patch({ settings: data.settings.settings_blob });
-          cache.set(CacheKeys.SETTINGS, data.settings.settings_blob);
+        if (data.links) {
+          linksStore.$patch({ links: data.links });
+          cache.set(CacheKeys.LINKS, data.links);
+        } else {
+          cache.clear(CacheKeys.LINKS);
         }
 
-        // Update cache after successful fetch
+        if (data.settings?.settings_blob) {
+          settingsStore.$patch({ settings: data.settings.settings_blob });
+          cache.set(CacheKeys.SETTINGS, data.settings.settings_blob);
+        } else {
+          cache.clear(CacheKeys.SETTINGS);
+        }
+
+        // Update user cache with latest state
         cache.set(CacheKeys.USER, this.$state);
         return true;
       } catch (error) {
+        // On error, clear all caches and reset stores
+        this.$reset();
+        cache.clear(CacheKeys.USER);
+        cache.clear(CacheKeys.LINKS);
+        cache.clear(CacheKeys.SETTINGS);
         this.error = error as string;
         return false;
       } finally {
