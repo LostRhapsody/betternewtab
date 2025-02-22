@@ -237,7 +237,7 @@
 	}
 
 	.link-card-grid:has(.three-columns) {
-		justify-content: center;
+		justify-content: space-evenly;
 	}
 
 	.link-card-grid:has(.multiple-columns) {
@@ -254,11 +254,13 @@
 	}
 
 	.three-columns {
-		flex: 0 0 30%;
+		flex: 1;
 	}
 
 	.multiple-columns {
-		flex: 0 0 45%;
+		flex: 1;
+		min-width: 30rem;
+		width: 30rem;
 	}
 
 	@media (max-width: 600px) {
