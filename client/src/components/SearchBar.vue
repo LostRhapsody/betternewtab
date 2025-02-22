@@ -15,9 +15,9 @@
 					<v-col>
 						<v-row class="flex justify-between">
 							<v-col :cols="mobile ? 6: 2" class="select-container">
-								<v-select v-model="selectedEngine" :items="searchEngines" item-title="name"
+								<v-select v-model="searchEngineStore.selectedEngine" :items="searchEngines" item-title="name"
 									item-value="url" variant="solo-inverted" hide-details
-									@update:modelValue="updateSelectedEngine">
+									>
 									<template v-slot:selection="{ item }">
 										<div class="d-flex align-center">
 											<v-icon v-if="item.raw.icon.startsWith('mdi-')" :icon="item.raw.icon" size="36" class="mr-2" />
@@ -26,7 +26,7 @@
 									</template>
 
 									<template v-slot:item="{ props, item }">
-										<v-list-item v-bind="props">
+										<v-list-item v-bind="props" @click="updateSelectedEngine">
 											<template v-slot:prepend>
 												<div class="d-flex align-center">
 													<v-icon v-if="item.raw.icon.startsWith('mdi-')"
