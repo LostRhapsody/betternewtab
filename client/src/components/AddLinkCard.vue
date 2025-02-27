@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-	import { computed, ref } from "vue";
+	import { computed, ref, watch } from "vue";
 	import { useRouter } from "vue-router";
 	import { useLinksStore } from "../stores/links";
 	import { useUserStore } from "../stores/user";
@@ -144,7 +144,9 @@
 
 	const newColumnType = ref("");
 
-	const columnTypes = computed(() => linksStore.uniqueColumnTypes);
+	const columnTypes = computed(() => {
+		return linksStore.uniqueColumnTypes;
+	});
 
 	const isAtMaxPins = computed(() => {
 		return props.tools.length + props.docs.length >= props.maxPins;
@@ -190,7 +192,6 @@
 
 	const addNewColumnType = () => {
 		if (newColumnType.value && !columnTypes.value.includes(newColumnType.value)) {
-			columnTypes.value.push(newColumnType.value);
 			formData.value.columnType = newColumnType.value;
 			newColumnType.value = "";
 		}
@@ -230,4 +231,19 @@
 			isLoading.value = false;
 		}
 	};
+
+	watch(isModalOpen, (newVal) => {
+		if (!newVal) {
+			// Modal is closed
+			if (newColumnType.value) {
+				// Clear the new column type if it exists
+				newColumnType.value = "";
+			}
+			
+			// Reset the form data if URL is not provided (form not completed)
+			if (!formData.value.url) {
+				resetForm();
+			}
+		}
+	});
 </script>

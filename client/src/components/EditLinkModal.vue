@@ -5,7 +5,7 @@
 
 			<v-card-text>
 				<v-form @submit.prevent="handleSubmit" ref="form">
-					<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', linkStore.validateUrl]" label="URL"
+					<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', linksStore.validateUrl]" label="URL"
 						required type="url" @keyup.enter="handleSubmit"></v-text-field>
 
 					<v-text-field v-model="formData.title" label="Title"
@@ -87,7 +87,7 @@ import { ref, watch, computed } from "vue";
 import type { Link } from "@/types/Link";
 import { useLinksStore } from "../stores/links";
 import { useDisplay } from 'vuetify';
-const linkStore = useLinksStore();
+const linksStore = useLinksStore();
 const mobile = useDisplay().smAndDown;
 
 const props = defineProps<{
@@ -110,7 +110,9 @@ const formData = ref({
 
 const newColumnType = ref("");
 
-const columnTypes = computed(() => linkStore.uniqueColumnTypes);
+const columnTypes = computed(() => {
+	return linksStore.uniqueColumnTypes;
+});
 
 watch(
 	() => props.modelValue,
@@ -154,7 +156,6 @@ const resetForm = () => {
 
 const addNewColumnType = () => {
     if (newColumnType.value.trim() && !columnTypes.value.includes(newColumnType.value.trim())) {
-        columnTypes.value.push(newColumnType.value.trim());
         formData.value.columnType = newColumnType.value.trim();
         newColumnType.value = "";
     }
@@ -173,7 +174,7 @@ const handleSubmit = async () => {
 		props.link.description = formData.value.description;
 		props.link.column_type = formData.value.columnType;
 
-		await linkStore.updateLink(props.link);
+		await linksStore.updateLink(props.link);
 		closeModal();
 	} catch (error) {
 		console.error("Error updating link:", error);
@@ -181,4 +182,19 @@ const handleSubmit = async () => {
 		isLoading.value = false;
 	}
 };
+
+watch(isModalOpen, (newVal) => {
+	if (!newVal) {
+		// Modal is closed
+		if (newColumnType.value) {
+			// Clear the new column type if it exists
+			newColumnType.value = "";
+		}
+		
+		// Reset the form data if URL is not provided (form not completed)
+		if (!formData.value.url) {
+			resetForm();
+		}
+	}
+});
 </script>
