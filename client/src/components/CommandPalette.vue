@@ -130,16 +130,25 @@ const triggerAddLink = () => {
 };
 
 onMounted(() => {
+  // show command palette
   window.addEventListener('keydown', (event) => {
     if (event.key === 'k' && event.ctrlKey) {
       event.preventDefault();
       openPalette();
     }
   });
+  // add a new link
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'n' && event.ctrlKey && event.altKey) {
+      event.preventDefault();
+      triggerAddLink();
+    }
+  });
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', openPalette);
+  window.removeEventListener('keydown', triggerAddLink);
 });
 </script>
 

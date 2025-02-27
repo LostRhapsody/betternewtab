@@ -18,7 +18,7 @@
 
 		<v-dialog v-model="isModalOpen" width="500" :fullscreen="mobile">
 			<v-card class="px-8 py-8 sm:py-0 sm:px-0">
-				<v-card-title>Add New Link {{ mobile }} </v-card-title>
+				<v-card-title>Add New Link </v-card-title>
 
 				<v-card-text>
 					<v-form @submit.prevent="handleSubmit" ref="form">

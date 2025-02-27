@@ -32,7 +32,7 @@
             <v-card-title class="headline">Keyboard Shortcuts</v-card-title>
             <v-card-text>
               <h4 class="text-xl mb-4">Open Links</h4>
-              <div class="border p-4 rounded-lg mb-4">
+              <div v-if="linkShortcuts.length" class="border p-4 rounded-lg mb-4">
                 <v-row>
                   <v-col>
                     <ul>
@@ -52,6 +52,9 @@
                     </ul>
                   </v-col>
                 </v-row>
+              </div>
+              <div v-else class="border p-4 rounded-lg mb-4">
+                No links added
               </div>
               <h4 class="text-xl mb-4 mt-8">Change Search Engine</h4>
               <div class="border p-4 rounded-lg mb-4">
@@ -79,7 +82,7 @@
                             {{ engine.name }}
                           </div>
                           <div class="col-span-1">
-                            <span class="kbd">{{ index + 1 }}</span>
+                            Search Engine {{ index + 1 }}
                           </div>
                         </div>
                         <v-divider v-if="index + 1 !== searchEngines.length" class="my-4"></v-divider>
@@ -88,7 +91,7 @@
                   </v-col>
                 </v-row>
               </div>
-              <h4 class="text-xl mb-4">Display Shortcuts</h4>
+              <h4 class="text-xl mb-4">Other Shortcuts</h4>
               <div class="border p-4 rounded-lg mb-4">
                 <v-row>
                   <v-col>
@@ -99,7 +102,35 @@
                             Show Keyboard Shortcuts
                           </div>
                           <div class="col-span-1">
-                            <span class="kbd">?</span>
+                            <span class="kbd">?</span> (<span class="kbd">shift + /</span>)
+                          </div>
+                        </div>
+                        <v-divider class="my-4"></v-divider>
+                      </li>
+                      <li>
+                        <div class="grid grid-cols-3 gap-2">
+                          <div class="col-span-2">
+                            Show Command Palette
+                          </div>
+                          <div class="col-span-1">
+                            <span class="kbd">ctrl</span>
+                            +
+                            <span class="kbd">k</span>
+                          </div>
+                        </div>
+                        <v-divider class="my-4"></v-divider>
+                      </li>
+                      <li>
+                        <div class="grid grid-cols-3 gap-2">
+                          <div class="col-span-2">
+                            Add A New Link
+                          </div>
+                          <div class="col-span-1">
+                            <span class="kbd">ctrl</span>
+                            +
+                            <span class="kbd">alt</span>
+                            +
+                            <span class="kbd">n</span>
                           </div>
                         </div>
                       </li>
