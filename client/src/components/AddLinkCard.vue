@@ -45,6 +45,7 @@
 										label="New Column Type"
 										dense
 										hide-details
+										@keyup.enter="addNewColumnType"
 									></v-text-field>
 									<v-btn @click="addNewColumnType" color="primary" class="w-full">
 										Add

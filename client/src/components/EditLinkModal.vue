@@ -28,6 +28,7 @@
 									label="New Column Type"
 									dense
 									hide-details
+									@keyup.enter="addNewColumnType"
 								></v-text-field>
 								<v-btn @click="addNewColumnType" color="primary" class="w-full">
 									Add
@@ -152,11 +153,11 @@ const resetForm = () => {
 };
 
 const addNewColumnType = () => {
-	if (newColumnType.value && !columnTypes.value.includes(newColumnType.value)) {
-		columnTypes.value.push(newColumnType.value);
-		formData.value.columnType = newColumnType.value;
-		newColumnType.value = "";
-	}
+    if (newColumnType.value.trim() && !columnTypes.value.includes(newColumnType.value.trim())) {
+        columnTypes.value.push(newColumnType.value.trim());
+        formData.value.columnType = newColumnType.value.trim();
+        newColumnType.value = "";
+    }
 };
 
 const handleSubmit = async () => {
@@ -170,7 +171,7 @@ const handleSubmit = async () => {
 		props.link.url = formData.value.url;
 		props.link.title = formData.value.title || new URL(formData.value.url).hostname;
 		props.link.description = formData.value.description;
-		props.link.columnType = formData.value.column_type;
+		props.link.column_type = formData.value.columnType;
 
 		await linkStore.updateLink(props.link);
 		closeModal();
