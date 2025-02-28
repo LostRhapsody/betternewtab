@@ -1,6 +1,7 @@
 use axum::{http::Request, middleware::Next, response::Response};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
+use crate::user_jwt;
 
 #[derive(Clone, Debug)]
 pub struct UserContext {
@@ -124,6 +125,43 @@ pub async fn authenticate_user(
     }
 
     println!("User authenticated");
+
+    // Check for user auth token and refresh if needed
+    if let Some(auth_token) = req.headers().get("X-User-Authorization") {
+        if let Ok(token_str) = auth_token.to_str() {
+            // Check if the token needs to be refreshed
+            match user_jwt::needs_refresh(token_str) {
+                Ok(needs_refresh) => {
+                    if needs_refresh {
+                        println!("JWT token needs refresh");
+                        
+                        // Get user ID and plan from token
+                        if let Ok(claims) = user_jwt::validate_jwt(token_str) {
+                            // Generate new token
+                            if let Ok(new_token) = user_jwt::generate_jwt(&claims.user_id, &claims.plan) {
+                                println!("Generated new JWT token for user {}", claims.user_id);
+                                
+                                // Run the next middleware and get the response
+                                let mut response = next.run(req).await;
+                                
+                                // Add the new token to the response headers
+                                response.headers_mut().insert(
+                                    "X-New-Auth-Token",
+                                    axum::http::HeaderValue::from_str(&new_token).unwrap_or_else(|_| axum::http::HeaderValue::from_static("")),
+                                );
+                                
+                                return Ok(response);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!("Error checking if token needs refresh: {:?}", e);
+                    // Continue with request even if refresh check fails
+                }
+            }
+        }
+    }
 
     Ok(next.run(req).await)
 }
