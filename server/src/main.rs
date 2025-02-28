@@ -5,6 +5,7 @@ mod resend;
 mod stripe_client;
 mod supabase;
 mod middleware;
+mod user_jwt;
 
 use axum::{
     extract::{
@@ -167,7 +168,7 @@ async fn runtime() {
         // get user
         .route("/user", get(get_user_handler))
         // get suggestion
-        .route("/suggest/{query}", get(move |path, user_context| suggest_handler(path, user_context)))
+        .route("/suggest/{query}", get(move |path, user_context, headers| suggest_handler(path, user_context, headers)))
         .route("/feedback", post(feedback_handler))
         .route("/settings", post(create_settings).put(update_settings).get(get_settings))
         // cancel subscription event listener for Stripe
@@ -216,6 +217,7 @@ async fn create_user_handler(
         id: payload.user_id,
         email: payload.email,
         created_at: Utc::now().to_rfc3339(),
+        auth_token: None,
     };
 
     match supabase.create_user(user.clone()).await {
@@ -1062,6 +1064,7 @@ async fn get_favicon(
 async fn suggest_handler(
     Path(query): Path<String>,
     Extension(user_context): Extension<UserContext>,
+    headers: HeaderMap,
 ) -> Result<Json<SuggestionResponse>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
@@ -1075,6 +1078,40 @@ async fn suggest_handler(
         }));
         scope.set_tag("http.method", "GET");
     });
+
+    // Check for the custom authorization header
+    let auth_token = headers
+        .get("X-User-Authorization")
+        .ok_or_else(|| {
+            println!("Missing X-User-Authorization header");
+            StatusCode::UNAUTHORIZED
+        })?
+        .to_str()
+        .map_err(|e| {
+            println!("Invalid X-User-Authorization header: {:?}", e);
+            StatusCode::BAD_REQUEST
+        })?;
+
+    // Validate the JWT token
+    let user_claims = match user_jwt::validate_jwt(auth_token) {
+        Ok(claims) => claims,
+        Err(e) => {
+            println!("Invalid JWT token: {:?}", e);
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    };
+
+    // Verify the user ID in the token matches the request user ID
+    if user_claims.user_id != user_id {
+        println!("Token user ID does not match request user ID");
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+    
+    // Check if token is for a "plus" plan user or if their plan allows this feature
+    if user_claims.plan != "plus" {
+        println!("User plan does not allow auto-suggestions");
+        return Err(StatusCode::FORBIDDEN);
+    }
 
     println!("Suggesting: {}", query);
 
@@ -1430,6 +1467,7 @@ async fn get_user_data_handler(
                 id: user_id.clone(),
                 email: user_email.clone(),
                 created_at: Utc::now().to_rfc3339(),
+                auth_token: None,
             };
             supabase.create_user(new_user.clone())
                 .await
@@ -1508,9 +1546,24 @@ async fn get_user_data_handler(
     } else {
         None
     };
+    
+    // Generate JWT token with user ID and plan info
+    let plan_name = subscription
+        .as_ref()
+        .map(|(_, plan)| plan.name.clone())
+        .or_else(|| free_plan.as_ref().map(|p| p.name.clone()))
+        .unwrap_or_else(|| "free".to_string());
+    
+    let auth_token = user_jwt::generate_jwt(&user_id, &plan_name)
+        .map_err(|e| {
+            tracing::error!("Failed to generate JWT token: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     tracing::info!("Successfully assembled user data response for {}", user_email);
-    Ok(Json(UserDataResponse {
+    
+    // Create response with user data and authorization token
+    let mut response = UserDataResponse {
         user,
         subscription: subscription.as_ref().map(|(sub, _)| sub.clone())
             .or(Some(SubscriptionResponse {
@@ -1520,7 +1573,12 @@ async fn get_user_data_handler(
         plan: subscription.map(|(_, plan)| plan).or(free_plan),
         settings,
         links,
-    }))
+    };
+    
+    // Add the auth_token to the response
+    response.user.auth_token = Some(auth_token);
+    
+    Ok(Json(response))
 }
 
 async fn create_user_default_settings(user: &crate::supabase::User) -> Result<supabase::UserSettings, StatusCode> {

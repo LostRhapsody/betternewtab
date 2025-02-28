@@ -91,9 +91,11 @@ import { useUserSettingsStore } from "../stores/settings";
 import { storeToRefs } from "pinia";
 import { API } from "../constants/api";
 import { useSearchEngineStore } from '../stores/searchEngine';
+import { useUserStore } from "@/stores/user";
 import { openUrl } from '../utils/openUrl';
 import { useDisplay } from 'vuetify';
 import api from "@/services/api";
+import { Axios, AxiosError } from "axios";
 
 const AUTO_SUGGEST_ON = import.meta.env.VITE_AUTO_SUGGEST_ON === 'true';
 const mobile = useDisplay().smAndDown;
@@ -444,14 +446,40 @@ const handleSearchEngineHotkeys = (event: KeyboardEvent) => {
 };
 
 const getSuggestions = async (query: string) => {
-	if(!AUTO_SUGGEST_ON) return;
+	if(!AUTO_SUGGEST_ON){
+		autoSuggestions.value = [];
+		return;
+	} 
+	if (!settingsStore.settings.autosuggest) {
+		autoSuggestions.value = [];
+		return;
+	}
 	try {
-		const response = await api.get(API.SUGGEST(query));
+		const userStore = useUserStore();
+		const authToken = userStore.getAuthToken();
+		
+		// Only proceed if we have an auth token
+		if (!authToken) {
+			console.warn('No auth token available for suggestions');
+			return;
+		}
+		
+		const response = await api.get(API.SUGGEST(query), {
+			headers: {
+				'X-User-Authorization': authToken
+			}
+		});		
 		const suggestionResponse = response.data as SuggestionsResponse;
-		// todo make this type safer
 		autoSuggestions.value = suggestionResponse.suggestions;
 	} catch (error) {
 		console.error("Error fetching suggestion:", error);
+		if ((error as AxiosError).status === 403) {
+			alert('Auto-suggestions are not available for your account. This feature has been disabled.');
+			settingsStore.updateSetting('autosuggest', false);
+			autoSuggestions.value = [];
+			return;
+		}
+		autoSuggestions.value = []; // Clear suggestions on error
 	}
 };
 

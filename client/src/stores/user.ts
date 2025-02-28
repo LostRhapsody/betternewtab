@@ -21,6 +21,7 @@ export const useUserStore = defineStore("user", {
     userPlan: null,
     isLoading: false,
     error: null,
+    auth_token: null,
   }),
 
   actions: {
@@ -69,6 +70,11 @@ export const useUserStore = defineStore("user", {
           this.setUserId(data.user.id);
           this.setFirstName(clerk_user.firstName);
           this.setLastName(clerk_user.lastName);
+
+          // Store the auth token
+          if (data.user.auth_token) {
+            this.setAuthToken(data.user.auth_token);
+          }
         }
 
         if (data.plan) {
@@ -138,6 +144,14 @@ export const useUserStore = defineStore("user", {
 
     setPlan(plan: Subscription) {
       this.userPlan = plan;
+    },
+
+    setAuthToken(token: string) {
+      this.auth_token = token;
+    },
+
+    getAuthToken(): string | null {
+      return this.auth_token;
     },
   },
 });

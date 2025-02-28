@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // Type definitions matching Database.ts
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct User {
     pub id: String,
     pub email: String,
     pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_token: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

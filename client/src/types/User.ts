@@ -7,6 +7,7 @@ export type User = {
   id: string;
   email: string;
   createdAt: string;
+  auth_token?: string;
 };
 
 // this is the "Pinia" User type, i.e. what we want to store in the store
@@ -18,6 +19,7 @@ export type UserState = {
   userPlan: Subscription | null;
   isLoading: boolean;
   error: string | null;
+  auth_token: string | null;
 };
 
 // this is the "Clerk" User type, i.e. the data we get from Clerk

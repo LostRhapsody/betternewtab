@@ -43,7 +43,7 @@ export const cache = {
       console.error("Cache clear failed:", error);
     }
   },
-  
+
   clearAll: (): void => {
     try {
       // Clear all cache keys used by the application
