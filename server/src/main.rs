@@ -594,6 +594,12 @@ async fn create_link(
             StatusCode::BAD_REQUEST
         })?;
 
+    let metadata_on = headers
+            .get("X-Fetch-Metadata")
+            .and_then(|m| m.to_str().ok())
+            .map(|s| s.to_lowercase() == "true")
+            .unwrap_or(false);
+
     // Validate the JWT token
     let user_claims = match user_jwt::validate_jwt(auth_token) {
         Ok(claims) => claims,
@@ -610,7 +616,7 @@ async fn create_link(
     }
 
     // init metadata, if plus plan retrieve from link's URL, else use defaults
-    let metadata = if user_claims.plan == "plus" {
+    let metadata = if user_claims.plan == "plus" && metadata_on {
         get_metadata(State(client.clone()), &url)
             .await
             .map_err(|e| {
@@ -641,7 +647,7 @@ async fn create_link(
     };
 
     // grab the favicon, or just pass an empty string
-    let favicon = if user_claims.plan == "plus" {
+    let favicon = if user_claims.plan == "plus" && metadata_on {
         get_favicon(
             State(client),
             &url,

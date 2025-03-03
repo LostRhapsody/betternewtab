@@ -89,7 +89,7 @@
 										</template>
 										<span>
 											<span class="kbd">+Plus Feature</span><br/>
-											If title and description are left blank, <strong>Better New Tab</strong> attempts to them this, along
+											If title and description are left blank, <strong>Better New Tab</strong> attempts to get them from the website, along
 											with an icon, from the URL's website.
 										</span>
 									</v-tooltip>

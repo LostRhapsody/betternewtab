@@ -1,9 +1,10 @@
 import { API } from "@/constants/api";
 import api from "@/services/api";
+import { useUserSettingsStore } from "@/stores/settings";
+import { useUserStore } from "@/stores/user";
 import type { CreateLinkRequest, Link, UpdateLinkRequest } from "@/types/Link";
 import { CacheKeys, cache } from "@/utils/cache";
 import { defineStore } from "pinia";
-import { useUserStore } from "@/stores/user";
 
 interface LinksState {
   links: Link[];
@@ -67,19 +68,22 @@ export const useLinksStore = defineStore("links", {
 
     async postLink(link: CreateLinkRequest) {
       this.isLoading = true;
-		  const userStore = useUserStore();
+      const userStore = useUserStore();
       const authToken = userStore.getAuthToken();
-		
+      const settingsStore = useUserSettingsStore();
+      const metadata_on = settingsStore.settings.metadata;
+
       // Only proceed if we have an auth token
       if (!authToken) {
-        console.warn('No auth token available for create link');
+        console.warn("No auth token available for create link");
         return;
       }
-      
+
       try {
         const response = await api.post(API.CREATE_LINK, link, {
           headers: {
-            'X-User-Authorization': authToken
+            "X-User-Authorization": authToken,
+            "X-Fetch-Metadata": metadata_on,
           },
         });
         if (response.status !== 201) {

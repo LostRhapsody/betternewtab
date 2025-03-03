@@ -14,6 +14,7 @@ export const useUserSettingsStore = defineStore("userSettings", {
       confluence_api: false,
       linear_api: false,
       new_tabs: false,
+      metadata: false,
     } as UserSettings,
   }),
   actions: {

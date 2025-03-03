@@ -5,6 +5,7 @@ export type UserSettings = {
   confluence_api: boolean;
   linear_api: boolean;
   new_tabs: boolean;
+  metadata: boolean;
 };
 
 export const UserSettingsLabels = [
@@ -17,6 +18,12 @@ export const UserSettingsLabels = [
   {
     label: "Enable Autosuggest (Powered By Brave)",
     key: "autosuggest",
+    active: true,
+    plan: "plus",
+  },
+  {
+    label: "Fetch Metadata for new links",
+    key: "metadata",
     active: true,
     plan: "plus",
   },
