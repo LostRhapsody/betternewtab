@@ -336,6 +336,7 @@ const feedbackMessage = ref("");
 
 // Token refresh interval
 let tokenRefreshInterval: number | undefined;
+let lastActivityTimestamp: number = Date.now();
 
 // User and data state
 const userId = ref<string | null>(null);
@@ -448,25 +449,83 @@ const handleFeedbackDialogClose = async (value: boolean) => {
 
 const refreshToken = async () => {
   try {
+    // Check if user is still active
+    const inactiveTime = Date.now() - lastActivityTimestamp;
+    const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
     const session = await clerk.session;
-    const token = await session?.getToken();
+
+    if (!session) {
+      console.warn("No active session found during token refresh");
+      return false;
+    }
+
+    // If inactive for too long, force a more thorough session check
+    if (inactiveTime > inactiveThreshold) {
+      console.log("Detected inactivity period, checking session validity");
+      await session.getToken(); // Force a check of the session
+    }
+    
+    // This will trigger a token refresh if needed
+    const token = await session.getToken({ leewayInSeconds: 30 }); // 30 seconds leeway to handle clock skew
     if (token) {
       localStorage.setItem("token", token);
+      console.log("Token refreshed successfully");
+    } else {
+      console.warn("Failed to get token during refresh");
+      // Try a more direct approach to refresh if the token wasn't returned
+      await session.touch();
     }
   } catch (error) {
     console.error("Error refreshing JWT token:", error);
+    // If refreshing fails, try a forced reload of the Clerk client
+    try {
+      await clerk.load();
+      const newSession = await clerk.session;
+      if (newSession) {
+        const token = await newSession.getToken();
+        if (token) {
+          localStorage.setItem("token", token);
+          console.log("Token refreshed after reload");
+        }
+      }
+    } catch (reloadError) {
+      console.error("Failed to reload clerk after refresh error:", reloadError);
+    }
   }
 };
 
 const startTokenRefreshInterval = () => {
-  // Refresh token every 15 minutes
-  tokenRefreshInterval = window.setInterval(refreshToken, 1 * 60 * 1000);
+  // Refresh token every 4 minutes (Clerk tokens typically expire after 5 minutes of inactivity)
+  tokenRefreshInterval = window.setInterval(refreshToken, 4 * 60 * 1000);
+  
+  // Setup activity tracking to detect user presence
+  const trackUserActivity = () => {
+    lastActivityTimestamp = Date.now();
+  };
+  
+  // Track various user activities
+  window.addEventListener('mousemove', trackUserActivity);
+  window.addEventListener('keydown', trackUserActivity);
+  window.addEventListener('click', trackUserActivity);
+  window.addEventListener('scroll', trackUserActivity);
+  window.addEventListener('focus', () => {
+    trackUserActivity();
+    // When tab regains focus, immediately refresh token
+    refreshToken();
+  });
 };
 
 const stopTokenRefreshInterval = () => {
   if (tokenRefreshInterval) {
     clearInterval(tokenRefreshInterval);
   }
+  
+  // Remove activity tracking
+  window.removeEventListener('mousemove', () => {});
+  window.removeEventListener('keydown', () => {});
+  window.removeEventListener('click', () => {});
+  window.removeEventListener('scroll', () => {});
+  window.removeEventListener('focus', () => {});
 };
 
 // Lifecycle hooks
