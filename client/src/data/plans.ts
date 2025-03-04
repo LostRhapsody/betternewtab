@@ -9,7 +9,6 @@ export const PlusPlanFeatures = [
   "Up to 99 links",
   "Links added have their title, description, and icon automatically setup for you, just add the link",
   "Automatic search suggestions",
-  
 ];
 
 export const ProPlanFeatures = [

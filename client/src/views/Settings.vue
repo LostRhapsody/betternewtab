@@ -7,12 +7,12 @@
             <v-list-item prepend-icon="mdi-arrow-left-circle" title="Back" value="back" @click="router.push('/')" />
             <v-list-item prepend-icon="mdi-account-cog" title="User Preferences" value="preferences"
               :active="activeTab === 'preferences'" @click="activeTab = 'preferences'" />
+            <v-list-item prepend-icon="mdi-credit-card" title="Billing" value="billing"
+              :active="activeTab === 'billing'" @click="activeTab = 'billing'" />
             <v-list-item prepend-icon="mdi-account-group" title="Manage Team" value="team"
               :active="activeTab === 'team'" @click="activeTab = 'team'" />
             <v-list-item prepend-icon="mdi-domain" title="Organization" value="organization"
-              :active="activeTab === 'organization'" @click="activeTab = 'organization'" />
-            <v-list-item prepend-icon="mdi-credit-card" title="Billing" value="billing"
-              :active="activeTab === 'billing'" @click="activeTab = 'billing'" />
+              :active="activeTab === 'organization'" @click="activeTab = 'organization'" />            
           </v-list>
         </v-navigation-drawer>
       </v-layout>
