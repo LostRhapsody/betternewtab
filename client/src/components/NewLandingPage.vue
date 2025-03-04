@@ -129,7 +129,7 @@
       <p class="text-xl text-gray-300 mb-12">
         Choose a plan that fits your needs. Free and premium options available.
       </p>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <!-- Free Plan -->
         <v-card class="!bg-white/5 !shadow-lg !rounded-lg !p-6 !shadow-white/10 plan-card">
           <v-card-item>
@@ -156,7 +156,7 @@
         <v-card class="!bg-white/5 !shadow-lg !rounded-lg !p-6 !shadow-white/10 plan-card">
           <v-card-item>
             <v-card-title class="text-h4 mb-2">Plus</v-card-title>
-            <div class="text-h3 mb-1">$8</div>
+            <div class="text-h3 mb-1">$5</div>
             <div class="text-caption mb-4">per month</div>
             <v-divider class="mb-4"></v-divider>
             <v-list class="!bg-transparent">
@@ -171,6 +171,30 @@
               <button
                 class="px-8 py-4 rounded-full bg-blue-500/70 text-white hover:bg-blue-600 transition-colors w-full">
                 Get BetterNewTab+!
+              </button>
+            </a>
+          </v-card-actions>
+        </v-card>
+
+        <!-- Pro Plan -->
+        <v-card class="!bg-white/5 !shadow-lg !rounded-lg !p-6 !shadow-white/10 plan-card">
+          <v-card-item>
+            <v-card-title class="text-h4 mb-2">Pro</v-card-title>
+            <div class="text-h3 mb-1">$10</div>
+            <div class="text-caption mb-4">per month</div>
+            <v-divider class="mb-4"></v-divider>
+            <v-list class="!bg-transparent">
+              <v-list-item class="text-start" v-for="feature in ProPlanFeatures" :key="feature">
+                <v-list-item-title><v-icon icon="mdi-check" class="mr-2 text-blue-400"></v-icon>{{ feature
+                  }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-card-item>
+          <v-card-actions class="pa-4">
+            <a class="w-full" :href=ProPlanUrl>
+              <button
+                class="px-8 py-4 rounded-full bg-blue-500/70 text-white hover:bg-blue-600 transition-colors w-full">
+                Get BetterNewTab Pro!
               </button>
             </a>
           </v-card-actions>
@@ -226,13 +250,14 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from "vue";
 import { Clerk } from "@clerk/clerk-js";
-import { FreePlanFeatures, PlusPlanFeatures } from "../data/plans";
+import { FreePlanFeatures, PlusPlanFeatures, ProPlanFeatures } from "../data/plans";
 import { cache } from "@/utils/cache";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerk = new Clerk(clerkPubKey);
 const showSignIn = ref(false);
 const PlusPlanUrl = import.meta.env.VITE_PLUS_PLAN_URL;
+const ProPlanUrl = import.meta.env.VITE_PRO_PLAN_URL;
 
 const handleShowSignIn = () => {
   // Clear all cache before signing in to ensure a fresh state
