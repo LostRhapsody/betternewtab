@@ -77,7 +77,7 @@ pub struct SuggestionResponse {
 
 #[derive(Deserialize, Debug)]
 pub struct FeedbackRequest {
-    reasons: Option<stripe::CancellationDetailsFeedback>,
+    reasons: Option<stripe::UpdateSubscriptionCancellationDetailsFeedback>,
     feedback_comment: Option<String>,
 }
 
@@ -408,16 +408,32 @@ async fn confirm_handler(
     };
 
     println!("Got subscription from Stripe");
-    // Double check if subscription is active
-    if !subscription.status.eq(&stripe::SubscriptionStatus::Active) {
+    
+    // Check if subscription is still valid based on status and current period end
+    let current_timestamp = chrono::Utc::now().timestamp();
+    
+    // Check both the subscription status and whether the current period has ended
+    let has_valid_subscription = subscription.status.eq(&stripe::SubscriptionStatus::Active) && 
+        subscription.current_period_end > current_timestamp;
+    
+    // Check if subscription is scheduled to be canceled at period end
+    let is_canceling = subscription.cancel_at_period_end;
+    
+    println!("Subscription status: {:?}, Period end: {}, Current time: {}, Is canceling: {}", 
+        subscription.status, 
+        subscription.current_period_end, 
+        current_timestamp,
+        is_canceling);
+    
+    if !has_valid_subscription {
+        println!("Subscription is not active or period has ended");
         return Ok(Json(SubscriptionResponse {
             plan_id: free_plan_id,
             current_period_end: 0,
         }));
     }
 
-    println!("Subscription is active");
-    // Get the subscription- we need the product id for later
+    // Get the subscription item - we need the product id for later
     let item = subscription
         .items
         .data
@@ -467,14 +483,16 @@ async fn confirm_handler(
     // Verify subscription record
     let sub_result = supabase.get_user_subscription(&user.id).await;
 
-    // verify we got the subcription
+    // verify we got the subscription
     match sub_result {
         Ok(sub) => {
             println!("Got subscription from Supabase");
-            // Update existing subscription if plan changed
-            // if plan id has changed (user upgraded/downgraded); or,
-            // the plan exists but has been cancelled and is now being re-activated
-            if (sub.plan_id != supabase_plan.id) || sub.status.eq("cancelled") {
+            // Update existing subscription if plan changed or status has changed
+            let should_update = sub.plan_id != supabase_plan.id || 
+                                sub.status != "active" ||
+                                is_canceling && sub.status != "cancelling";
+            
+            if should_update {
                 let mut updates = HashMap::new();
                 updates.insert("plan_id".to_string(), json!(supabase_plan.id));
                 updates.insert(
@@ -484,9 +502,12 @@ async fn confirm_handler(
                         .to_rfc3339()),
                 );
                 updates.insert("stripe_subscription_id".to_string(), json!(subscription.id));
-                updates.insert("status".to_string(), json!("active"));
+                
+                // If subscription is set to cancel at period end, mark it as "cancelling" in Supabase
+                let status = if is_canceling { "cancelling" } else { "active" };
+                updates.insert("status".to_string(), json!(status));
 
-                println!("Updating subscription");
+                println!("Updating subscription with status: {}", status);
                 println!("updates: {:?}", updates);
                 supabase
                     .update_subscription(&sub.id, updates)
@@ -506,7 +527,7 @@ async fn confirm_handler(
                 entity_id: user.id.clone(),
                 entity_type: "user".to_string(),
                 plan_id: supabase_plan.clone().id,
-                status: "active".to_string(),
+                status: if is_canceling { "cancelling" } else { "active" }.to_string(),
                 stripe_subscription_id: subscription.id.to_string(),
                 current_period_end: Utc
                     .timestamp_opt(subscription.current_period_end, 0)
