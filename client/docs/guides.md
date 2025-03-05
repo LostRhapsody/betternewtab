@@ -7,6 +7,10 @@ description: Comprehensive guides for BetterNewTab features and functionality
 
 Here you'll find detailed instructions for using all the features available in BetterNewTab.
 
+::: tip The ❔ Button
+There is a ❔button in the bottom right of the BetterNewTab dashboard. This provides quick links for keyboard shortcuts, guides, and providing feedback.
+:::
+
 ## Available Guides
 
 ### Links Management

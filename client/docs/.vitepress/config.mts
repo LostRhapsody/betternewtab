@@ -20,9 +20,7 @@ export default defineConfig({
     sidebar: [
       {
         text: 'Getting Started',
-        items: [
-          { text: 'BNT & You', link: '/getting-started' },
-        ],        
+        link: '/getting-started',  
       },
       {
         text: 'Guides',
@@ -37,6 +35,14 @@ export default defineConfig({
           { text: 'Metadata Fetching', link: '/guides/metadata-fetching' },
           { text: 'Search Suggestions', link: '/guides/search-suggestions' },
           { text: 'Manage Your Subscription', link: '/guides/manage-your-subscription' },
+        ],
+      },
+      {
+        text: 'Integrations',
+        items: [
+          { text: 'Confluence', link: '/guides/confluence-integration' },
+          { text: 'Jira', link: '/guides/jira-integration' },
+          { text: 'Linear', link: '/guides/linear-integration' },
         ],
       }
     ],

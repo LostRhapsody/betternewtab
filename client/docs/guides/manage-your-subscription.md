@@ -5,15 +5,14 @@ description: Learn how to update payment information or cancel your BetterNewTab
 
 # Managing Your Subscription
 
-If you're a Plus subscriber, you might occasionally need to update your payment information or manage your subscription. This guide explains how to access and manage your subscription details.
+If you're a Plus or Pro subscriber, you can update your payment information via the subscription management portal. This guide explains how to access and manage your subscription details.
 
 ## Accessing Subscription Management
 
 To manage your subscription:
 
-1. Click on your profile picture or icon in the top right corner
-2. Select "Settings" from the dropdown menu
-3. Navigate to the "Billing" tab in the left sidebar
+1. Click on the settings cog icon in the top right corner
+2. Navigate to the "Billing" tab in the left sidebar
 
 ## Billing Page Overview
 
@@ -21,7 +20,8 @@ The billing page displays:
 
 - Your current plan (Free, Plus, or Pro)
 - Number of pins included with your plan
-- Options to manage your subscription
+- A button to cancel your plan
+- A button to manage your subscription
 
 ## Updating Payment Information
 
@@ -39,12 +39,16 @@ If you need to cancel your subscription:
 
 1. Navigate to the "Billing" tab in Settings
 2. Click the "Cancel Plan" button
-3. You'll be asked to provide feedback about why you're cancelling
+3. You'll be asked to provide feedback about why you're cancelling, which is entirely optional
 4. After submitting feedback, confirm the cancellation
 5. You'll see a confirmation message when the process is complete
 
 ::: info Important
 When you cancel your subscription, you'll continue to have access to Plus features until the end of your current billing period. After that, your account will revert to the Free plan.
+:::
+
+::: tip Alternative
+You can also cancel your subscription through the Stripe customer portal.
 :::
 
 ## What Happens After Cancellation

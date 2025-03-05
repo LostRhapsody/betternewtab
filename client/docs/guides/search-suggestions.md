@@ -20,7 +20,7 @@ As you type in the search bar, BetterNewTab can display a list of suggested sear
 
 ## Powered by Brave
 
-BetterNewTab's search suggestions are powered by Brave's suggestion API, which provides relevant, privacy-focused search recommendations. Each suggestion is clearly labeled "POWERED BY BRAVE" to indicate its source.
+BetterNewTab's search suggestions are powered by Brave's suggestion API, which provides relevant, privacy-focused search recommendations.
 
 ## How to Use Search Suggestions
 

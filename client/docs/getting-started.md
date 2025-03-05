@@ -1,5 +1,5 @@
 ---
-title: BNT & You
+title: Geting Started
 description: Getting started with BetterNewTab
 ---
 
