@@ -17,7 +17,7 @@ BetterNewTab offers a variety of keyboard shortcuts to enhance your productivity
 | Cycle Search Engines | <kbd>`Ctrl`</kbd> + <kbd>`↑`</kbd> / <kbd>`↓`</kbd> |
 | Open Link in Column 1 | <kbd>`Ctrl`</kbd> + <kbd>`Number`</kbd> (1-9) |
 | Open Link in Column 2 | <kbd>`Ctrl`</kbd> + <kbd>`Shift`</kbd> + <kbd>`Number`</kbd> (1-9)|
-| Open Link in Column 2 | <kbd>`Ctrl`</kbd> + <kbd>`Alt`</kbd> + <kbd>`Number`</kbd> (1-9)|
+| Open Link in Column 3 | <kbd>`Ctrl`</kbd> + <kbd>`Alt`</kbd> + <kbd>`Number`</kbd> (1-9)|
 
 ## Navigation Shortcuts
 
