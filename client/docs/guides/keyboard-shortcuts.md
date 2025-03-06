@@ -16,7 +16,8 @@ BetterNewTab offers a variety of keyboard shortcuts to enhance your productivity
 | Add New Link | <kbd>`Ctrl`</kbd> + <kbd>`Alt`</kbd> + <kbd>`N`</kbd> |
 | Cycle Search Engines | <kbd>`Ctrl`</kbd> + <kbd>`↑`</kbd> / <kbd>`↓`</kbd> |
 | Open Link in Column 1 | <kbd>`Ctrl`</kbd> + <kbd>`Number`</kbd> (1-9) |
-| Open Link in Column 2 | <kbd>`Alt`</kbd> + <kbd>`Number`</kbd> (1-9)|
+| Open Link in Column 2 | <kbd>`Ctrl`</kbd> + <kbd>`Shift`</kbd> + <kbd>`Number`</kbd> (1-9)|
+| Open Link in Column 2 | <kbd>`Ctrl`</kbd> + <kbd>`Alt`</kbd> + <kbd>`Number`</kbd> (1-9)|
 
 ## Navigation Shortcuts
 
@@ -48,7 +49,14 @@ The Command Palette gives you keyboard access to all your links and application 
 
 - **Add New Link**: <kbd>`Ctrl`</kbd> + <kbd>`Alt`</kbd> + <kbd>`N`</kbd>
 - **Open Link (Column 1)**: <kbd>`Ctrl`</kbd> + <kbd>`Number`</kbd> (1-9)
-- **Open Link (Column 2)**: <kbd>`Alt`</kbd> + <kbd>`Number`</kbd> (1-9)
+- **Open Link (Column 2)**: <kbd>`Ctrl`</kbd> + <kbd>`Shift`</kbd> + <kbd>`Number`</kbd> (1-9)
+- **Open Link (Column 3)**: <kbd>`Ctrl`</kbd> + <kbd>`Alt`</kbd> + <kbd>`Number`</kbd> (1-9)
+
+::: info Column Shortcuts
+The first three columns in your dashboard have shortcuts reserved for them. Additional columns will not have a unqie shortcut mapped to them.
+
+BetterNewTab is designed with a 1 or 2 column layout primarily, 
+
 
 ## Search Engine Shortcuts
 
