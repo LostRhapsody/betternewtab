@@ -70,8 +70,20 @@
 								:class="{ focused: focusedIndex === index }"
 								@mouseover="focusedIndex = index">
 								<a variant="plain" @click="() => suggestionHandler(suggestion.query)" class="d-flex align-center">
-									<v-icon v-if="suggestion.isHistory" icon="mdi-history" size="small" class="mr-1" />
-									{{ suggestion.query }}
+									<div v-if="suggestion.isHistory" class="flex justify-between w-full">
+										<div>
+											<v-icon v-if="suggestion.isHistory" icon="mdi-history" size="small" class="mr-1" />
+											{{ suggestion.query }}
+										</div>
+										<v-icon 
+											icon="mdi-trash-can" 
+											size="small" 
+											class="mr-1 trash-can"
+										/>
+									</div>
+									<div v-else>
+										{{ suggestion.query }}
+									</div>
 								</a>
 							</div>
 							<div v-if="autoSuggestions.some(s => !s.isHistory)">
@@ -740,6 +752,14 @@ onUnmounted(() => {
 .searchBarContainer:focus-within {
 	border: #ffffff1e 1px solid;
 	box-shadow: 0 2px 10px 1px rgba(255, 255, 255, 0.1);
+}
+
+.trash-can {
+	display: none;
+}
+
+:hover.trash-can {
+	display: block;
 }
 
 /* Add responsive styles */

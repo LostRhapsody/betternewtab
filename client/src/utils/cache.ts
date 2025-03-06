@@ -55,12 +55,8 @@ export const cache = {
   // search history is stored unqiuely
   set_search_history: <T>(key: string, data: T): void => {
     try {
-      localStorage.setItem(
-        key,        
-        data,
-      );
-    }
-    catch (error) {
+      localStorage.setItem(key, data);
+    } catch (error) {
       console.error("Cache write failed:", error);
     }
   },
