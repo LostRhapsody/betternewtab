@@ -6,6 +6,16 @@ import type { CreateLinkRequest, Link, UpdateLinkRequest } from "@/types/Link";
 import { CacheKeys, cache } from "@/utils/cache";
 import { defineStore } from "pinia";
 
+// Define shortcut mapping for columns
+export const SHORTCUT_MAPPINGS = [
+  { key: 'ctrl', label: 'Ctrl' }, // First column
+  { key: 'alt', label: 'Alt' },  // Second column
+  { key: 'ctrlalt', label: 'Ctrl+Alt' }, // Third column
+  { key: 'ctrlshift', label: 'Ctrl+Shift' }, // Fourth column
+  { key: 'altshift', label: 'Alt+Shift' }, // Fifth column
+  { key: 'ctrlaltshift', label: 'Ctrl+Shift+Alt' }, // Sixth column
+];
+
 interface LinksState {
   links: Link[];
   isLoading: boolean;
@@ -27,6 +37,13 @@ export const useLinksStore = defineStore("links", {
     uniqueColumnTypes: (state) => {
       const columnTypes = new Set(state.links.map((link) => link.column_type));
       return Array.from(columnTypes);
+    },
+    getColumnShortcut: (state) => (columnType: string) => {
+      const columnIndex = state.uniqueColumnTypes.indexOf(columnType);
+      if (columnIndex >= 0 && columnIndex < SHORTCUT_MAPPINGS.length) {
+        return SHORTCUT_MAPPINGS[columnIndex].label;
+      }
+      return '';
     },
   },
 
