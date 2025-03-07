@@ -11,20 +11,21 @@
           <!-- Logo -->
           <div class="flex items-center space-x-2">
             <!-- <img src="/api/placeholder/32/32" alt="Logo" class="w-8 h-8" /> -->
-            <span class="text-white text-xl font-semibold">BetterNewTab_</span>
+            <span class="text-white text-xl font-semibold">
+              <a href="#">BetterNewTab_</a></span>
           </div>
 
           <!-- Navigation Links -->
           <div class="hidden md:flex space-x-8 border border-gray-300 px-6 py-4 rounded-full">
-            <a href="#" class="text-gray-300 hover:text-white transition-colors">About</a>
+            <a href="/docs/getting-started" class="text-gray-300 hover:text-white transition-colors">Getting Started</a>
             <span class="text-gray-300 cursor-default">•</span>
-            <a href="#" class="text-gray-300 hover:text-white transition-colors">Integrations</a>
+            <a href="/docs/integrations" class="text-gray-300 hover:text-white transition-colors">Integrations</a>
             <span class="text-gray-300 cursor-default">•</span>
-            <a href="#" class="text-gray-300 hover:text-white transition-colors">Pricing</a>
+            <a href="#pricing" class="text-gray-300 hover:text-white transition-colors">Pricing</a>
             <span class="text-gray-300 cursor-default">•</span>
-            <a href="#" class="text-gray-300 hover:text-white transition-colors">Features</a>
+            <a href="/docs/guides" class="text-gray-300 hover:text-white transition-colors">Guides</a>
             <span class="text-gray-300 cursor-default">•</span>
-            <a href="#" class="text-gray-300 hover:text-white transition-colors">Contact</a>
+            <a href="/contact" class="text-gray-300 hover:text-white transition-colors">Contact</a>
           </div>
 
           <!-- Get Started and Sign In Buttons -->
@@ -52,7 +53,7 @@
       <div class="flex justify-center mb-8">
         <a href="#"
           class="inline-flex items-center px-4 py-2 rounded-full bg-gray-800 text-gray-300 hover:text-white transition-colors">
-          <span>Launching Soon</span>
+          <span>v0.1.0 Soon</span>
           <v-icon icon="mdi-chevron-right" size="small" />
         </a>
       </div>
@@ -69,7 +70,12 @@
           Access everything you need in one place, with powerful search and integrations.
         </p>
 
-        <!-- Email Signup -->
+        <!-- Homepage Image -->
+        <div class="flex justify-center mb-8 z-10 relative">
+          <img src="/copy/homepage.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+        </div>
+
+        <!-- Signup CTA -->
         <div class="max-w-lg mx-auto">
           <div class="flex justify-center">
             <button @click="handleShowSignUp"
@@ -92,40 +98,81 @@
       </div>
     </div>
     <!-- Build your own new tab landing page -->
-    <div class="container mx-auto px-4 py-24 text-center">
+    <div class="container max-w-4xl mx-auto px-4 py-24 text-center">
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Build your own new tab landing page</h2>
       <p class="text-xl text-gray-300 mb-12">
-        Customize your new tab page with widgets, shortcuts, and more. Make it truly yours.
+        Customize your new tab page with your favorite tools and resources.
       </p>
+      <!-- Add Link Image -->
+      <div class="flex justify-center mb-8 z-10 relative">
+          <img src="/copy/add_link.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+      </div>
     </div>
 
     <!-- Keyboard oriented control with intuitive shortcuts -->
-    <div class="container mx-auto px-4 py-24 text-center">
+    <div class="container max-w-4xl mx-auto px-4 py-24 text-center">
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Keyboard oriented control with intuitive shortcuts</h2>
       <p class="text-xl text-gray-300 mb-12">
         Navigate and control your new tab page with ease using keyboard shortcuts.
       </p>
+      <!-- Shortcuts Image -->
+      <div class="flex justify-center mb-8 z-10 relative">
+          <img src="/copy/shortcuts.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+      </div>
     </div>
 
     <!-- A super-powered search bar -->
-    <div class="container mx-auto px-4 py-24 text-center">
+    <div class="container max-w-4xl mx-auto px-4 py-24 text-center">
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">A super-powered search bar</h2>
       <p class="text-xl text-gray-300 mb-12">
         Search across all your tools and resources from one place.
       </p>
+      <em class="text-lg text-gray-300">Quickly find your pinned links</em>
+      <!-- My link Image -->
+      <div class="flex justify-center mb-8 z-10 relative">
+          <img src="/copy/my_link.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+      </div>
+      <!-- Suggestions Image -->
+      <em class="text-lg text-gray-300">Get search suggestions based on a local search history and your search terms</em>
+      <div class="flex justify-center mb-8 z-10 relative">
+          <img src="/copy/suggestions.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+      </div>
+    </div>
+
+    
+    <!-- Command Palette -->
+    <div class="container max-w-4xl mx-auto px-4 py-24 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">The power users favorite</h2>
+      <p class="text-xl text-gray-300 mb-12">
+        Navigate quickly to your links, settings, or actions with the command palette.
+      </p>
+      <em class="text-lg text-gray-300">Open with easily <kbd class="kbd">Ctrl+K</kbd></em>
+      <!-- My link Image -->
+      <div class="flex justify-center mt-2 mb-8 z-10 relative">
+          <img src="/copy/command_palette.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+      </div>
+      <!-- Suggestions Image -->
+      <em class="text-lg text-gray-300">Type to perform actions, open links, or navigate to settings.</em>
+      <div class="flex justify-center mb-8 z-10 relative">
+          <img src="/copy/command_new_link.png" alt="Hero Image" class="w-full rounded-lg shadow-lg" />
+      </div>
     </div>
 
     <!-- Integrations for the best tools -->
-    <div class="container mx-auto px-4 py-24 text-center">
+    <div class="container max-w-4xl mx-auto px-4 py-12 text-center">
+      <a href="#"
+          class="inline-flex items-center px-4 py-2 mb-2 rounded-full bg-gray-800 text-gray-300 hover:text-white transition-colors">
+          <span>Coming Soon!</span>          
+        </a>
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Integrations for the best tools</h2>
       <p class="text-xl text-gray-300 mb-12">
-        Connect with your favorite tools and services for a seamless experience.
+        Connect with your favorite tools and services for a seamless experience with support for Jira, Confluence, Linear, and more.
       </p>
     </div>
 
     <!-- Pricing -->
     <div class="container mx-auto px-4 py-24 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Pricing</h2>
+      <h2 id="pricing" class="text-3xl md:text-4xl font-bold text-white mb-6">Pricing</h2>
       <p class="text-xl text-gray-300 mb-12">
         Choose a plan that fits your needs. Free and premium options available.
       </p>
@@ -191,10 +238,12 @@
             </v-list>
           </v-card-item>
           <v-card-actions class="pa-4">
-            <a class="w-full" :href=ProPlanUrl>
+            <!-- :href=ProPlanUrl -->
+            <a class="w-full" href="#">
               <button
                 class="px-8 py-4 rounded-full bg-blue-500/70 text-white hover:bg-blue-600 transition-colors w-full">
-                Get BetterNewTab Pro!
+                <!-- Get BetterNewTab Pro! -->
+                 Coming Soon!
               </button>
             </a>
           </v-card-actions>
@@ -220,7 +269,7 @@
               <span class="text-gray-300 cursor-default">•</span>
               <a href="#" class="text-gray-300 hover:text-white transition-colors">Terms of Service</a>
               <span class="text-gray-300 cursor-default">•</span>
-              <a href="#" class="text-gray-300 hover:text-white transition-colors">Contact</a>
+              <a href="/contact" class="text-gray-300 hover:text-white transition-colors">Contact</a>
             </div>
 
             <!-- Social Media Links -->

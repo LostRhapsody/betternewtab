@@ -10,7 +10,7 @@
           <v-row class="items-center">
             <v-col>
               <h1 class="text-xl">
-                BetterNewTab_
+                <a href="#">BetterNewTab_</a>
               </h1>
             </v-col>
             <v-col class="flex justify-end">
