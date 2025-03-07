@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 // Rate limiter structure to maintain request timestamps
 struct RateLimiter {
@@ -87,7 +89,7 @@ impl Brave {
         tracing::info!("Initializing Brave API client");
         let client = Client::new();
         // Configure rate limiter for 2 requests per second
-        let rate_limiter = Arc::new(Mutex::new(RateLimiter::new(2, 1)));
+        let rate_limiter = Arc::new(Mutex::new(RateLimiter::new(1, 1)));
         
         Ok(Self {
             client,
@@ -99,7 +101,25 @@ impl Brave {
 
     pub async fn get_suggestions(&self, query: &str) -> Result<SuggestResponse> {
         tracing::info!("Fetching suggestions for query: {}", query);
-        
+        // Log the query to querys.log
+
+        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let log_entry = format!("[{}] {}\n", now, query);
+
+        match OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("querys.log")
+        {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(log_entry.as_bytes()) {
+                    tracing::error!("Failed to write to query log: {}", e);
+                }
+            },
+            Err(e) => {
+                tracing::error!("Failed to open query log file: {}", e);
+            }
+        }
         // Check rate limiting
         let can_proceed = {
             let mut limiter = self.rate_limiter.lock().unwrap();
@@ -115,14 +135,14 @@ impl Brave {
             if wait_time > Duration::from_secs(0) {
                 // Return rate limit error rather than waiting
                 tracing::warn!("Rate limit exceeded for Brave API, need to wait {:?}", wait_time);
-                return Err(anyhow::anyhow!("429 Too Many Requests"));
+                return Err(anyhow::anyhow!("429"));
             }
             
             // Try again after rate limit window has passed
             let mut limiter = self.rate_limiter.lock().unwrap();
             if !limiter.can_make_request() {
                 tracing::warn!("Rate limit still exceeded for Brave API");
-                return Err(anyhow::anyhow!("429 Too Many Requests"));
+                return Err(anyhow::anyhow!("429"));
             }
         }
         
@@ -137,9 +157,35 @@ impl Brave {
             .send()
             .await?;
 
-        tracing::info!("Brave API response status: {}", response.status());
+        // Log the raw response status for debugging
+        let status = response.status();
+        let response_body = response.text().await?;
 
-        let suggestions = response.json::<SuggestResponse>().await?;
+        // Log the response to suggestions.log
+        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let log_entry = format!("[{}] Status: {} Response: {}\n", now, status, response_body);
+        match OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("suggestions.log")
+        {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(log_entry.as_bytes()) {
+                    tracing::error!("Failed to write to suggestions log: {}", e);
+                }
+            },
+            Err(e) => {
+                tracing::error!("Failed to open suggestions log file: {}", e);
+            }
+        }
+        tracing::info!("Brave API response status: {}", status);
+
+        if status == 429 {
+            return Err(anyhow::anyhow!("429"));
+        }
+
+        // Parse the response body back to a Response to return
+        let suggestions: SuggestResponse = serde_json::from_str(&response_body)?;
         tracing::info!("Successfully fetched {} suggestions", suggestions.results.len());
         Ok(suggestions)
     }

@@ -584,7 +584,8 @@ const suggestionHandler = (suggestion: string) => {
 // Add these variables near the other refs and constants
 const lastQuery = ref(""); // Keep track of the last query we sent to the API
 const lastQueryTime = ref(0); // Keep track of when we last sent a request
-const DEBOUNCE_TIME = 500; // milliseconds to wait for user typing to settle
+const DEBOUNCE_TIME = 1000; // milliseconds to wait for user typing to settle
+const REQUEST_TIME = 500; // milliseconds to wait for user typing to settle
 const MIN_TOKEN_SIZE = 3; // minimum characters difference to trigger a new request
 
 // watch, mount, and unmount
@@ -626,7 +627,7 @@ watch(searchQuery, async (newQuery) => {
         // 1. We have enough new characters (tokenization) OR
         // 2. Enough time has passed since last request AND the query is different
         if (
-            (charDiff >= MIN_TOKEN_SIZE) || 
+            (charDiff >= MIN_TOKEN_SIZE && timeSinceLastQuery >= REQUEST_TIME) || 
             (timeSinceLastQuery >= DEBOUNCE_TIME && newQuery !== lastQuery.value)
         ) {
             lastQuery.value = newQuery;
