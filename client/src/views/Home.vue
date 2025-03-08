@@ -104,6 +104,22 @@
                     </v-col>
                   </v-row>
                 </div>
+                <h4 class="text-xl mb-4 mt-8">Navigate links</h4>
+                <div class="border p-4 rounded-lg mb-4">
+                  <p class="text-lg mb-4">
+                    Use
+                    <span class="kbd !text-sm">
+                      <v-icon icon="mdi-arrow-up"></v-icon>
+                      up arrow
+                    </span>
+                    or
+                    <span class="kbd !text-sm">
+                      <v-icon icon="mdi-arrow-down"></v-icon>
+                      down arrow
+                    </span>
+                    to jump between links when you are not focused on the search bar.
+                  </p>                  
+                </div>
                 <h4 class="text-xl mb-4">Other Shortcuts</h4>
                 <div class="border p-4 rounded-lg mb-4">
                   <v-row>

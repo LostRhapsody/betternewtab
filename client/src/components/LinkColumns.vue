@@ -9,7 +9,10 @@
 			<LinkCard v-for="(link, index) in getLinksByColumnType(columnType)" :key="link.order_index"
 				:icon="link.icon ?? ''" :title="link.title" :description="link.description ?? ''" :link="link.url"
 				:index="index" :shortcut="getShortcut(columnType)" class="mb-2" :onDelete="() => handleDeleteLink(link)"
-				:onEdit="() => handleEditLink(link)" />
+				:onEdit="() => handleEditLink(link)" :ref="el => { if (el) linkRefs.push(el) }" 
+				:tabindex="getFocusableIndex(columnType, index)" 
+				:data-column="columnType" 
+				:data-link-index="index" />
 			<AddLinkCard v-if="canAddLinks" :columnType="columnType"
 				:userId="props.userId" :maxPins="props.maxPins" :isPlanFree="isPlanFree" />
 		</div>
@@ -18,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, onMounted, onUnmounted, ref, computed } from "vue";
+import { defineProps, onMounted, onUnmounted, ref, computed, nextTick } from "vue";
 import AddLinkCard from "./AddLinkCard.vue";
 import EditLinkModal from "./EditLinkModal.vue";
 import LinkCard from "./LinkCard.vue";
@@ -28,6 +31,8 @@ const linkStore = useLinksStore();
 
 const showEditModal = ref(false);
 const editingLink = ref<Link | undefined>();
+const linkRefs = ref<any[]>([]);
+const currentFocus = ref<{ columnType: string, index: number } | null>(null);
 
 const props = defineProps<{
 	canAddLinks?: boolean;
@@ -50,12 +55,102 @@ const getShortcut = (columnType: string) => {
 	return '';
 };
 
+const getFocusableIndex = (columnType: string, index: number) => {
+	// Make link cards focusable for keyboard navigation
+	return 0;
+};
+
 const handleDeleteLink = async (link: Link) => linkStore.removeLink(link.id);
 
 const handleEditLink = (link: Link) => {
 	editingLink.value = link;
 	showEditModal.value = true;
 };
+
+const isSearchInputFocused = () => {
+	const activeElement = document.activeElement;
+	return activeElement && (
+		activeElement.tagName === 'TEXTAREA' ||
+		activeElement.classList.contains('searchBar')
+	);
+};
+
+const focusLinkCard = (columnType: string, index: number) => {
+	nextTick(() => {
+		// Reset refs array before getting fresh references
+		linkRefs.value = [];
+		nextTick(() => {
+			const targetLink = linkRefs.value.find(
+				ref => ref.$el.dataset.column === columnType && 
+				parseInt(ref.$el.dataset.linkIndex) === index
+			);
+			
+			if (targetLink && targetLink.$el) {
+				console.log(targetLink.$el);
+				const anchorElement = targetLink.$el.querySelector('a');
+				if (anchorElement) {
+					anchorElement.focus();
+				} else {
+					targetLink.$el.focus(); // Fallback to div if anchor not found
+				}
+				currentFocus.value = { columnType, index };
+			}
+		});
+	});
+};
+
+const handleArrowKeys = (event: KeyboardEvent) => {
+	// Skip if search input is focused or if modifiers are pressed
+	if (isSearchInputFocused() || event.ctrlKey || event.altKey || event.metaKey) {
+		return;
+	}
+	
+	if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+		return;
+	}
+	
+	event.preventDefault();
+	
+	// If no current focus, focus the first link in the first column
+	if (!currentFocus.value) {
+		if (uniqueColumnTypes.value.length > 0) {
+			const firstColumnType = uniqueColumnTypes.value[0];
+			const columnLinks = getLinksByColumnType(firstColumnType);
+			if (columnLinks.length > 0) {
+				focusLinkCard(firstColumnType, 0);
+			}
+		}
+		return;
+	}
+	
+	const { columnType, index } = currentFocus.value;
+	const columnLinks = getLinksByColumnType(columnType);
+	
+	if (event.key === 'ArrowDown') {
+		// Move down to next link in same column
+		if (index < columnLinks.length - 1) {
+			focusLinkCard(columnType, index + 1);
+		}
+	} else if (event.key === 'ArrowUp') {
+		// Move up to previous link in same column
+		if (index > 0) {
+			focusLinkCard(columnType, index - 1);
+		}
+	}
+};
+
+onMounted(() => {
+	window.addEventListener("keydown", handleKeydown);
+	window.addEventListener("keydown", handleArrowKeys);
+	
+	// Reset link refs whenever links change
+	linkRefs.value = [];
+});
+
+onUnmounted(() => {
+	window.removeEventListener("keydown", handleKeydown);
+	window.removeEventListener("keydown", handleArrowKeys);
+});
 
 const handleKeydown = (event: KeyboardEvent) => {
 	// Only process numeric keys 1-9
@@ -81,14 +176,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 		}
 	}
 };
-
-onMounted(() => {
-	window.addEventListener("keydown", handleKeydown);
-});
-
-onUnmounted(() => {
-	window.removeEventListener("keydown", handleKeydown);
-});
 
 const columnClass = computed(() => {
 	const columnCount = uniqueColumnTypes.value.length;
@@ -175,5 +262,11 @@ const columnClass = computed(() => {
 	.four-columns {
 		flex: 0 0 45%;
 	}
+}
+
+/* Style for focused link cards */
+:deep(.link-card:focus) {
+  outline: 2px solid #4a9df8;
+  outline-offset: 2px;
 }
 </style>

@@ -230,6 +230,7 @@
 				validLink.value = false;
 				return;
 			}
+			validLink.value = true;
 			if (!savedLink) console.error("Error saving link");
 			closeModal();
 		} catch (error) {

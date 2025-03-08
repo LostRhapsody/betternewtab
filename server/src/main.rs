@@ -1104,7 +1104,7 @@ async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metad
     let response = match client.get(url).send().await {
         Ok(response) => response,
         Err(e) => {
-            tracing::error!("Failed to fetch URL {}: {:?}", url, e);
+            tracing::info!("Failed to fetch URL {}: {:?}", url, e);
             println!("Error fetching metadata: {:?}", e);
             return Err(StatusCode::BAD_GATEWAY);
         }
