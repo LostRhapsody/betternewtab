@@ -28,7 +28,6 @@
             <SearchBar />
           </section>
           <section aria-label="Link columns">
-            {{ userStore.userPlan?.max_pins }}
             <LinkColumns :userId="userId"
               :maxPins="userStore.userPlan?.max_pins || 6" :canAddLinks="canShowAddLink" :isPlanFree="userStore.userPlan?.name === 'free'" />
           </section>
@@ -59,7 +58,7 @@
                                   <span class="kbd">{{ index + 1 }}</span>
                                 </div>
                               </div>
-                              <v-divider v-if="colIndex < 1" class="my-4"></v-divider>
+                              <v-divider v-if="showShortcutDivider(index,getLinksByColumnType(columnType).length,colIndex)" class="my-4"></v-divider>
                             </div>
                           </li>
                         </ul>
@@ -230,7 +229,6 @@
 </template>
 <script setup lang="ts">
 import CommandPalette from '../components/CommandPalette.vue';
-import type { Link } from "@/types/Link";
 import { Clerk } from "@clerk/clerk-js";
 import { computed, nextTick, onMounted, ref, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
@@ -242,7 +240,6 @@ import { useUserStore } from "../stores/user";
 import { useLinksStore, SHORTCUT_MAPPINGS } from "../stores/links";
 import { useFeedbackStore } from "../stores/feedback";
 import { useUserSettingsStore } from "../stores/settings";
-import { storeToRefs } from "pinia";
 import { searchEngines } from "../data/SearchEngines";
 import { API } from "../constants/api";
 import api from "../services/api";
@@ -511,6 +508,20 @@ const stopTokenRefreshInterval = () => {
   window.removeEventListener('scroll', () => { });
   window.removeEventListener('focus', () => { });
 };
+
+const showShortcutDivider = (index:number, linksInColumn:number, currentColumn:number) => {
+  // if there is only 1 column, then we don't need a divider for the last index of this column.
+  // if there is more than 1 column, then we don't need a divider for the last index of the last column.
+  const numberOfColumns = linksStore.uniqueColumnTypes.length;
+  if(numberOfColumns === 1){
+    return index !== linksInColumn - 1;
+  } else {
+    const isLastLink = index === linksInColumn - 1;
+    const isLastColumn = currentColumn === numberOfColumns - 1;
+    return  !(isLastLink && isLastColumn);
+  }
+
+}
 
 // Lifecycle hooks
 onMounted(async () => {

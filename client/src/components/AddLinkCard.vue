@@ -5,13 +5,13 @@
 			class="group cursor-pointer border-2 rounded-lg p-4 transition-all duration-300 flex flex-col items-center justify-center space-y-2"
 			:class="[
 				isAtMaxPins
-					? 'border-amber-500 bg-amber-50 hover:bg-amber-100'
+					? 'border-amber-500/50 bg-amber-50/50 hover:bg-amber-100/50'
 					: 'border-dashed hover:border-primary border-gray-300'
 			]" @mouseenter="hover = true" @mouseleave="hover = false">
 			<v-icon :color="isAtMaxPins ? 'amber-darken-2' : (hover ? 'primary' : 'grey')" size="24">
 				{{ isAtMaxPins ? 'mdi-arrow-up-circle' : 'mdi-plus' }}
 			</v-icon>
-			<span :class="isAtMaxPins ? 'text-amber-700' : (hover ? 'text-primary' : 'text-grey')">
+			<span :class="isAtMaxPins ? 'text-amber-800' : (hover ? 'text-primary' : 'text-grey')">
 				{{ isAtMaxPins ? 'Upgrade for more pins' : 'Add new link' }}
 			</span>
 		</div>

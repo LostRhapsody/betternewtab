@@ -79,8 +79,7 @@
             </v-list>
           </v-card-item>
           <v-card-actions class="pa-4">
-            <a class="w-full" color="primary" :href=ProPlanUrl><v-btn block variant="flat" color="primary">Upgrade to
-                Pro</v-btn></a>
+            <v-btn block variant="flat" color="primary">Coming Soon</v-btn>
           </v-card-actions>
         </v-card>
 
