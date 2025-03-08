@@ -1,4 +1,3 @@
-import type SearchHistory from "../types/SearchHistory";
 
 const CACHE_PREFIX = "betternewtab_";
 const CACHE_VERSION = "v1_";

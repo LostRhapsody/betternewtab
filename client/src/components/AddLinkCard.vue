@@ -24,6 +24,7 @@
 					<v-form @submit.prevent="handleSubmit" ref="form">
 						<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', linksStore.validateUrl]"
 							label="URL" required type="url" @keyup.enter="handleSubmit"></v-text-field>
+						<p v-if="!validLink" class="text-error my-2 text-sm">Invalid URL: Failed to connect with this URL's server, is it spelled correctly?</p>
 
 						<v-text-field @keyup.enter="(e: Event) => { e.preventDefault(); handleSubmit() }"
 							v-model="formData.title" label="Title"></v-text-field>
@@ -112,6 +113,7 @@
 	const linksStore = useLinksStore();
 	const userStore = useUserStore();
 	const mobile = useDisplay().smAndDown;
+	const validLink = ref(true);
 
 	type formData = {
 		url: string;
@@ -228,6 +230,10 @@
 			};
 
 			const savedLink = await linksStore.postLink(linkData);
+			if (savedLink === 502) {
+				validLink.value = false;
+				return;
+			}
 			if (!savedLink) console.error("Error saving link");
 			closeModal();
 		} catch (error) {

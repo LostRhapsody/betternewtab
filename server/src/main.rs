@@ -712,17 +712,22 @@ async fn create_link(
 
     // init metadata, if not free plan retrieve from link's URL, else use defaults
     let metadata = if user_claims.plan != "free" && metadata_on {
-        get_metadata(State(client.clone()), &url)
-            .await
-            .map_err(|e| {
-                tracing::error!("Error getting metadata: {:?}", e);
-            })
-            .unwrap_or_else(|_| Metadata {
-                title: Some(url.clone()),
-                description: None,
-                favicon: None,
-                mime_type: None,
-            })
+        match get_metadata(State(client.clone()), &url).await {
+            Ok(metadata) => metadata,
+            Err(StatusCode::BAD_GATEWAY) => {
+                // If we get BAD_GATEWAY from get_metadata, return it directly to the client
+                return Err(StatusCode::BAD_GATEWAY);
+            },
+            Err(_) => {
+                // For any other errors, use default metadata
+                Metadata {
+                    title: Some(url.clone()),
+                    description: None,
+                    favicon: None,
+                    mime_type: None,
+                }
+            }
+        }
     } else {
         Metadata {
             title: Some(url.clone()),
@@ -1095,10 +1100,15 @@ async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metad
 
     println!("Fetching metadata for URL: {}", url);
 
-    let response = client.get(url).send().await.map_err(|e| {
-        tracing::error!("Failed to fetch URL {}: {:?}", url, e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Attempt to fetch the URL with proper error handling
+    let response = match client.get(url).send().await {
+        Ok(response) => response,
+        Err(e) => {
+            tracing::error!("Failed to fetch URL {}: {:?}", url, e);
+            println!("Error fetching metadata: {:?}", e);
+            return Err(StatusCode::BAD_GATEWAY);
+        }
+    };
 
     if !response.status().is_success() {
         return Err(StatusCode::BAD_REQUEST);

@@ -3,9 +3,6 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tokio::time::sleep;
-use std::fs::OpenOptions;
-use std::io::Write;
 
 // Rate limiter structure to maintain request timestamps
 struct RateLimiter {
@@ -101,25 +98,7 @@ impl Brave {
 
     pub async fn get_suggestions(&self, query: &str) -> Result<SuggestResponse> {
         tracing::info!("Fetching suggestions for query: {}", query);
-        // Log the query to querys.log
-
-        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let log_entry = format!("[{}] {}\n", now, query);
-
-        match OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("querys.log")
-        {
-            Ok(mut file) => {
-                if let Err(e) = file.write_all(log_entry.as_bytes()) {
-                    tracing::error!("Failed to write to query log: {}", e);
-                }
-            },
-            Err(e) => {
-                tracing::error!("Failed to open query log file: {}", e);
-            }
-        }
+        
         // Check rate limiting
         let can_proceed = {
             let mut limiter = self.rate_limiter.lock().unwrap();
@@ -161,23 +140,6 @@ impl Brave {
         let status = response.status();
         let response_body = response.text().await?;
 
-        // Log the response to suggestions.log
-        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let log_entry = format!("[{}] Status: {} Response: {}\n", now, status, response_body);
-        match OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("suggestions.log")
-        {
-            Ok(mut file) => {
-                if let Err(e) = file.write_all(log_entry.as_bytes()) {
-                    tracing::error!("Failed to write to suggestions log: {}", e);
-                }
-            },
-            Err(e) => {
-                tracing::error!("Failed to open suggestions log file: {}", e);
-            }
-        }
         tracing::info!("Brave API response status: {}", status);
 
         if status == 429 {
