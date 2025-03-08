@@ -2,26 +2,15 @@
   <v-dialog v-model="isOpen" max-width="600px">
     <v-card>
       <v-card-title>
-        <v-text-field
-          v-model="query"
-          placeholder="Type a command or search..."
-          @keydown="handleKeydown"
-          ref="input"
-          autofocus
-        />
+        <v-text-field v-model="query" placeholder="Type a command or search..." @keydown="handleKeydown" ref="input"
+          autofocus />
       </v-card-title>
       <v-card-text>
         <v-list>
-          <v-list-item
-            v-for="(result, index) in filteredResults"
-            :key="index"
-            :class="{ focused: focusedIndex === index, 'rounded-lg': true }"
-            @click="handleSelect(result)"
-            @mouseover="focusedIndex = index"
-            rounded-pill
-            :title="result.title"
-            :subtitle="result.subtitle"
-          ></v-list-item>
+          <v-list-item v-for="(result, index) in filteredResults" :key="index"
+            :class="{ focused: focusedIndex === index, 'rounded-lg': true }" @click="handleSelect(result)"
+            @mouseover="focusedIndex = index" rounded-pill :title="result.title"
+            :subtitle="result.subtitle"></v-list-item>
         </v-list>
       </v-card-text>
     </v-card>
@@ -35,6 +24,7 @@ import { useLinksStore } from '../stores/links';
 import { useSearchEngineStore } from '../stores/searchEngine';
 import { storeToRefs } from 'pinia';
 import { openUrl } from '../utils/openUrl';
+import { tr } from 'vuetify/locale';
 
 type Result = {
   title: string;
@@ -71,8 +61,8 @@ const filteredResults = computed(() => {
     title: `Switch to ${engine.name}`,
     subtitle: `Change search engine to ${engine.name}`,
     action: () => searchEngineStore.setSearchEngine(engine.url)
-  })).filter(engineResult => 
-    engineResult.title.toLowerCase().includes(lowerQuery) || 
+  })).filter(engineResult =>
+    engineResult.title.toLowerCase().includes(lowerQuery) ||
     engineResult.subtitle.toLowerCase().includes(lowerQuery)
   );
 
@@ -111,11 +101,14 @@ const handleSelect = (result: Result) => {
   closePalette();
 };
 
-const openPalette = () => {
-  isOpen.value = true;
-  nextTick(() => {
-    input.value?.focus();
-  });
+const openPalette = (event: KeyboardEvent) => {
+  if (event.key === 'k' && event.ctrlKey) {
+    event.preventDefault();
+    isOpen.value = true;
+    nextTick(() => {
+      input.value?.focus();
+    });
+  }
 };
 
 const closePalette = () => {
@@ -132,26 +125,22 @@ const triggerAddLink = () => {
   }
 };
 
+const handleTriggerAddLink = (event: KeyboardEvent) => {
+  if (event.key === 'n' && event.ctrlKey && event.altKey) {
+    triggerAddLink();
+  }
+}
+
 onMounted(() => {
   // show command palette
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'k' && event.ctrlKey) {
-      event.preventDefault();
-      openPalette();
-    }
-  });
+  window.addEventListener('keydown', openPalette);
   // add a new link
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'n' && event.ctrlKey && event.altKey) {
-      event.preventDefault();
-      triggerAddLink();
-    }
-  });
+  window.addEventListener('keydown', handleTriggerAddLink);
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', openPalette);
-  window.removeEventListener('keydown', triggerAddLink);
+  window.removeEventListener('keydown', handleTriggerAddLink);
 });
 </script>
 
@@ -161,6 +150,7 @@ onUnmounted(() => {
   color: black !important;
   padding: 8px;
 }
+
 .v-list-item {
   padding: 8px;
 }
