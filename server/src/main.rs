@@ -107,6 +107,12 @@ pub struct StagingLoginRequest {
     password: String,
 }
 
+#[derive(Clone)]
+pub struct AppState {
+    pub client: reqwest::Client,
+    pub supabase: Supabase,
+}
+
 // New helper function to disable premium features in user settings
 fn disable_premium_features(settings_blob: &mut serde_json::Value) {
     if let Some(obj) = settings_blob.as_object_mut() {
@@ -210,6 +216,19 @@ async fn runtime() {
     };
 
     let client = reqwest::Client::new();
+    let supabase = match Supabase::new(
+        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
+        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
+    ) {
+        Ok(supabase) => supabase,
+        Err(e) => {
+            tracing::error!("Error initializing Supabase client: {:?}", e);
+            println!("Error initializing Supabase client: {:?}", e);
+            return;
+        }
+    };
+
+    let app_state = AppState { client, supabase };
 
     // Reminder! Anything you return must be serializable
     let app = Router::new()
@@ -224,12 +243,12 @@ async fn runtime() {
         // delete link
         .route(
             "/link/{link_id}",
-            delete(move |path, user_context| delete_link(path, user_context)),
+            delete(move |state: State<AppState>, path, user_context| delete_link(state, path, user_context)),
         )
         // get plan
         .route(
             "/plan/{plan_id}",
-            get(move |path, user_context| plan_handler(path, user_context)),
+            get(move |state: State<AppState>, path, user_context| plan_handler(state, path, user_context)),
         )
         // create user
         .route("/create_user", post(create_user_handler))
@@ -250,7 +269,7 @@ async fn runtime() {
         .route("/user_data", get(get_user_data_handler))
         // Add staging login route - doesn't need authentication
         .route("/staging_login", post(staging_login_handler))
-        .with_state(client)
+        .with_state(app_state)
         .layer(axum::middleware::from_fn(authenticate_user))
         .layer(axum::middleware::from_fn(extract_user))
         .layer(cors);
@@ -287,11 +306,14 @@ async fn staging_login_handler(
 }
 
 async fn create_user_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<Json<supabase::User>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
+    let supabase = &app_state.supabase;
+    
     println!("Creating new user: {}", payload.email);
 
     sentry::configure_scope(|scope| {
@@ -305,15 +327,6 @@ async fn create_user_handler(
 
     tracing::info!("Creating new user: {}", payload.email);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
     let user = supabase::User {
         id: payload.user_id,
         email: payload.email,
@@ -324,7 +337,7 @@ async fn create_user_handler(
     match supabase.create_user(user.clone()).await {
         Ok(_) => {
             tracing::info!("Successfully created user: {}", user.email);
-            let create_settings_result = create_user_default_settings(&user).await;
+            let create_settings_result = create_user_default_settings(&app_state, &user).await;
             if let Err(e) = create_settings_result {
                 if e == StatusCode::INTERNAL_SERVER_ERROR {
                     tracing::error!("Failed to create user settings for user: {}", user.email);
@@ -378,8 +391,9 @@ async fn create_user_handler(
 ///     Err(status) => println!("Error confirming subscription: {:?}", status),
 /// }
 /// ```
-#[tracing::instrument]
+// #[tracing::instrument]
 async fn confirm_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<SubscriptionResponse>, StatusCode> {
     let user_email = user_context.email.clone();
@@ -397,12 +411,8 @@ async fn confirm_handler(
 
     let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
 
-    // Initialize Supabase client
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance instead of creating a new one
+    let supabase = &app_state.supabase;
 
     println!("Initialized Supabase client");
     println!("Getting customer from Stripe");
@@ -620,6 +630,7 @@ async fn confirm_handler(
 }
 
 async fn links_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<Vec<supabase::Link>>, StatusCode> {
     let user_email = user_context.email.clone();
@@ -637,14 +648,8 @@ async fn links_handler(
 
     tracing::info!("Fetching links for user: {}", user_id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let links = supabase.get_links(&user_id, "user").await.map_err(|e| {
         tracing::error!("Failed to fetch links for user {}: {:?}", user_id, e);
@@ -660,13 +665,15 @@ async fn links_handler(
 }
 
 async fn create_link(
-    State(client): State<reqwest::Client>,
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     headers: HeaderMap,
     Json(payload): Json<CreateLinkRequest>,
 ) -> Result<(StatusCode, Json<supabase::Link>), StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
+    let client = &app_state.client;
+
     println!(
         "Creating new link for owner {}: {}",
         payload.owner_id, payload.url
@@ -821,6 +828,7 @@ async fn create_link(
 }
 
 async fn update_link(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<UpdateLinkRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -839,14 +847,8 @@ async fn update_link(
 
     tracing::info!("Updating link: {}", payload.id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let mut updates = HashMap::new();
     if let Some(url) = payload.url {
@@ -876,6 +878,7 @@ async fn update_link(
 }
 
 async fn delete_link(
+    State(app_state): State<AppState>,
     Path(link_id): Path<String>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<StatusCode, StatusCode> {
@@ -891,11 +894,8 @@ async fn delete_link(
         scope.set_tag("http.method", "DELETE");
     });
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     if let Err(e) = supabase.delete_link(&link_id).await {
         println!("Error deleting link: {:?}", e);
@@ -906,6 +906,7 @@ async fn delete_link(
 }
 
 async fn plan_handler(
+    State(app_state): State<AppState>,
     Path(plan_id): Path<String>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<supabase::Plan>, StatusCode> {
@@ -921,11 +922,8 @@ async fn plan_handler(
         scope.set_tag("http.method", "GET");
     });
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let plan = supabase
         .get_plan(&plan_id)
@@ -939,6 +937,7 @@ async fn plan_handler(
 }
 
 async fn get_user_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<supabase::User>, StatusCode> {
     let user_email = user_context.email.clone();
@@ -953,11 +952,8 @@ async fn get_user_handler(
         scope.set_tag("http.method", "GET");
     });
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let user = supabase
         .get_user(&user_id)
@@ -1001,6 +997,7 @@ async fn get_user_handler(
 /// ```
 #[axum::debug_handler]
 async fn cancel_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     payload: Json<FeedbackRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1028,13 +1025,10 @@ async fn cancel_handler(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    // first confirm if user exists, if not throw a 404
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
+    // first confirm if user exists, if not throw a 404
     let _user = supabase
         .get_user(&user_id)
         .await
@@ -1184,7 +1178,7 @@ async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metad
 }
 
 async fn get_favicon(
-    client: State<reqwest::Client>,
+    client: State<&reqwest::Client>,
     url: &str,
     favicon_source: Option<String>,
     mime_type: Option<String>
@@ -1336,6 +1330,7 @@ async fn suggest_handler(
 }
 
 async fn feedback_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<FeedbackRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1356,11 +1351,8 @@ async fn feedback_handler(
     let user_email = user_context.email.clone();
     println!("Feedback for user: {}", user_id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     // Check if the user has sent feedback in the last 24 hours
     let can_send_feedback = supabase
@@ -1412,6 +1404,7 @@ async fn feedback_handler(
 }
 
 async fn create_settings(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<UserSettingsRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1431,11 +1424,8 @@ async fn create_settings(
     println!("Creating settings for user: {}", user_id);
     println!("Payload: {:?}", payload);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let settings = supabase::UserSettings {
         user_id: user_id.clone(),
@@ -1452,6 +1442,7 @@ async fn create_settings(
 }
 
 async fn update_settings(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<UserSettingsRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1471,11 +1462,8 @@ async fn update_settings(
     println!("Updating settings for user: {}", user_id);
     println!("Payload: {:?}", payload);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let mut updates = HashMap::new();
     updates.insert("settings_blob".to_string(), json!(payload));
@@ -1489,6 +1477,7 @@ async fn update_settings(
 }
 
 async fn get_settings(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<supabase::UserSettings>, StatusCode> {
     let user_email = user_context.email.clone();
@@ -1506,11 +1495,8 @@ async fn get_settings(
 
     println!("Getting settings for user: {}", user_id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let settings =
         supabase
@@ -1525,6 +1511,7 @@ async fn get_settings(
 }
 
 async fn cancel_subscription_hook(
+    State(app_state): State<AppState>,
     headers: HeaderMap,
     Json(payload): Json<Event>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1605,14 +1592,8 @@ async fn cancel_subscription_hook(
         }
     };
 
-    let supabase = Supabase::new(
-        env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        println!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let user = supabase.get_user_by_email(&user_email).await.map_err(|e| {
         println!("Error retrieving user by email: {:?}", e);
@@ -1639,6 +1620,7 @@ async fn cancel_subscription_hook(
 }
 
 async fn get_user_data_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<UserDataResponse>, StatusCode> {
     let user_email = user_context.email.clone();
@@ -1657,15 +1639,8 @@ async fn get_user_data_handler(
         scope.set_tag("http.method", "GET");
     });
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        println!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     // Get or create user
     let user = match supabase.get_user(&user_id).await {
@@ -1689,7 +1664,7 @@ async fn get_user_data_handler(
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
             new_user_created = true;
-            let create_settings_result = create_user_default_settings(&new_user).await;
+            let create_settings_result = create_user_default_settings(&app_state, &new_user).await;
             if let Err(e) = create_settings_result {
                 if e == StatusCode::INTERNAL_SERVER_ERROR {
                     tracing::error!(
@@ -1763,7 +1738,7 @@ async fn get_user_data_handler(
     if !new_user_created {
         settings = match supabase.get_user_settings(&user_id).await {
             Ok(settings) => Some(settings),
-            Err(_) => match create_user_default_settings(&user).await {
+            Err(_) => match create_user_default_settings(&app_state, &user).await {
                 Ok(new_settings) => Some(new_settings),
                 Err(e) => {
                     if e == StatusCode::INTERNAL_SERVER_ERROR {
@@ -1866,15 +1841,13 @@ async fn get_user_data_handler(
 }
 
 async fn create_user_default_settings(
+    app_state: &AppState,
     user: &crate::supabase::User,
 ) -> Result<supabase::UserSettings, StatusCode> {
     println!("Creating default user settings");
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's Supabase instance
+    let supabase = &app_state.supabase;
 
     let settings_blob = UserSettingsRequest {
         search_history: false,

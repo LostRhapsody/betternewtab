@@ -46,7 +46,7 @@ Sentry.init({
     Sentry.replayIntegration(),
   ],
   // Reduce sample rates for production
-  tracesSampleRate:  import.meta.env.VITE_STAGING ? 1.0 : 0.2,
+  tracesSampleRate: import.meta.env.VITE_STAGING ? 1.0 : 0.2,
   tracePropagationTargets: ["localhost", /^https:\/\/betternewtab\.com\/api/],
   replaysSessionSampleRate: import.meta.env.VITE_STAGING ? 0.5 : 0.1,
   replaysOnErrorSampleRate: 1.0,

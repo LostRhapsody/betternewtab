@@ -82,6 +82,7 @@ pub struct UserSettings {
     pub created_at: String,
 }
 
+#[derive(Clone)]
 pub struct Supabase {
     client: Client,
     url: String,
