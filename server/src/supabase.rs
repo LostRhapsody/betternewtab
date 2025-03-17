@@ -1,13 +1,13 @@
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use reqwest::{header::HeaderMap, Client};
 use serde::{Deserialize, Serialize};
-use stripe::generated::billing::subscription;
 use std::collections::HashMap;
-use sqlx::postgres::PgPoolOptions;
-use sqlx::postgres::PgPool;
-use sqlx::FromRow;
-use chrono::{DateTime, Utc};
-use sqlx::Row;
+use sqlx::{
+    postgres::{PgPoolOptions,PgPool},
+    FromRow,
+    Row
+};
 
 // Type definitions matching Database.ts
 #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
