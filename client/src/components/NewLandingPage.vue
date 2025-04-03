@@ -37,7 +37,7 @@
         <!-- Signup CTA -->
         <div class="max-w-lg mx-auto">
           <div class="flex justify-center">
-            <button @click="handleShowSignUp"
+            <button @click="showSignIn = true"
               class="px-8 py-4 rounded-full bg-white/5 backdrop-filter backdrop-blur-lg text-white hover:bg-white/5 active:bg-white/10 transition-colors flex items-center space-x-2 shadow-inner shadow-white/20">
               <span class="text-lg">Get Started</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
@@ -209,58 +209,27 @@
     </div>
 
     <AppFooter />
-
-    <v-dialog v-model="showSignIn" max-width="600px">
-      <div class="m-auto">
-        <div id="sign-in"></div>
-      </div>
-    </v-dialog>
+    <!-- <AuthModal 
+        v-model:showModal="showAuthModal" 
+        v-model:activeModal="activeModal" 
+        ref="authModalRef" 
+    /> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from "vue";
-import { Clerk } from "@clerk/clerk-js";
 import { FreePlanFeatures, PlusPlanFeatures, ProPlanFeatures } from "../data/plans";
 import { cache } from "@/utils/cache";
 import AppHeader from '@/components/AppHeader.vue';
 import AppFooter from '@/components/AppFooter.vue';
+import AuthModal from "./AuthModal.vue";
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerk = new Clerk(clerkPubKey);
-const showSignIn = ref(false);
+const showAuthModal = ref(false);
+const activeModal = ref("login");
 const PlusPlanUrl = import.meta.env.VITE_PLUS_PLAN_URL;
 const ProPlanUrl = import.meta.env.VITE_PRO_PLAN_URL;
 
-const handleShowSignIn = () => {
-  // Clear all cache before signing in to ensure a fresh state
-  cache.clearAll();
-  
-  showSignIn.value = true;
-  nextTick(() => {
-    const signInDiv = document.getElementById("sign-in");
-    if (signInDiv) {
-      clerk.mountSignIn(signInDiv as HTMLDivElement);
-    }
-  });
-};
-
-const handleShowSignUp = () => {
-  // Clear all cache before signing up to ensure a fresh state
-  cache.clearAll();
-  
-  showSignIn.value = true;
-  nextTick(() => {
-    const signInDiv = document.getElementById("sign-in");
-    if (signInDiv) {
-      clerk.mountSignUp(signInDiv as HTMLDivElement);
-    }
-  });
-};
-
-onMounted(async () => {
-  await clerk.load();
-});
 </script>
 
 <style scoped>

@@ -222,14 +222,7 @@
     </div>
     <div v-else>
       <NewLandingPage />
-      <v-dialog v-model="showSignIn" max-width="600px">
-        <div class="m-auto">
-          <div id="sign-in"></div>
-        </div>
-      </v-dialog>
     </div>
-    
-    <AuthModal />
 
     <Feedback v-model="showFeedbackDialog" @update:modelValue="handleFeedbackDialogClose" :cancelSubscription=false />
 
@@ -263,7 +256,6 @@ import { API } from "../constants/api";
 import api from "../services/api";
 import { useHead } from '@unhead/vue';
 import { createClient } from '@supabase/supabase-js';
-import AuthModal from '@/components/AuthModal.vue';
 
 // Set SEO metadata using Unhead
 useHead({
@@ -353,7 +345,6 @@ const clerk = new Clerk(clerkPubKey);
 // State management
 const isLoggedIn = ref(false);
 const isLoading = ref(true);
-const showSignIn = ref(false);
 const showHelpDialog = ref(false);
 const showFeedbackDialog = ref(false);
 const showFeedbackMessageDialog = ref(false);

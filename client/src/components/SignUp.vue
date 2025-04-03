@@ -117,6 +117,11 @@ const signUp = async () => {
             email: email.value,
             password: password.value,
         });
+        if (error) {
+            console.error('Error signing up:', error.message);
+            return;
+        }
+        console.log('Sign up successful:', data);
     }
 };
 
