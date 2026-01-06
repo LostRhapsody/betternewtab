@@ -51,7 +51,7 @@ cd betternewtab
 
 ```bash
 # Start PostgreSQL with Docker Compose
-docker-compose up -d
+docker compose up -d
 
 # The database will be available at localhost:5432
 # Database: betternewtab
@@ -68,6 +68,8 @@ CREATE DATABASE betternewtab;
 ```
 
 ### 3. Run Database Migrations
+
+**NOTE**: This doesn't really work. We need to copy the files over to the container, I think.
 
 ```bash
 cd server
