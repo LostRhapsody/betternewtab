@@ -84,7 +84,6 @@ pub struct FeedbackRequest {
 #[derive(Serialize)]
 pub struct UserDataResponse {
     user: database::User,
-    plan: Option<database::Plan>,
     settings: Option<database::UserSettings>,
     links: Vec<database::Link>,
 }
@@ -229,13 +228,6 @@ async fn runtime() {
                 delete_link(state, path, user_context)
             }),
         )
-        // get plan
-        .route(
-            "/plan/{plan_id}",
-            get(move |state: State<AppState>, path, user_context| {
-                plan_handler(state, path, user_context)
-            }),
-        )
         // create user
         .route("/create_user", post(create_user_handler))
         // get user
@@ -290,30 +282,8 @@ async fn register_handler(
             }
         })?;
 
-    // Get the free plan for new users
-    let free_plan_id = env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
-    let plan = database.get_plan(&free_plan_id).await.map_err(|e| {
-        tracing::error!("Failed to get free plan: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    // Create subscription for the user
-    database
-        .create_subscription(
-            &user.id,
-            "user",
-            &plan.id,
-            "active",
-            Utc::now() + chrono::Duration::days(365 * 100), // Free plan never expires
-        )
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to create subscription: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
     // Generate JWT token
-    let token = user_jwt::generate_jwt(&user.id, &user.email, &plan.id).map_err(|e| {
+    let token = user_jwt::generate_jwt(&user.id, &user.email).map_err(|e| {
         tracing::error!("Failed to generate JWT: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -344,19 +314,8 @@ async fn login_handler(
             StatusCode::UNAUTHORIZED
         })?;
 
-    // Get user's subscription to find their plan
-    let user_subscription = database.get_user_subscription(&user.id).await.ok();
-
-    let plan_id = if let Some(sub) = user_subscription {
-        sub.plan_id
-    } else {
-        // If no subscription, use free plan
-        env::var("FREE_PLAN_ID")
-            .unwrap_or_else(|_| "a0b1c2d3-e4f5-6789-abcd-ef0123456789".to_string())
-    };
-
     // Generate JWT token
-    let token = user_jwt::generate_jwt(&user.id, &user.email, &plan_id).map_err(|e| {
+    let token = user_jwt::generate_jwt(&user.id, &user.email).map_err(|e| {
         tracing::error!("Failed to generate JWT: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -544,8 +503,8 @@ async fn create_link(
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    // init metadata, if not free plan retrieve from link's URL, else use defaults
-    let metadata = if user_claims.plan != "free" && metadata_on {
+    // init metadata, retrieve from link's URL, else use defaults
+    let metadata = if metadata_on {
         match get_metadata(State(client.clone()), &url).await {
             Ok(metadata) => metadata,
             Err(StatusCode::BAD_GATEWAY) => {
@@ -581,7 +540,7 @@ async fn create_link(
     };
 
     // grab the favicon, or just pass an empty string
-    let favicon = if user_claims.plan != "free" && metadata_on {
+    let favicon = if metadata_on {
         get_favicon(
             State(client),
             &url,
@@ -724,37 +683,6 @@ async fn delete_link(
 
     tracing::info!("Successfully deleted link: {}", link_id);
     Ok(StatusCode::NO_CONTENT)
-}
-
-async fn plan_handler(
-    State(app_state): State<AppState>,
-    Path(plan_id): Path<String>,
-    Extension(user_context): Extension<UserContext>,
-) -> Result<Json<database::Plan>, StatusCode> {
-    let user_email = user_context.email.clone();
-    let user_id = user_context.user_id.clone();
-
-    sentry::configure_scope(|scope| {
-        scope.set_user(Some(sentry::User {
-            email: Some(user_email.clone()),
-            id: Some(user_id.clone()),
-            ..Default::default()
-        }));
-        scope.set_tag("http.method", "GET");
-    });
-
-    // Use app_state's Supabase instance
-    let database = &app_state.database;
-
-    let plan = database
-        .get_plan(&plan_id)
-        .await
-        .map_err(|e| match e.to_string().as_str() {
-            "404" => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        })?;
-
-    Ok(Json(plan))
 }
 
 async fn get_user_handler(
@@ -967,12 +895,6 @@ async fn suggest_handler(
     if user_claims.user_id != user_id {
         println!("Token user ID does not match request user ID");
         return Err(StatusCode::UNAUTHORIZED);
-    }
-
-    // Check if token is for a "free" plan user or if their plan allows this feature
-    if user_claims.plan == "free" {
-        println!("User plan does not allow auto-suggestions");
-        return Err(StatusCode::FORBIDDEN);
     }
 
     println!("Suggesting: {}", query);
@@ -1273,15 +1195,8 @@ async fn get_user_data_handler(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    // Get the free plan (all users now get full access)
-    let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
-    let plan = database.get_plan(&free_plan_id).await.map_err(|err| {
-        println!("Error fetching plan: {:?}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    // Generate JWT token with user ID and plan info
-    let auth_token = user_jwt::generate_jwt(&user_id, &user_email, &plan.name).map_err(|e| {
+    // Generate JWT token with user ID
+    let auth_token = user_jwt::generate_jwt(&user_id, &user_email).map_err(|e| {
         tracing::error!("Failed to generate JWT token: {:?}", e);
         println!("Failed to generate JWT token: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
@@ -1299,7 +1214,6 @@ async fn get_user_data_handler(
     // Create response with user data
     let mut response = UserDataResponse {
         user,
-        plan: Some(plan),
         settings,
         links,
     };

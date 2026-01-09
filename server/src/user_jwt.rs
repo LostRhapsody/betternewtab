@@ -9,7 +9,6 @@ use anyhow::Result;
 pub struct UserClaims {
     pub user_id: String,
     pub email: String,
-    pub plan: String,
     pub exp: usize, // Expiration time (as UTC timestamp)
     pub iat: usize, // Issued at (as UTC timestamp)
 }
@@ -22,7 +21,7 @@ fn get_current_timestamp() -> usize {
         .as_secs() as usize
 }
 
-pub fn generate_jwt(user_id: &str, email: &str, plan: &str) -> Result<String> {
+pub fn generate_jwt(user_id: &str, email: &str) -> Result<String> {
     // Get JWT secret from environment variable
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
@@ -33,7 +32,6 @@ pub fn generate_jwt(user_id: &str, email: &str, plan: &str) -> Result<String> {
     let claims = UserClaims {
         user_id: user_id.to_string(),
         email: email.to_string(),
-        plan: plan.to_string(),
         exp,
         iat,
     };

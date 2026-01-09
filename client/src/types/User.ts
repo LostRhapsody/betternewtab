@@ -1,6 +1,4 @@
 import type { Link } from "./Link";
-import type { Subscription } from "./Subscription";
-import type { UserSettings } from "./UserSettings";
 
 // this is the "Supabase" User type, i.e. exactly what is in the supabase table
 export type User = {
@@ -16,7 +14,6 @@ export type UserState = {
   firstName: string | null;
   lastName: string | null;
   email: string | null;
-  userPlan: Subscription | null;
   isLoading: boolean;
   error: string | null;
   auth_token: string | null;
@@ -36,7 +33,6 @@ export type AuthResponse = {
 
 export type UserDataResponse = {
   user: User;
-  plan: Subscription | null;
   settings: settings_blob;
   links: Link[];
 };

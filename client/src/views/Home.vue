@@ -80,10 +80,21 @@
               <p class="shortcuts-modal__description">
                 Use
                 <kbd><TpIcon name="arrow-up" size="sm" /> up</kbd>
-                or
+                ,
                 <kbd><TpIcon name="arrow-down" size="sm" /> down</kbd>
+                ,
+                <kbd><TpIcon name="arrow-left" size="sm" /> left</kbd>
+                , or
+                <kbd><TpIcon name="arrow-right" size="sm" /> right</kbd>
                 to jump between links when you are not focused on the search bar.
               </p>
+              <TpDivider />
+              <div class="shortcuts-modal__row">
+                <span class="shortcuts-modal__label">Edit Focused Link</span>
+                <span class="shortcuts-modal__keys">
+                  <kbd>E</kbd>
+                </span>
+              </div>
             </div>
 
             <h4 class="shortcuts-modal__section-title">Other Shortcuts</h4>
@@ -105,7 +116,7 @@
               <div class="shortcuts-modal__row">
                 <span class="shortcuts-modal__label">Add A New Link</span>
                 <span class="shortcuts-modal__keys">
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd>
+                  <kbd>Alt</kbd> + <kbd>N</kbd>
                 </span>
               </div>
             </div>

@@ -136,7 +136,8 @@ const handleArrowKeys = (event: KeyboardEvent) => {
     return
   }
 
-  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+  const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+  if (!arrowKeys.includes(event.key)) {
     return
   }
 
@@ -155,6 +156,7 @@ const handleArrowKeys = (event: KeyboardEvent) => {
 
   const { columnType, index } = currentFocus.value
   const columnLinks = getLinksByColumnType(columnType)
+  const currentColumnIndex = uniqueColumnTypes.value.indexOf(columnType)
 
   if (event.key === 'ArrowDown') {
     if (index < columnLinks.length - 1) {
@@ -164,18 +166,52 @@ const handleArrowKeys = (event: KeyboardEvent) => {
     if (index > 0) {
       focusLinkCard(columnType, index - 1)
     }
+  } else if (event.key === 'ArrowLeft') {
+    if (currentColumnIndex > 0) {
+      const prevColumnType = uniqueColumnTypes.value[currentColumnIndex - 1]
+      const prevColumnLinks = getLinksByColumnType(prevColumnType)
+      if (prevColumnLinks.length > 0) {
+        const targetIndex = Math.min(index, prevColumnLinks.length - 1)
+        focusLinkCard(prevColumnType, targetIndex)
+      }
+    }
+  } else if (event.key === 'ArrowRight') {
+    if (currentColumnIndex < uniqueColumnTypes.value.length - 1) {
+      const nextColumnType = uniqueColumnTypes.value[currentColumnIndex + 1]
+      const nextColumnLinks = getLinksByColumnType(nextColumnType)
+      if (nextColumnLinks.length > 0) {
+        const targetIndex = Math.min(index, nextColumnLinks.length - 1)
+        focusLinkCard(nextColumnType, targetIndex)
+      }
+    }
+  }
+}
+
+const handleEditShortcut = (event: KeyboardEvent) => {
+  if (event.key !== 'e') return
+  if (isSearchInputFocused() || isModalOpen()) return
+  if (event.ctrlKey || event.altKey || event.metaKey) return
+  if (!currentFocus.value) return
+
+  event.preventDefault()
+  const { columnType, index } = currentFocus.value
+  const links = getLinksByColumnType(columnType)
+  if (index >= 0 && index < links.length) {
+    handleEditLink(links[index])
   }
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keydown', handleArrowKeys)
+  window.addEventListener('keydown', handleEditShortcut)
   linkRefs.value = []
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keydown', handleArrowKeys)
+  window.removeEventListener('keydown', handleEditShortcut)
 })
 
 const handleKeydown = (event: KeyboardEvent) => {

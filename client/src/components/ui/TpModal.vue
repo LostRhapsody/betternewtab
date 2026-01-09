@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{
   closeOnOverlay?: boolean
   closeOnEscape?: boolean
   persistent?: boolean
+  initialFocus?: string
 }>(), {
   size: 'md',
   closable: true,
@@ -69,11 +70,17 @@ watch(() => props.modelValue, async (isOpen) => {
     emit('open')
 
     await nextTick()
-    // Focus the first focusable element in the modal
-    const firstFocusable = modalRef.value?.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    )
-    firstFocusable?.focus()
+    // Focus the initial focus element if specified, otherwise the first focusable
+    let focusTarget: HTMLElement | null | undefined = null
+    if (props.initialFocus) {
+      focusTarget = modalRef.value?.querySelector<HTMLElement>(props.initialFocus)
+    }
+    if (!focusTarget) {
+      focusTarget = modalRef.value?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    }
+    focusTarget?.focus()
   } else {
     document.body.style.overflow = ''
     document.removeEventListener('keydown', handleKeydown)

@@ -48,7 +48,7 @@ pub async fn authenticate_user(
             tracing::debug!("JWT token needs refresh for user: {}", claims.user_id);
 
             // Generate new token
-            if let Ok(new_token) = user_jwt::generate_jwt(&claims.user_id, &claims.email, &claims.plan) {
+            if let Ok(new_token) = user_jwt::generate_jwt(&claims.user_id, &claims.email) {
                 tracing::debug!("Generated new JWT token for user: {}", claims.user_id);
 
                 // Run the next middleware and get the response

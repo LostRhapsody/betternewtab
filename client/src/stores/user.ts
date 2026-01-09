@@ -1,8 +1,7 @@
 import { API } from "@/constants/api";
 import api from "@/services/api";
 import type { Link } from "@/types/Link";
-import type { Subscription } from "@/types/Subscription";
-import type { AuthUser, User, UserDataResponse, UserState } from "@/types/User";
+import type { AuthUser, UserDataResponse, UserState } from "@/types/User";
 import { CacheKeys, cache } from "@/utils/cache";
 import { defineStore } from "pinia";
 import { useLinksStore } from "./links";
@@ -14,7 +13,6 @@ export const useUserStore = defineStore("user", {
     firstName: null,
     lastName: null,
     email: null,
-    userPlan: null,
     isLoading: false,
     error: null,
     auth_token: null,
@@ -58,7 +56,7 @@ export const useUserStore = defineStore("user", {
 
     /**
      * Fetches user data from the API and updates the store state.
-     * This includes the user record, subscription record, and plan record.
+     * This includes the user record and user settings record.
      * @param authUser - The authenticated user object containing id and email.
      * @returns true if the user data was successfully fetched, false otherwise.
      * @throws Error if the user data could not be fetched.
@@ -88,10 +86,6 @@ export const useUserStore = defineStore("user", {
           if (data.user.auth_token) {
             this.setAuthToken(data.user.auth_token);
           }
-        }
-
-        if (data.plan) {
-          this.setPlan(data.plan);
         }
 
         if (data.links) {
@@ -152,10 +146,6 @@ export const useUserStore = defineStore("user", {
       this.email = email;
     },
 
-    setPlan(plan: Subscription) {
-      this.userPlan = plan;
-    },
-
     setAuthToken(token: string) {
       this.auth_token = token;
     },
@@ -172,7 +162,6 @@ export const useUserStore = defineStore("user", {
       this.firstName = null;
       this.lastName = null;
       this.email = null;
-      this.userPlan = null;
       this.isLoading = false;
       this.error = null;
       this.auth_token = null;

@@ -1,6 +1,7 @@
 <template>
   <div>
     <div
+      id="add-link-card"
       class="add-link-card"
       @click="handleClick"
       @mouseenter="hover = true"
@@ -18,9 +19,10 @@
       </span>
     </div>
 
-    <TpModal v-model="isModalOpen" title="Add New Link" :size="mobile ? 'full' : 'md'">
+    <TpModal v-model="isModalOpen" title="Add New Link" :size="mobile ? 'full' : 'md'" initial-focus="#add-link-card-url">
       <form @submit.prevent="handleSubmit" ref="formRef" class="add-link-form">
         <TpInput
+          input-id="add-link-card-url"
           v-model="formData.url"
           label="URL"
           type="url"
@@ -35,6 +37,7 @@
         </p>
 
         <TpInput
+          input-id="add-link-card-title"
           v-model="formData.title"
           label="Title"
           placeholder="My Link"
@@ -42,6 +45,7 @@
         />
 
         <TpTextarea
+          input-id="add-link-card-description"
           v-model="formData.description"
           label="Description"
           placeholder="Optional description"
@@ -50,6 +54,7 @@
 
         <div class="add-link-form__column-select">
           <TpSelect
+            input-id="add-link-card-column-type"
             v-model="formData.columnType"
             :options="columnTypeOptions"
             label="Column Label"
@@ -57,6 +62,7 @@
 
           <div class="add-link-form__new-column">
             <TpInput
+              input-id="add-link-card-new-column-type"
               v-model="newColumnType"
               placeholder="New column name"
               @enter="addNewColumnType"
@@ -94,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useLinksStore } from '../stores/links'
 import { useUserStore } from '../stores/user'
 import { useBreakpoint } from '@/composables/useBreakpoint'
@@ -145,12 +151,6 @@ const handleClick = () => {
 
 const openModal = () => {
   isModalOpen.value = true
-  nextTick(() => {
-    const urlField = document.querySelector('input[type="url"]')
-    if (urlField) {
-      ;(urlField as HTMLInputElement).focus()
-    }
-  })
 }
 
 const closeModal = () => {

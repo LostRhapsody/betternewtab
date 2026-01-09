@@ -4,6 +4,7 @@ import TpIcon from './TpIcon.vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
+  inputId?: string
   label?: string
   placeholder?: string
   type?: 'text' | 'email' | 'password' | 'url' | 'search' | 'tel' | 'number'
@@ -16,6 +17,7 @@ const props = withDefaults(defineProps<{
   appendIcon?: string
 }>(), {
   modelValue: '',
+  inputId: '',
   type: 'text',
   disabled: false,
   required: false,
@@ -93,6 +95,7 @@ defineExpose({ focus, blur, select, inputRef })
       <input
         ref="inputRef"
         v-model="inputValue"
+        :id="inputId"
         :type="type"
         :placeholder="placeholder"
         :disabled="disabled"

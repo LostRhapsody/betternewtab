@@ -157,7 +157,8 @@ const triggerAddLink = () => {
 }
 
 const handleTriggerAddLink = (event: KeyboardEvent) => {
-  if (event.key === 'n' && event.ctrlKey && event.altKey) {
+  if (event.key === 'n' && event.altKey && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault()
     triggerAddLink()
   }
 }

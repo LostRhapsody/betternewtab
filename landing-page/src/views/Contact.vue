@@ -177,7 +177,7 @@ const faqs = ref([
   },
   {
     question: 'Is BetterNewTab free to use?',
-    answer: 'Yes, BetterNewTab offers a free tier with basic features. Premium plans are available for additional functionality.'
+    answer: "It's free, open source, and can be self-hosted. No paid cloud offerings available."
   }
 ]);
 

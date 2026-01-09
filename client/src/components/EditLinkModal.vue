@@ -1,7 +1,8 @@
 <template>
-  <TpModal v-model="isModalOpen" title="Edit Link" :size="mobile ? 'full' : 'md'">
+  <TpModal v-model="isModalOpen" title="Edit Link" :size="mobile ? 'full' : 'md'" initial-focus="#edit-link-url">
     <form @submit.prevent="handleSubmit" ref="formRef" class="edit-link-form">
       <TpInput
+        input-id="edit-link-url"
         v-model="formData.url"
         label="URL"
         type="url"

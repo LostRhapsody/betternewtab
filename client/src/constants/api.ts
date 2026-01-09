@@ -5,7 +5,6 @@ export const API = {
   REGISTER: `${apiDomain}/register`,
   CREATE_USER: `${apiDomain}/create_user`,
   GET_USER: `${apiDomain}/user`,
-  GET_USER_PLAN: (planId: string) => `${apiDomain}/plan/${planId}`,
   GET_USER_LINKS: `${apiDomain}/user/links`,
   CREATE_LINK: `${apiDomain}/link`,
   UPDATE_LINK: `${apiDomain}/link`,
