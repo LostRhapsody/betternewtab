@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- Plus icon -->
+  <symbol id="icon-plus" viewBox="0 0 24 24">
+    <path d="M12 4v16m-8-8h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Arrow right -->
+  <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+    <path d="M5 12h14m-6-6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Arrow left -->
+  <symbol id="icon-arrow-left" viewBox="0 0 24 24">
+    <path d="M19 12H5m6-6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Arrow up -->
+  <symbol id="icon-arrow-up" viewBox="0 0 24 24">
+    <path d="M12 19V5m-6 6l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Arrow down -->
+  <symbol id="icon-arrow-down" viewBox="0 0 24 24">
+    <path d="M12 5v14m-6-6l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Chevron right -->
+  <symbol id="icon-chevron-right" viewBox="0 0 24 24">
+    <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Chevron left -->
+  <symbol id="icon-chevron-left" viewBox="0 0 24 24">
+    <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Chevron down -->
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Chevron up -->
+  <symbol id="icon-chevron-up" viewBox="0 0 24 24">
+    <path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- X / Close -->
+  <symbol id="icon-x" viewBox="0 0 24 24">
+    <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Menu (vertical dots) -->
+  <symbol id="icon-menu-dots" viewBox="0 0 24 24">
+    <circle cx="12" cy="6" r="1.5" fill="currentColor"/>
+    <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
+  </symbol>
+
+  <!-- Search / Magnify -->
+  <symbol id="icon-search" viewBox="0 0 24 24">
+    <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Link -->
+  <symbol id="icon-link" viewBox="0 0 24 24">
+    <path d="M10 14a3.5 3.5 0 0 0 5 0l4-4a3.5 3.5 0 0 0-5-5l-.5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M14 10a3.5 3.5 0 0 0-5 0l-4 4a3.5 3.5 0 0 0 5 5l.5-.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Clock / History -->
+  <symbol id="icon-clock" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Cog / Settings -->
+  <symbol id="icon-cog" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2" fill="none"/>
+  </symbol>
+
+  <!-- Logout -->
+  <symbol id="icon-logout" viewBox="0 0 24 24">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- User -->
+  <symbol id="icon-user" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Users / Group -->
+  <symbol id="icon-users" viewBox="0 0 24 24">
+    <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <circle cx="17" cy="7" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Help / Question -->
+  <symbol id="icon-help" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M9 9a3 3 0 1 1 3 3v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"/>
+  </symbol>
+
+  <!-- Trash / Delete -->
+  <symbol id="icon-trash" viewBox="0 0 24 24">
+    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Copy -->
+  <symbol id="icon-copy" viewBox="0 0 24 24">
+    <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Edit / Pencil -->
+  <symbol id="icon-edit" viewBox="0 0 24 24">
+    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Mail / Email -->
+  <symbol id="icon-mail" viewBox="0 0 24 24">
+    <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Lock -->
+  <symbol id="icon-lock" viewBox="0 0 24 24">
+    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Eye (show password) -->
+  <symbol id="icon-eye" viewBox="0 0 24 24">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+  </symbol>
+
+  <!-- Eye off (hide password) -->
+  <symbol id="icon-eye-off" viewBox="0 0 24 24">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Check -->
+  <symbol id="icon-check" viewBox="0 0 24 24">
+    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Keyboard -->
+  <symbol id="icon-keyboard" viewBox="0 0 24 24">
+    <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Book / Guide -->
+  <symbol id="icon-book" viewBox="0 0 24 24">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" fill="none"/>
+  </symbol>
+
+  <!-- Rocket -->
+  <symbol id="icon-rocket" viewBox="0 0 24 24">
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" stroke="currentColor" stroke-width="2" fill="none"/>
+  </symbol>
+
+  <!-- Chat / Comment -->
+  <symbol id="icon-chat" viewBox="0 0 24 24">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- External link -->
+  <symbol id="icon-external" viewBox="0 0 24 24">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Building / Organization -->
+  <symbol id="icon-building" viewBox="0 0 24 24">
+    <rect x="4" y="2" width="16" height="20" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M9 22V12h6v10M9 6h.01M15 6h.01M9 10h.01M15 10h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Return / Enter key -->
+  <symbol id="icon-return" viewBox="0 0 24 24">
+    <path d="M9 10l-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M20 4v7a4 4 0 0 1-4 4H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </symbol>
+
+  <!-- Loading spinner (static, animated via CSS) -->
+  <symbol id="icon-spinner" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25"/>
+    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </symbol>
+
+  <!-- Info -->
+  <symbol id="icon-info" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Warning / Alert -->
+  <symbol id="icon-warning" viewBox="0 0 24 24">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+</svg>

@@ -1,130 +1,218 @@
 <template>
-    <v-dialog v-model="dialog" max-width="400px">
-        <v-card class="bg-gray-700">
-            <v-card-text class="pt-0 px-0">
+  <TpModal v-model="dialog" title="" size="sm">
+    <div class="login-form">
+      <div class="login-form__header">
+        <h2 class="login-form__title">Sign in to New Tab</h2>
+        <p class="login-form__subtitle">Welcome back! Please sign in.</p>
+      </div>
 
-                <v-card class="rounded-lg !bg-zinc-800">
-                    <v-card-title class="text-center pa-4 mb-4">
-                        <p class="text-xl my-2">Sign in to New Tab</p>
-                        <p class="text-sm text-gray-200">Welcome back! Please sign in.</p>
-                    </v-card-title>
+      <TpAlert v-if="errorMessage" variant="error" dismissible @dismiss="errorMessage = ''">
+        {{ errorMessage }}
+      </TpAlert>
 
-                    <v-card-text>
-                        <v-alert v-if="errorMessage" type="error" class="mb-4" closable @click:close="errorMessage = ''">
-                            {{ errorMessage }}
-                        </v-alert>
+      <form @submit.prevent="login" class="login-form__fields">
+        <TpInput
+          v-model="email"
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          :error="emailError"
+          :disabled="isLoading"
+          required
+          @blur="validateEmail"
+        />
 
-                        <v-form ref="form" v-model="valid" lazy-validation @submit.prevent="login">
-                            <v-text-field v-model="email" :rules="emailRules" label="Email" required
-                                prepend-inner-icon="mdi-email" variant="outlined" rounded :disabled="isLoading"></v-text-field>
+        <TpInput
+          v-model="password"
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          :error="passwordError"
+          :disabled="isLoading"
+          autocomplete="password"
+          required
+          @blur="validatePassword"
+        />
 
-                            <v-text-field v-model="password" :rules="passwordRules" label="Password" type="password"
-                                required prepend-inner-icon="mdi-lock" autocomplete="password" variant="outlined" rounded :disabled="isLoading"></v-text-field>
+        <TpButton
+          variant="primary"
+          type="submit"
+          :disabled="!isFormValid || isLoading"
+          :loading="isLoading"
+          class="login-form__submit"
+        >
+          Login
+        </TpButton>
+      </form>
 
-                            <v-btn block class="mt-4 bg-white" :disabled="!valid || isLoading" :loading="isLoading" @click="login" rounded>
-                                Login
-                            </v-btn>
-                        </v-form>
-                    </v-card-text>
-
-                </v-card>
-            </v-card-text>
-
-            <v-card-text class="pt-0">
-                <p class="text-center">Don't have an account? <strong @click="switchToSignUp" class="cursor-pointer">Sign up here.</strong></p>
-            </v-card-text>
-
-        </v-card>
-
-    </v-dialog>
+      <p class="login-form__switch">
+        Don't have an account?
+        <button type="button" class="login-form__link" @click="switchToSignUp">
+          Sign up here.
+        </button>
+      </p>
+    </div>
+  </TpModal>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { authService } from "@/services/auth";
-import { useUserStore } from "@/stores/user";
+import { ref, computed } from 'vue'
+import { authService } from '@/services/auth'
+import { useUserStore } from '@/stores/user'
+import { TpModal, TpInput, TpButton, TpAlert } from '@/components/ui'
 
-const userStore = useUserStore();
+const userStore = useUserStore()
 
-const dialog = ref(true);
-const valid = ref(true);
-const email = ref("");
-const password = ref("");
-const form = ref<{ validate: () => Promise<boolean> } | null>(null);
-const isLoading = ref(false);
-const errorMessage = ref("");
+const dialog = ref(true)
+const email = ref('')
+const password = ref('')
+const isLoading = ref(false)
+const errorMessage = ref('')
 
-const emailRules = [
-    (v: string) => !!v || "Email is required",
-    (v: string) => /.+@.+\..+/.test(v) || "Email must be valid",
-];
+const emailError = ref('')
+const passwordError = ref('')
 
-const passwordRules = [
-    (v: string) => !!v || "Password is required",
-    (v: string) => v.length >= 6 || "Password must be at least 6 characters",
-];
+const validateEmail = () => {
+  if (!email.value) {
+    emailError.value = 'Email is required'
+    return false
+  }
+  if (!/.+@.+\..+/.test(email.value)) {
+    emailError.value = 'Email must be valid'
+    return false
+  }
+  emailError.value = ''
+  return true
+}
+
+const validatePassword = () => {
+  if (!password.value) {
+    passwordError.value = 'Password is required'
+    return false
+  }
+  if (password.value.length < 6) {
+    passwordError.value = 'Password must be at least 6 characters'
+    return false
+  }
+  passwordError.value = ''
+  return true
+}
+
+const isFormValid = computed(() => {
+  return email.value && password.value && !emailError.value && !passwordError.value
+})
 
 const open = () => {
-    dialog.value = true;
-    errorMessage.value = "";
-};
+  dialog.value = true
+  errorMessage.value = ''
+}
 
 const close = () => {
-    dialog.value = false;
-    errorMessage.value = "";
-};
+  dialog.value = false
+  errorMessage.value = ''
+}
 
 const login = async () => {
-    if (!form.value) return;
+  const emailValid = validateEmail()
+  const passwordValid = validatePassword()
 
-    const isValid = await form.value.validate();
-    if (!isValid) return;
+  if (!emailValid || !passwordValid) return
 
-    isLoading.value = true;
-    errorMessage.value = "";
+  isLoading.value = true
+  errorMessage.value = ''
 
-    try {
-        const response = await authService.login(email.value, password.value);
-        authService.setToken(response.token);
+  try {
+    const response = await authService.login(email.value, password.value)
+    authService.setToken(response.token)
 
-        await userStore.fetchUserData({
-            id: response.user.id,
-            email: response.user.email,
-        });
+    await userStore.fetchUserData({
+      id: response.user.id,
+      email: response.user.email
+    })
 
-        emit("login-success");
-        close();
-        window.location.reload();
-    } catch (error: unknown) {
-        const err = error as { response?: { status: number } };
-        if (err.response?.status === 401) {
-            errorMessage.value = "Invalid email or password";
-        } else {
-            errorMessage.value = "Login failed. Please try again.";
-        }
-    } finally {
-        isLoading.value = false;
+    emit('login-success')
+    close()
+    window.location.reload()
+  } catch (error: unknown) {
+    const err = error as { response?: { status: number } }
+    if (err.response?.status === 401) {
+      errorMessage.value = 'Invalid email or password'
+    } else {
+      errorMessage.value = 'Login failed. Please try again.'
     }
-};
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const switchToSignUp = () => {
-    emit("switch-to-signup");
-};
+  emit('switch-to-signup')
+}
 
 const emit = defineEmits<{
-    "switch-to-signup": [];
-    "login-success": [];
-}>();
+  'switch-to-signup': []
+  'login-success': []
+}>()
 
-defineExpose({ open, close });
+defineExpose({ open, close })
 </script>
 
 <style scoped>
-.v-card {
-    border-radius: 12px;
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-6);
 }
 
-.cursor-pointer {
-    cursor: pointer;
+.login-form__header {
+  text-align: center;
+  margin-bottom: var(--tp-space-2);
+}
+
+.login-form__title {
+  font-size: var(--tp-text-xl);
+  font-weight: var(--tp-font-bold);
+  color: var(--tp-text-primary);
+  margin-bottom: var(--tp-space-2);
+}
+
+.login-form__subtitle {
+  font-size: var(--tp-text-sm);
+  color: var(--tp-text-muted);
+}
+
+.login-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-4);
+}
+
+.login-form__submit {
+  width: 100%;
+  margin-top: var(--tp-space-2);
+}
+
+.login-form__switch {
+  text-align: center;
+  font-size: var(--tp-text-sm);
+  color: var(--tp-text-secondary);
+}
+
+.login-form__link {
+  color: var(--tp-accent);
+  font-weight: var(--tp-font-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--tp-transition-fast);
+}
+
+.login-form__link:hover {
+  color: var(--tp-accent-hover);
+  text-decoration: underline;
+}
+
+.login-form__link:focus-visible {
+  outline: var(--tp-focus-ring);
+  outline-offset: var(--tp-focus-offset);
 }
 </style>

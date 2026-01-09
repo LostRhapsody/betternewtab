@@ -1,50 +1,82 @@
 <template>
-  <v-menu>
-    <template v-slot:activator="{ props }">
-      <v-btn v-bind="props" icon variant="text" class="scale-150">
-        <v-avatar size="36" color="primary">
-          <span class="text-sm font-medium">{{ userInitial }}</span>
-        </v-avatar>
-      </v-btn>
+  <TpMenu position="bottom-end">
+    <template #trigger="{ isOpen }">
+      <button
+        class="user-menu-trigger"
+        :aria-expanded="isOpen"
+        aria-haspopup="menu"
+      >
+        <TpAvatar :name="userEmail" size="md" />
+      </button>
     </template>
-    <v-list class="!bg-zinc-800">
-      <v-list-item>
-        <v-list-item-title class="text-gray-300">{{ userEmail }}</v-list-item-title>
-      </v-list-item>
-      <v-divider />
-      <v-list-item to="/settings">
-        <template v-slot:prepend>
-          <v-icon icon="mdi-cog" class="mr-2" />
-        </template>
-        <v-list-item-title>Settings</v-list-item-title>
-      </v-list-item>
-      <v-list-item @click="logout">
-        <template v-slot:prepend>
-          <v-icon icon="mdi-logout" class="mr-2" />
-        </template>
-        <v-list-item-title>Sign Out</v-list-item-title>
-      </v-list-item>
-    </v-list>
-  </v-menu>
+
+    <template #default="{ close }">
+      <div class="user-menu__header">
+        <span class="user-menu__email">{{ userEmail }}</span>
+      </div>
+
+      <TpDivider />
+
+      <TpMenuItem icon="cog" @click="goToSettings(close)">
+        Settings
+      </TpMenuItem>
+
+      <TpMenuItem icon="logout" @click="logout">
+        Sign Out
+      </TpMenuItem>
+    </template>
+  </TpMenu>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useUserStore } from "@/stores/user";
-import { authService } from "@/services/auth";
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { authService } from '@/services/auth'
+import { TpMenu, TpMenuItem, TpAvatar, TpDivider } from '@/components/ui'
 
-const userStore = useUserStore();
+const router = useRouter()
+const userStore = useUserStore()
 
-const userEmail = computed(() => userStore.email || "");
+const userEmail = computed(() => userStore.email || '')
 
-const userInitial = computed(() => {
-  const email = userStore.email;
-  if (!email) return "?";
-  return email.charAt(0).toUpperCase();
-});
+const goToSettings = (close: () => void) => {
+  close()
+  router.push('/settings')
+}
 
 const logout = () => {
-  authService.logout();
-  window.location.href = "/";
-};
+  authService.logout()
+  window.location.href = '/'
+}
 </script>
+
+<style scoped>
+.user-menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--tp-space-1);
+  border-radius: 50%;
+  transition: background-color var(--tp-transition-fast);
+}
+
+.user-menu-trigger:hover {
+  background: var(--tp-bg-secondary);
+}
+
+.user-menu-trigger:focus-visible {
+  outline: var(--tp-focus-ring);
+  outline-offset: var(--tp-focus-offset);
+}
+
+.user-menu__header {
+  padding: var(--tp-space-2) var(--tp-space-3);
+}
+
+.user-menu__email {
+  font-size: var(--tp-text-sm);
+  color: var(--tp-text-muted);
+  font-family: var(--tp-font-mono);
+}
+</style>
