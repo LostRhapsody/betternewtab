@@ -3,7 +3,7 @@
   <div class="min-h-screen bg-[rgb(3,5,21)] relative">
     <!-- Gradient Overlay -->
     <div class="absolute top-0 right-0 w-full h-full animated-gradient"></div>
-    
+
     <AppHeader />
 
     <!-- Hero Section -->
@@ -98,7 +98,7 @@
       </div>
     </div>
 
-    
+
     <!-- Command Palette -->
     <div class="container max-w-4xl mx-auto px-4 py-24 text-center">
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">The power users favorite</h2>
@@ -121,7 +121,7 @@
     <div class="container max-w-4xl mx-auto px-4 py-12 text-center">
       <a href="#"
           class="inline-flex items-center px-4 py-2 mb-2 rounded-full bg-gray-800 text-gray-300 hover:text-white transition-colors">
-          <span>Coming Soon!</span>          
+          <span>Coming Soon!</span>
         </a>
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Integrations for the best tools</h2>
       <p class="text-xl text-gray-300 mb-12">
@@ -215,10 +215,10 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { FreePlanFeatures, PlusPlanFeatures, ProPlanFeatures } from "../data/plans";
+import { FreePlanFeatures, PlusPlanFeatures, ProPlanFeatures } from "@/data/plans";
 import AppHeader from "@/components/AppHeader.vue";
 import AppFooter from "@/components/AppFooter.vue";
-import AuthModal from "./AuthModal.vue";
+import AuthModal from "@/components/AuthModal.vue";
 import type { AuthModalMethods } from "@/types/AuthModalMethods";
 
 const authModalRef = ref<AuthModalMethods | null>(null);
@@ -281,5 +281,18 @@ div {
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+
+.kbd {
+  background-color: #313131;
+  border: 1px solid #838383;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+  color: #b4b4b4;
+  display: inline-block;
+  font-size: 0.85em;
+  font-family: Monaco, Menlo, Consolas, monospace;
+  padding: 2px 4px;
+  white-space: nowrap;
 }
 </style>

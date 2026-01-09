@@ -3,7 +3,7 @@
   <div class="min-h-screen bg-[rgb(3,5,21)] relative">
     <!-- Gradient Overlay -->
     <div class="absolute top-0 right-0 w-full h-full animated-gradient"></div>
-    
+
     <AppHeader />
 
     <!-- Privacy Policy Section -->
@@ -24,10 +24,10 @@
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Information We Collect</h2>
-          
+
           <div class="text-gray-300">
             <p class="mb-4">We collect several types of information from and about users of our Service, including:</p>
-            
+
             <ul class="list-disc pl-6 mb-6">
               <li class="mb-2"><strong>Personal Information:</strong> Email address, collected when you create an account.</li>
               <li class="mb-2"><strong>User Content:</strong> Links, URLs, and descriptions that you enter into the website.</li>
@@ -40,10 +40,10 @@
           </div>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">How We Use Your Information</h2>
-          
+
           <div class="text-gray-300">
             <p class="mb-4">We use the information we collect to:</p>
-            
+
             <ul class="list-disc pl-6 mb-6">
               <li class="mb-2">Provide, maintain, and improve our Service</li>
               <li class="mb-2">Process and complete transactions, and send related information</li>
@@ -55,25 +55,25 @@
           </div>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Data Storage and Transfer</h2>
-          
+
           <p class="text-gray-300 mb-4">
             Your data is stored in Supabase, not on our servers. Data is transferred through our servers to Supabase. Our operations are based in Canada, but we use various services such as Supabase and Brave that operate globally, primarily in the United States.
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Error Tracking and Monitoring</h2>
-          
+
           <p class="text-gray-300 mb-4">
             We use Sentry for error tracking and performance monitoring. Sentry may associate your email address and ID with crash details and telemetry data. This information is used solely for improving our Service and troubleshooting issues.
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Analytics and Telemetry</h2>
-          
+
           <p class="text-gray-300 mb-4">
             We do not use any analytics or telemetry services that collect and store information about your use of the Service.
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Third-Party Services</h2>
-          
+
           <p class="text-gray-300 mb-4">
             Our Service uses third-party services that may collect information used to identify you:
           </p>
@@ -94,7 +94,7 @@
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Data Retention</h2>
-          
+
           <p class="text-gray-300 mb-4">
             We will retain your personal information only for as long as necessary to fulfill the purposes outlined in this Privacy Policy. When your data is no longer needed for the purposes for which it was collected, we will delete or anonymize it.
           </p>
@@ -106,7 +106,7 @@
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Your Rights</h2>
-          
+
           <p class="text-gray-300 mb-4">
             Depending on your location, you may have certain rights regarding your personal information, such as:
           </p>
@@ -126,13 +126,13 @@
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Changes to This Privacy Policy</h2>
-          
+
           <p class="text-gray-300 mb-4">
             We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
           </p>
 
           <h2 class="text-2xl font-bold text-white mt-8 mb-4">Contact Us</h2>
-          
+
           <p class="text-gray-300 mb-4">
             If you have any questions about this Privacy Policy, please contact us:
           </p>
@@ -151,8 +151,6 @@
 <script setup lang="ts">
 import AppHeader from '@/components/AppHeader.vue';
 import AppFooter from '@/components/AppFooter.vue';
-
-// The rest of the script setup code is no longer needed as it's moved to AppHeader
 </script>
 
 <style scoped>

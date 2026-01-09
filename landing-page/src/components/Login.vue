@@ -1,0 +1,124 @@
+<template>
+    <v-dialog v-model="dialog" max-width="400px">
+        <v-card class="bg-gray-700">
+            <v-card-text class="pt-0 px-0">
+
+                <v-card class="rounded-lg !bg-zinc-800">
+                    <v-card-title class="text-center pa-4 mb-4">
+                        <p class="text-xl my-2">Sign in to New Tab</p>
+                        <p class="text-sm text-gray-200">Welcome back! Please sign in.</p>
+                    </v-card-title>
+
+                    <v-card-text>
+                        <v-alert v-if="errorMessage" type="error" class="mb-4" closable @click:close="errorMessage = ''">
+                            {{ errorMessage }}
+                        </v-alert>
+
+                        <v-form ref="form" v-model="valid" lazy-validation @submit.prevent="login">
+                            <v-text-field v-model="email" :rules="emailRules" label="Email" required
+                                prepend-inner-icon="mdi-email" variant="outlined" rounded :disabled="isLoading"></v-text-field>
+
+                            <v-text-field v-model="password" :rules="passwordRules" label="Password" type="password"
+                                required prepend-inner-icon="mdi-lock" autocomplete="password" variant="outlined" rounded :disabled="isLoading"></v-text-field>
+
+                            <v-btn block class="mt-4 bg-white" :disabled="!valid || isLoading" :loading="isLoading" @click="login" rounded>
+                                Login
+                            </v-btn>
+                        </v-form>
+                    </v-card-text>
+
+                </v-card>
+            </v-card-text>
+
+            <v-card-text class="pt-0">
+                <p class="text-center">Don't have an account? <strong @click="switchToSignUp" class="cursor-pointer">Sign up here.</strong></p>
+            </v-card-text>
+
+        </v-card>
+
+    </v-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref } from "vue";
+import { authService } from "@/services/auth";
+
+const dialog = ref(true);
+const valid = ref(true);
+const email = ref("");
+const password = ref("");
+const form = ref<{ validate: () => Promise<boolean> } | null>(null);
+const isLoading = ref(false);
+const errorMessage = ref("");
+
+const emailRules = [
+    (v: string) => !!v || "Email is required",
+    (v: string) => /.+@.+\..+/.test(v) || "Email must be valid",
+];
+
+const passwordRules = [
+    (v: string) => !!v || "Password is required",
+    (v: string) => v.length >= 6 || "Password must be at least 6 characters",
+];
+
+const open = () => {
+    dialog.value = true;
+    errorMessage.value = "";
+};
+
+const close = () => {
+    dialog.value = false;
+    errorMessage.value = "";
+};
+
+const login = async () => {
+    if (!form.value) return;
+
+    const isValid = await form.value.validate();
+    if (!isValid) return;
+
+    isLoading.value = true;
+    errorMessage.value = "";
+
+    try {
+        const response = await authService.login(email.value, password.value);
+        authService.setToken(response.token);
+
+        emit("login-success");
+        close();
+
+        // Redirect to the main app
+        authService.redirectToApp();
+    } catch (error: unknown) {
+        const err = error as { response?: { status: number } };
+        if (err.response?.status === 401) {
+            errorMessage.value = "Invalid email or password";
+        } else {
+            errorMessage.value = "Login failed. Please try again.";
+        }
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const switchToSignUp = () => {
+    emit("switch-to-signup");
+};
+
+const emit = defineEmits<{
+    "switch-to-signup": [];
+    "login-success": [];
+}>();
+
+defineExpose({ open, close });
+</script>
+
+<style scoped>
+.v-card {
+    border-radius: 12px;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>

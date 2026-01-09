@@ -3,7 +3,7 @@
   <div class="min-h-screen bg-[rgb(3,5,21)] relative">
     <!-- Gradient Overlay -->
     <div class="absolute top-0 right-0 w-full h-full animated-gradient"></div>
-    
+
     <AppHeader />
 
     <div class="container mx-auto px-4 py-24">
@@ -20,7 +20,7 @@
         <!-- Contact Info -->
         <div class="bg-white/5 backdrop-filter backdrop-blur-lg rounded-lg p-8 shadow-lg">
           <h2 class="text-2xl font-bold text-white mb-6">Contact Information</h2>
-          
+
           <div class="mb-6">
             <h3 class="text-xl font-semibold text-blue-400 mb-2">Email</h3>
             <p class="text-gray-300 flex items-center">
@@ -64,7 +64,7 @@
         <!-- Contact Form -->
         <div class="bg-white/5 backdrop-filter backdrop-blur-lg rounded-lg p-8 shadow-lg">
           <h2 class="text-2xl font-bold text-white mb-6">Send Us a Message</h2>
-          
+
           <form @submit.prevent="submitForm">
             <div class="mb-4">
               <label for="name" class="block text-gray-300 mb-2">Name</label>
@@ -133,7 +133,7 @@
       <!-- FAQ Section -->
       <div class="max-w-4xl mx-auto mt-24">
         <h2 class="text-3xl font-bold text-white mb-12 text-center">Frequently Asked Questions</h2>
-        
+
         <v-expansion-panels variant="accordion" class="bg-transparent">
           <v-expansion-panel v-for="(faq, index) in faqs" :key="index" class="!bg-white/5 !text-white rounded-lg">
             <v-expansion-panel-title class="!text-white">
@@ -165,9 +165,6 @@ const form = ref({
 
 const isSubmitting = ref(false);
 const formSubmitted = ref(false);
-const showSnackbar = ref(false);
-const snackbarText = ref('');
-const snackbarColor = ref('');
 
 const faqs = ref([
   {
@@ -186,28 +183,22 @@ const faqs = ref([
 
 const submitForm = async () => {
   isSubmitting.value = true;
-  
+
   try {
     // Here you would typically make an API call to submit the form
     // For demo purposes, we'll just simulate a delay
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Reset form and show success message
     form.value = { name: '', email: '', subject: '', message: '' };
     formSubmitted.value = true;
-    
+
     // After 5 seconds, hide the success message
     setTimeout(() => {
       formSubmitted.value = false;
     }, 5000);
-    
-    snackbarText.value = 'Message sent successfully!';
-    snackbarColor.value = 'success';
-    showSnackbar.value = true;
   } catch (error) {
-    snackbarText.value = 'Failed to send message. Please try again.';
-    snackbarColor.value = 'error';
-    showSnackbar.value = true;
+    console.error('Failed to send message:', error);
   } finally {
     isSubmitting.value = false;
   }

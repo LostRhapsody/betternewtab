@@ -4,14 +4,23 @@ A customizable browser new tab replacement that helps you organize your most-use
 
 ## Tech Stack
 
-### Frontend
+### Client App (Vue.js)
 - **Vue.js 3** with Composition API and TypeScript
 - **Vuetify 3** for UI components
 - **Pinia** for state management
 - **Vite** for build tooling
 - **Tailwind CSS** for styling
 
-### Backend
+### Landing Page (Vue.js)
+- **Vue.js 3** with TypeScript
+- **Vuetify 3** for UI components
+- **Vite** for build tooling
+- **Tailwind CSS** for styling
+
+### Documentation (VitePress)
+- **VitePress** for static site generation
+
+### Backend (Rust)
 - **Rust** with Axum web framework
 - **PostgreSQL** for data persistence
 - **SQLx** for type-safe database queries
@@ -102,7 +111,7 @@ cargo run
 
 The server will start on `http://localhost:3000`.
 
-### 5. Frontend Setup
+### 5. Client App Setup
 
 ```bash
 cd client
@@ -118,14 +127,49 @@ cp .env.example .env
 # - VITE_API_BASE_URL=http://localhost:3000
 
 # Run development server
+bun dev:all
+```
+
+The client app will be available at `http://localhost:5173`.
+
+### 6. Landing Page Setup (Optional)
+
+```bash
+cd landing-page
+
+# Install dependencies
+bun install
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your configuration
+# - VITE_API_BASE_URL=http://localhost:3000
+# - VITE_APP_URL=http://localhost:5173
+
+# Build Tailwind and run development server
+bun tailwind:build && bun dev
+```
+
+The landing page will be available at `http://localhost:5175`.
+
+### 7. Documentation Setup (Optional)
+
+```bash
+cd docs
+
+# Install dependencies
+bun install
+
+# Run development server
 bun dev
 ```
 
-The frontend will be available at `http://localhost:5173`.
+The documentation will be available at `http://localhost:5174`.
 
 ## Development
 
-### Frontend Commands
+### Client App Commands
 
 ```bash
 cd client
@@ -149,6 +193,39 @@ bun build
 bun test:unit         # Watch mode
 bun test:run          # Single run
 bun test:e2e          # Cypress E2E tests
+```
+
+### Landing Page Commands
+
+```bash
+cd landing-page
+
+# Development server
+bun dev
+
+# Development server + Tailwind watcher
+bun dev:all
+
+# Type checking
+bun type-check
+
+# Build for production
+bun build
+```
+
+### Documentation Commands
+
+```bash
+cd docs
+
+# Development server
+bun dev
+
+# Build for production
+bun build
+
+# Preview production build
+bun preview
 ```
 
 ### Backend Commands
@@ -176,20 +253,37 @@ cargo clippy
 
 ```
 betternewtab/
-├── client/                 # Vue.js frontend
+├── client/                 # Vue.js main app (authenticated users)
 │   ├── src/
 │   │   ├── assets/        # CSS, images
 │   │   ├── components/    # Vue components
 │   │   ├── composables/   # Vue composables
 │   │   ├── constants/     # API endpoints, config
-│   │   ├── router/        # Vue Router
+│   │   ├── router/        # Vue Router (with auth guards)
 │   │   ├── services/      # API service layer
 │   │   ├── stores/        # Pinia stores
 │   │   ├── types/         # TypeScript types
 │   │   ├── utils/         # Utility functions
-│   │   └── views/         # Page components
+│   │   └── views/         # Page components (Home, Settings, Login)
 │   ├── package.json
 │   └── vite.config.ts
+├── landing-page/           # Vue.js marketing site (standalone)
+│   ├── src/
+│   │   ├── assets/        # CSS, images
+│   │   ├── components/    # Header, Footer, AuthModal
+│   │   ├── data/          # Pricing plans
+│   │   ├── router/        # Vue Router
+│   │   ├── services/      # Auth service
+│   │   ├── types/         # TypeScript types
+│   │   └── views/         # LandingPage, Contact, Privacy, Terms
+│   ├── public/copy/       # Marketing images
+│   ├── package.json
+│   └── vite.config.ts
+├── docs/                   # VitePress documentation
+│   ├── .vitepress/        # VitePress config
+│   ├── guides/            # Guide markdown files
+│   ├── index.md           # Docs home
+│   └── package.json
 ├── server/                 # Rust backend
 │   ├── src/
 │   │   ├── main.rs        # Entry point & handlers
@@ -234,11 +328,14 @@ ENVIRONMENT=development
 DOMAIN=localhost
 ```
 
-### Frontend (.env)
+### Client App (.env)
 
 ```bash
 # API
 VITE_API_BASE_URL=http://localhost:3000
+
+# Landing page URL (for signup links)
+VITE_LANDING_URL=http://localhost:5175
 
 # Stripe URLs
 VITE_PLUS_PLAN_URL=https://buy.stripe.com/...
@@ -249,6 +346,23 @@ VITE_STRIPE_MANAGE_URL=https://billing.stripe.com/...
 # Features
 VITE_AUTO_SUGGEST_ON=true
 VITE_MAX_HISTORY_ENTRIES=10
+```
+
+### Landing Page (.env)
+
+```bash
+# API
+VITE_API_BASE_URL=http://localhost:3000
+
+# App URL (redirect after login/signup)
+VITE_APP_URL=http://localhost:5173
+
+# Docs URL
+VITE_DOCS_URL=http://localhost:5174
+
+# Stripe URLs
+VITE_PLUS_PLAN_URL=https://buy.stripe.com/...
+VITE_PRO_PLAN_URL=https://buy.stripe.com/...
 ```
 
 ## Deployment
@@ -268,22 +382,43 @@ This project is configured for Railway deployment with PostgreSQL.
    # Set environment variables in Railway dashboard
    ```
 
-4. **Deploy Frontend**:
+4. **Deploy Client App**:
    ```bash
-   # Build the frontend
    cd client
    bun build
-
    # The build output will be in client/dist
-   # Serve with a static file server or add to your backend
+   # Deploy to app.yourdomain.com
    ```
 
-5. **Run Migrations**:
+5. **Deploy Landing Page**:
+   ```bash
+   cd landing-page
+   bun build
+   # The build output will be in landing-page/dist
+   # Deploy to yourdomain.com
+   ```
+
+6. **Deploy Documentation**:
+   ```bash
+   cd docs
+   bun build
+   # The build output will be in docs/.vitepress/dist
+   # Deploy to docs.yourdomain.com
+   ```
+
+7. **Run Migrations**:
    ```bash
    # Connect to Railway PostgreSQL
    railway run psql $DATABASE_URL -f server/migrations/001_initial_schema.sql
    railway run psql $DATABASE_URL -f server/migrations/002_functions.sql
    ```
+
+### Domain Structure (Recommended)
+
+- `yourdomain.com` - Landing page
+- `app.yourdomain.com` - Client app
+- `docs.yourdomain.com` - Documentation
+- `api.yourdomain.com` - Backend API
 
 ## API Endpoints
 

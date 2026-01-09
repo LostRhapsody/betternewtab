@@ -21,16 +21,16 @@
                 <!-- Desktop Navigation Links (6 columns) - Hidden on mobile -->
                 <div
                     class="hidden md:flex col-span-12 md:col-span-6 justify-around space-x-4 border border-gray-300 rounded-full px-6 py-4 overflow-x-auto">
-                    <a href="/docs/getting-started"
+                    <a :href="docsUrl + '/getting-started'"
                         class="text-gray-300 hover:text-white transition-colors whitespace-nowrap">Getting Started</a>
                     <span class="text-gray-300">•</span>
-                    <a href="/docs/guides/confluence-integration"
+                    <a :href="docsUrl + '/guides/confluence-integration'"
                         class="text-gray-300 hover:text-white transition-colors whitespace-nowrap">Integrations</a>
                     <span class="text-gray-300">•</span>
                     <a href="/#pricing"
                         class="text-gray-300 hover:text-white transition-colors whitespace-nowrap">Pricing</a>
                     <span class="text-gray-300">•</span>
-                    <a href="/docs/guides"
+                    <a :href="docsUrl + '/guides'"
                         class="text-gray-300 hover:text-white transition-colors whitespace-nowrap">Guides</a>
                     <span class="text-gray-300">•</span>
                     <a href="/contact"
@@ -65,17 +65,17 @@
 
                 <!-- Mobile Navigation Links -->
                 <div class="flex flex-col space-y-4 text-center">
-                    <a href="/docs/getting-started" class="text-xl text-white border-b border-gray-300 py-3">
+                    <a :href="docsUrl + '/getting-started'" class="text-xl text-white border-b border-gray-300 py-3">
                         Getting Started
                     </a>
-                    <a href="/docs/guides/confluence-integration"
+                    <a :href="docsUrl + '/guides/confluence-integration'"
                         class="text-xl text-white border-b border-gray-300 py-3">
                         Integrations
                     </a>
                     <a href="/#pricing" class="text-xl text-white border-b border-gray-300 py-3">
                         Pricing
                     </a>
-                    <a href="/docs/guides" class="text-xl text-white border-b border-gray-300 py-3">
+                    <a :href="docsUrl + '/guides'" class="text-xl text-white border-b border-gray-300 py-3">
                         Guides
                     </a>
                     <a href="/contact" class="text-xl text-white border-b border-gray-300 py-3">
@@ -97,13 +97,13 @@
             </div>
         </v-navigation-drawer>
     </v-layout>
-    
+
     <!-- Authentication Modal with v-model bindings -->
     <AuthModal ref="authModalRef" />
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from "vue";
+import { ref } from "vue";
 
 import AuthModal from "./AuthModal.vue";
 import type { AuthModalMethods } from "@/types/AuthModalMethods";
@@ -112,10 +112,12 @@ const authModalRef = ref<InstanceType<typeof AuthModal> & AuthModalMethods | nul
 // Mobile drawer state
 const drawer = ref(false);
 
+const docsUrl = import.meta.env.VITE_DOCS_URL || "/docs";
+
 const handleShowSignIn = () => {
     // Use the exposed method from AuthModal
     authModalRef.value?.openLogin();
-    
+
     // Close drawer when signing in
     drawer.value = false;
 };
@@ -123,14 +125,10 @@ const handleShowSignIn = () => {
 const handleShowSignUp = () => {
     // Use the exposed method from AuthModal
     authModalRef.value?.openSignUp();
-    
+
     // Close drawer when signing up
     drawer.value = false;
 };
-
-onMounted(async () => {
-    // Any initialization code here
-});
 </script>
 
 <style scoped>

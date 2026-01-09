@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Black background with rounded corners -->
+  <rect width="100" height="100" rx="15" ry="15" fill="#353839"/>
+  <!-- Larger plus sign in steel blue -->
+  <text x="50" y="50" font-size="115" text-anchor="middle" dy=".30em" fill="#4682b4" font-weight="bold">+</text>
+</svg> 

@@ -12,7 +12,7 @@
 
           <!-- Footer Links -->
           <div class="flex space-x-8 border border-gray-300 px-6 py-4 rounded-full">
-            <a href="/docs/getting-started" class="text-gray-300 hover:text-white transition-colors">Getting Started</a>
+            <a :href="docsUrl + '/getting-started'" class="text-gray-300 hover:text-white transition-colors">Getting Started</a>
             <span class="text-gray-300 cursor-default">•</span>
             <a href="/privacy-policy" class="text-gray-300 hover:text-white transition-colors">Privacy Policy</a>
             <span class="text-gray-300 cursor-default">•</span>
@@ -44,7 +44,7 @@
 
           <!-- Footer Links -->
           <div class="flex flex-wrap justify-center gap-3 text-sm">
-            <a href="/docs/getting-started" class="text-gray-300 hover:text-white transition-colors">Getting Started</a>
+            <a :href="docsUrl + '/getting-started'" class="text-gray-300 hover:text-white transition-colors">Getting Started</a>
             <a href="/privacy-policy" class="text-gray-300 hover:text-white transition-colors">Privacy Policy</a>
             <a href="/terms-of-service" class="text-gray-300 hover:text-white transition-colors">Terms of Service</a>
             <a href="/contact" class="text-gray-300 hover:text-white transition-colors">Contact</a>
@@ -68,8 +68,8 @@
   </div>
 </template>
 
-<script setup>
-// No additional logic needed for the footer
+<script setup lang="ts">
+const docsUrl = import.meta.env.VITE_DOCS_URL || "/docs";
 </script>
 
 <style scoped>

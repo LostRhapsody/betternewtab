@@ -32,12 +32,6 @@ export default defineConfig({
 
   // Development specific settings
   server: {
-    proxy: {
-      "/docs": {
-        target: "http://localhost:5174",
-        rewrite: (path) => path,
-      },
-    },
     hmr: {
       overlay: true
     },

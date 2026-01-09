@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "BetterNewTab | Guides",
   description: "Getting started and guides for BetterNewTab",
-  base: '/docs/',
+  base: '/',
   themeConfig: {
     logo: '/favicon.svg',    
     search: {

@@ -3,7 +3,7 @@
     <div v-if="isLoading" class="h-screen flex items-center justify-center">
       <v-progress-circular indeterminate />
     </div>
-    <div v-else-if="isLoggedIn && !isLoading">
+    <div v-else>
       <header class="border-b border-gray-700 bg-white/5">
         <v-container>
           <v-row class="items-center">
@@ -218,9 +218,6 @@
         </v-menu>
       </div>
     </div>
-    <div v-else>
-      <NewLandingPage />
-    </div>
 
     <Feedback v-model="showFeedbackDialog" @update:modelValue="handleFeedbackDialogClose" :cancelSubscription=false />
 
@@ -240,7 +237,6 @@
 import CommandPalette from "../components/CommandPalette.vue";
 import { computed, onMounted, ref, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import NewLandingPage from "../components/NewLandingPage.vue";
 import LinkColumns from "../components/LinkColumns.vue";
 import SearchBar from "../components/SearchBar.vue";
 import Feedback from "../components/Feedback.vue";
@@ -339,7 +335,6 @@ const userSettingsStore = useUserSettingsStore();
 const router = useRouter();
 
 // State management
-const isLoggedIn = ref(false);
 const isLoading = ref(true);
 const showHelpDialog = ref(false);
 const showFeedbackDialog = ref(false);
@@ -447,59 +442,54 @@ onMounted(async () => {
   isLoading.value = true;
 
   try {
-    // Check if user has a valid token
-    const token = authService.getToken();
-    isLoggedIn.value = !!token;
+    // Router ensures user is authenticated before reaching this page
+    // User data may already be loaded by router guard, but we need to ensure links are fetched
+    if (userStore.userId) {
+      // User data already loaded by router, just fetch links
+      await linksStore.fetchLinks(userStore.userId);
+    } else {
+      // Fallback: fetch user data if not yet loaded
+      const response = await api.get<{ user: { id: string; email: string } }>(API.GET_USER_DATA);
 
-    if (isLoggedIn.value) {
-      try {
-        // Fetch user data from server
-        const response = await api.get<{ user: { id: string; email: string } }>(API.GET_USER_DATA);
+      if (response.data.user) {
+        const authUser = {
+          id: response.data.user.id,
+          email: response.data.user.email,
+        };
 
-        if (response.data.user) {
-          const authUser = {
-            id: response.data.user.id,
-            email: response.data.user.email,
-          };
+        // Check cache first - this is synchronous
+        const gotCachedData = userStore.fetchUserDataFromCache(authUser);
 
-          // Check cache first - this is synchronous
-          const gotCachedData = userStore.fetchUserDataFromCache(authUser);
-
-          if (gotCachedData) {
-            // We have cache data, fetch from server asynchronously (don't await)
-            userStore.fetchUserDataFromServer(authUser).catch((error) => {
-              console.error("Background refresh of user data failed:", error);
-            });
-          } else {
-            // No cache data, must wait for server data
-            const serverDataSuccess = await userStore.fetchUserDataFromServer(authUser);
-
-            if (!serverDataSuccess) {
-              throw new Error("Failed to fetch user data from server");
-            }
-          }
-
-          // Always fetch settings - these will come from cache if available
-          userSettingsStore.fetchSettings();
-
-          if (!userStore.userId) {
-            throw new Error("User ID not found");
-          }
-          linksStore.fetchLinks(userStore.userId);
+        if (gotCachedData) {
+          // We have cache data, fetch from server asynchronously (don't await)
+          userStore.fetchUserDataFromServer(authUser).catch((error) => {
+            console.error("Background refresh of user data failed:", error);
+          });
         } else {
-          // No user found, clear auth state
-          isLoggedIn.value = false;
-          authService.logout();
+          // No cache data, must wait for server data
+          const serverDataSuccess = await userStore.fetchUserDataFromServer(authUser);
+
+          if (!serverDataSuccess) {
+            throw new Error("Failed to fetch user data from server");
+          }
         }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        // Token might be invalid, clear auth state
-        isLoggedIn.value = false;
+
+        // Always fetch settings - these will come from cache if available
+        userSettingsStore.fetchSettings();
+
+        if (userStore.userId) {
+          await linksStore.fetchLinks(userStore.userId);
+        }
+      } else {
+        // No user found, redirect to login
         authService.logout();
+        router.push("/login");
       }
     }
   } catch (error) {
     console.error("Error during initialization:", error);
+    authService.logout();
+    router.push("/login");
   } finally {
     isLoading.value = false;
   }
