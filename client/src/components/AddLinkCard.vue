@@ -171,9 +171,8 @@ const resetForm = () => {
 }
 
 const addNewColumnType = () => {
-  if (newColumnType.value && !columnTypes.value.includes(newColumnType.value)) {
+  if (newColumnType.value) {
     formData.value.columnType = newColumnType.value
-    newColumnType.value = ''
   }
 }
 
@@ -281,6 +280,7 @@ watch(isModalOpen, (newVal) => {
   display: flex;
   flex-direction: column;
   gap: var(--tp-space-4);
+  min-height: 360px;
 }
 
 .add-link-form__error {

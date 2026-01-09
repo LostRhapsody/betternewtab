@@ -106,17 +106,16 @@ const getMappedIcon = (mdiIcon: string) => {
       </div>
 
       <div class="link-card__content">
-        <div class="link-card__title">{{ title }}</div>
+        <div class="link-card__title">{{ title }}
+        <div v-if="shortcut" class="link-card__shortcut">
+           <kbd>{{ shortcut }}+{{ index + 1 }}</kbd>
+        </div>
+        </div>
         <div v-if="description" class="link-card__description">
           {{ description }}
         </div>
       </div>
 
-      <TpIcon name="chevron-right" size="md" class="link-card__chevron" />
-
-      <div v-if="shortcut" class="link-card__shortcut">
-        <kbd>{{ shortcut }}+{{ index + 1 }}</kbd>
-      </div>
     </a>
 
     <TpMenu position="bottom-end" class="link-card__menu">
@@ -126,7 +125,7 @@ const getMappedIcon = (mdiIcon: string) => {
           @click.prevent
           aria-label="Link options"
         >
-          <TpIcon name="menu-dots" size="sm" />
+          <TpIcon name="menu-dots" size="md" />
         </button>
       </template>
 
@@ -152,6 +151,7 @@ const getMappedIcon = (mdiIcon: string) => {
 
 <style scoped>
 .link-card {
+  min-height: 4rem;
   position: relative;
   display: flex;
   align-items: center;
@@ -227,6 +227,8 @@ const getMappedIcon = (mdiIcon: string) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
 }
 
 .link-card__description {
@@ -240,23 +242,8 @@ const getMappedIcon = (mdiIcon: string) => {
   margin-top: var(--tp-space-1);
 }
 
-.link-card__chevron {
-  color: var(--tp-text-muted);
-  flex-shrink: 0;
-  transition: transform var(--tp-transition-fast);
-  opacity: 0.5;
-}
-
-.link-card:hover .link-card__chevron {
-  transform: translateX(4px);
-  opacity: 1;
-  color: var(--tp-accent);
-}
-
 .link-card__shortcut {
-  position: absolute;
-  bottom: var(--tp-space-2);
-  right: var(--tp-space-2);
+  margin-left: var(--tp-space-3);
   opacity: 0;
   transition: opacity var(--tp-transition-fast);
 }
@@ -286,8 +273,8 @@ const getMappedIcon = (mdiIcon: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--tp-radius-sm);
   color: var(--tp-text-muted);
   transition:
@@ -309,7 +296,6 @@ const getMappedIcon = (mdiIcon: string) => {
 @media (prefers-reduced-motion: reduce) {
   .link-card,
   .link-card__custom-icon,
-  .link-card__chevron,
   .link-card__shortcut,
   .link-card__menu {
     transition: none;

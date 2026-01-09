@@ -98,6 +98,10 @@ const isSearchInputFocused = () => {
   )
 }
 
+const isModalOpen = () => {
+  return document.querySelector('.tp-modal-overlay') !== null
+}
+
 const focusLinkCard = (columnType: string, index: number) => {
   nextTick(() => {
     linkRefs.value = []
@@ -124,6 +128,7 @@ const focusLinkCard = (columnType: string, index: number) => {
 const handleArrowKeys = (event: KeyboardEvent) => {
   if (
     isSearchInputFocused() ||
+    isModalOpen() ||
     event.ctrlKey ||
     event.altKey ||
     event.metaKey
@@ -175,6 +180,7 @@ onUnmounted(() => {
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (!/^[1-9]$/.test(event.key)) return
+  if (isModalOpen()) return
 
   const numKey = Number.parseInt(event.key) - 1
 

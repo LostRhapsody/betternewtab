@@ -53,6 +53,9 @@ export default {
         'tp-8': 'var(--tp-space-8)',
         'tp-12': 'var(--tp-space-12)',
         'tp-16': 'var(--tp-space-16)',
+        'tp-24': 'var(--tp-space-24)',
+        'tp-32': 'var(--tp-space-32)',
+        'tp-48': 'var(--tp-space-48)',
       },
       borderRadius: {
         'tp-sm': 'var(--tp-radius-sm)',

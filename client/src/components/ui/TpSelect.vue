@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import TpIcon from './TpIcon.vue'
 
 export interface SelectOption {
@@ -31,6 +31,7 @@ const triggerRef = ref<HTMLButtonElement>()
 const menuRef = ref<HTMLUListElement>()
 const isOpen = ref(false)
 const focusedIndex = ref(-1)
+const menuPosition = ref({ top: '0px', left: '0px', width: '0px' })
 
 const selectedOption = computed(() =>
   props.options.find(opt => opt.value === props.modelValue) ?? null
@@ -40,12 +41,23 @@ const displayText = computed(() =>
   selectedOption.value?.label ?? props.placeholder ?? 'Select...'
 )
 
+const updateMenuPosition = () => {
+  if (!triggerRef.value) return
+  const rect = triggerRef.value.getBoundingClientRect()
+  menuPosition.value = {
+    top: `${rect.bottom + window.scrollY + 4}px`,
+    left: `${rect.left + window.scrollX}px`,
+    width: `${rect.width}px`
+  }
+}
+
 const toggle = () => {
   if (props.disabled) return
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     focusedIndex.value = props.options.findIndex(opt => opt.value === props.modelValue)
     if (focusedIndex.value === -1) focusedIndex.value = 0
+    nextTick(updateMenuPosition)
   }
 }
 
@@ -176,41 +188,49 @@ onUnmounted(() => {
       </span>
     </button>
 
-    <Transition name="tp-dropdown">
-      <ul
-        v-if="isOpen"
-        ref="menuRef"
-        class="tp-select__menu"
-        role="listbox"
-      >
-        <li
-          v-for="(option, index) in options"
-          :key="option.value"
-          :class="[
-            'tp-select__item',
-            {
-              'tp-select__item--focused': focusedIndex === index,
-              'tp-select__item--selected': option.value === modelValue,
-              'tp-select__item--disabled': option.disabled
-            }
-          ]"
-          role="option"
-          :aria-selected="option.value === modelValue"
-          @click="select(option)"
-          @mouseenter="focusedIndex = index"
+    <Teleport to="body">
+      <Transition name="tp-dropdown">
+        <ul
+          v-if="isOpen"
+          ref="menuRef"
+          class="tp-select__menu"
+          role="listbox"
+          :style="{
+            position: 'absolute',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            width: menuPosition.width
+          }"
         >
-          <slot name="option" :option="option">
-            {{ option.label }}
-          </slot>
-          <TpIcon
-            v-if="option.value === modelValue"
-            name="check"
-            size="sm"
-            class="tp-select__check"
-          />
-        </li>
-      </ul>
-    </Transition>
+          <li
+            v-for="(option, index) in options"
+            :key="option.value"
+            :class="[
+              'tp-select__item',
+              {
+                'tp-select__item--focused': focusedIndex === index,
+                'tp-select__item--selected': option.value === modelValue,
+                'tp-select__item--disabled': option.disabled
+              }
+            ]"
+            role="option"
+            :aria-selected="option.value === modelValue"
+            @click="select(option)"
+            @mouseenter="focusedIndex = index"
+          >
+            <slot name="option" :option="option">
+              {{ option.label }}
+            </slot>
+            <TpIcon
+              v-if="option.value === modelValue"
+              name="check"
+              size="sm"
+              class="tp-select__check"
+            />
+          </li>
+        </ul>
+      </Transition>
+    </Teleport>
 
     <span v-if="error" class="tp-select__error">{{ error }}</span>
   </div>
@@ -295,12 +315,7 @@ onUnmounted(() => {
 }
 
 .tp-select__menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: var(--tp-z-dropdown);
-  margin-top: var(--tp-space-1);
+  z-index: var(--tp-z-toast);
   padding: var(--tp-space-1) 0;
   list-style: none;
   background: var(--tp-bg-primary);

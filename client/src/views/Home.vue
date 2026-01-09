@@ -283,8 +283,12 @@ const getLinksByColumnType = (columnType: string) => {
   return linksStore.links.filter((link) => link.column_type === columnType)
 }
 
+const isModalOpen = () => {
+  return document.querySelector('.tp-modal-overlay') !== null
+}
+
 const handleShowKeyboardShortcuts = (event: KeyboardEvent) => {
-  if (event.key === '?') {
+  if (event.key === '?' && !isModalOpen()) {
     showHelpDialog.value = true
   }
 }

@@ -1,21 +1,58 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, onUnmounted, nextTick } from 'vue'
 
 const props = withDefaults(defineProps<{
   content: string
   position?: 'top' | 'bottom' | 'left' | 'right'
   delay?: number
   disabled?: boolean
+  maxWidth?: string
 }>(), {
   position: 'top',
   delay: 300,
-  disabled: false
+  disabled: false,
+  maxWidth: '280px'
 })
 
 const isVisible = ref(false)
 const triggerRef = ref<HTMLElement>()
+const tooltipPosition = ref({ top: '0px', left: '0px' })
 let showTimeout: ReturnType<typeof setTimeout> | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
+
+const updatePosition = () => {
+  if (!triggerRef.value) return
+  const rect = triggerRef.value.getBoundingClientRect()
+  const scrollX = window.scrollX
+  const scrollY = window.scrollY
+
+  let top = 0
+  let left = 0
+
+  switch (props.position) {
+    case 'top':
+      top = rect.top + scrollY - 8
+      left = rect.left + scrollX + rect.width / 2
+      break
+    case 'bottom':
+      top = rect.bottom + scrollY + 8
+      left = rect.left + scrollX + rect.width / 2
+      break
+    case 'left':
+      top = rect.top + scrollY + rect.height / 2
+      left = rect.left + scrollX - 8
+      break
+    case 'right':
+      top = rect.top + scrollY + rect.height / 2
+      left = rect.right + scrollX + 8
+      break
+  }
+
+  tooltipPosition.value = {
+    top: `${top}px`,
+    left: `${left}px`
+  }
+}
 
 const show = () => {
   if (props.disabled) return
@@ -25,6 +62,7 @@ const show = () => {
   }
   showTimeout = setTimeout(() => {
     isVisible.value = true
+    nextTick(updatePosition)
   }, props.delay)
 }
 
@@ -67,15 +105,23 @@ onUnmounted(() => {
   >
     <slot />
 
-    <Transition name="tp-tooltip">
-      <div
-        v-if="isVisible && content"
-        :class="['tp-tooltip', `tp-tooltip--${position}`]"
-        role="tooltip"
-      >
-        {{ content }}
-      </div>
-    </Transition>
+    <Teleport to="body">
+      <Transition name="tp-tooltip">
+        <div
+          v-if="isVisible && content"
+          :class="['tp-tooltip', `tp-tooltip--${position}`]"
+          :style="{
+            position: 'absolute',
+            top: tooltipPosition.top,
+            left: tooltipPosition.left,
+            maxWidth: maxWidth
+          }"
+          role="tooltip"
+        >
+          {{ content }}
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -86,41 +132,35 @@ onUnmounted(() => {
 }
 
 .tp-tooltip {
-  position: absolute;
   z-index: var(--tp-z-tooltip);
-  padding: var(--tp-space-1) var(--tp-space-2);
+  padding: var(--tp-space-2) var(--tp-space-3);
   font-size: var(--tp-text-sm);
   font-family: var(--tp-font-mono);
   color: var(--tp-bg-primary);
   background: var(--tp-text-primary);
   border-radius: var(--tp-radius-sm);
-  white-space: nowrap;
+  white-space: normal;
+  word-wrap: break-word;
   pointer-events: none;
+  text-align: center;
+  line-height: var(--tp-leading-normal);
 }
 
-/* Positions */
+/* Positions - transforms for centering */
 .tp-tooltip--top {
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -100%);
 }
 
 .tp-tooltip--bottom {
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 0);
 }
 
 .tp-tooltip--left {
-  right: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-100%, -50%);
 }
 
 .tp-tooltip--right {
-  left: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%);
+  transform: translate(0, -50%);
 }
 
 /* Transitions */
@@ -138,21 +178,21 @@ onUnmounted(() => {
 
 .tp-tooltip--top.tp-tooltip-enter-from,
 .tp-tooltip--top.tp-tooltip-leave-to {
-  transform: translateX(-50%) translateY(4px);
+  transform: translate(-50%, calc(-100% + 4px));
 }
 
 .tp-tooltip--bottom.tp-tooltip-enter-from,
 .tp-tooltip--bottom.tp-tooltip-leave-to {
-  transform: translateX(-50%) translateY(-4px);
+  transform: translate(-50%, -4px);
 }
 
 .tp-tooltip--left.tp-tooltip-enter-from,
 .tp-tooltip--left.tp-tooltip-leave-to {
-  transform: translateY(-50%) translateX(4px);
+  transform: translate(calc(-100% + 4px), -50%);
 }
 
 .tp-tooltip--right.tp-tooltip-enter-from,
 .tp-tooltip--right.tp-tooltip-leave-to {
-  transform: translateY(-50%) translateX(-4px);
+  transform: translate(-4px, -50%);
 }
 </style>

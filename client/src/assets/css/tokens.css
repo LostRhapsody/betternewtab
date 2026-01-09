@@ -72,6 +72,9 @@
   --tp-space-8: 2rem;       /* 32px */
   --tp-space-12: 3rem;      /* 48px */
   --tp-space-16: 4rem;      /* 64px */
+  --tp-space-24: 6rem;      /* 96px */
+  --tp-space-32: 8rem;      /* 128px */
+  --tp-space-48: 12rem;     /* 192px */
 
   /* -------- Layout -------- */
   --tp-container-max: 1200px;
