@@ -442,10 +442,12 @@ const handleKeydown = (event: KeyboardEvent) => {
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault()
+        event.stopPropagation()
         focusedIndex.value = (focusedIndex.value + 1) % totalItems
         break
       case 'ArrowUp':
         event.preventDefault()
+        event.stopPropagation()
         focusedIndex.value = (focusedIndex.value - 1 + totalItems) % totalItems
         break
       case 'Enter':

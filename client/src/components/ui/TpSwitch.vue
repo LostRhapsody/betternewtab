@@ -19,7 +19,9 @@ const emit = defineEmits<{
 
 const toggle = () => {
   if (props.disabled) return
+  console.log("Toggling switch:", props.modelValue);
   const newValue = !props.modelValue
+  console.log("New value:", newValue);
   emit('update:modelValue', newValue)
   emit('change', newValue)
 }

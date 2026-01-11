@@ -62,126 +62,6 @@
           </TpButton>
         </div>
       </div>
-
-      <!-- Team Management -->
-      <div v-else-if="activeTab === 'team'" class="settings__panel">
-        <template v-if="!isTeamPlan">
-          <div class="settings__empty">
-            <TpIcon name="user" size="lg" />
-            <h3 class="settings__empty-title">Team Plan Coming Soon</h3>
-          </div>
-        </template>
-        <template v-else-if="!hasTeam">
-          <div class="settings__empty">
-            <TpIcon name="user" size="lg" />
-            <h3 class="settings__empty-title">Create Your Team</h3>
-            <p class="settings__empty-text">Get started by creating your first team</p>
-            <TpButton variant="primary" @click="showTeamModal = true">Create Team</TpButton>
-          </div>
-        </template>
-        <template v-else>
-          <div class="settings__header">
-            <h2 class="settings__title">Team Management</h2>
-            <TpButton variant="primary" @click="showInviteModal = true">
-              <TpIcon name="plus" size="sm" />
-              Invite Member
-            </TpButton>
-          </div>
-
-          <table class="settings__table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="member in teamMembers" :key="member.user_id">
-                <td>{{ member.name }}</td>
-                <td>{{ member.email }}</td>
-                <td>
-                  <TpSelect
-                    v-if="member.role !== 'owner'"
-                    v-model="member.role"
-                    :options="roleOptions"
-                    @update:modelValue="updateMemberRole(member.user_id, $event as string)"
-                  />
-                  <span v-else class="settings__owner-badge">Owner</span>
-                </td>
-                <td>
-                  <TpButton
-                    v-if="member.role !== 'owner'"
-                    variant="ghost"
-                    icon-only
-                    @click="removeMember(member.user_id)"
-                  >
-                    <TpIcon name="trash" size="sm" />
-                  </TpButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </template>
-      </div>
-
-      <!-- Organization -->
-      <div v-else-if="activeTab === 'organization'" class="settings__panel">
-        <template v-if="!isEnterprisePlan">
-          <div class="settings__empty">
-            <TpIcon name="cog" size="lg" />
-            <h3 class="settings__empty-title">Enterprise Plan Coming Soon</h3>
-          </div>
-        </template>
-        <template v-else>
-          <div class="settings__section">
-            <h2 class="settings__title">Organization Settings</h2>
-            <div class="settings__form">
-              <TpInput v-model="orgName" label="Organization Name" />
-              <TpSelect
-                v-model="selectedTeam"
-                :options="teamOptions"
-                label="Current Team"
-              />
-              <TpButton variant="primary" @click="showTeamModal = true">
-                <TpIcon name="plus" size="sm" />
-                Add Team
-              </TpButton>
-            </div>
-          </div>
-
-          <div class="settings__section">
-            <div class="settings__header">
-              <h3 class="settings__subtitle">Organization Members</h3>
-              <TpInput
-                v-model="memberSearch"
-                placeholder="Search members..."
-                class="settings__search"
-              />
-            </div>
-
-            <table class="settings__table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Team</th>
-                  <th>Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="member in filteredOrgMembers" :key="member.id">
-                  <td>{{ member.name }}</td>
-                  <td>{{ member.email }}</td>
-                  <td>{{ member.team }}</td>
-                  <td>{{ member.role }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </template>
-      </div>
     </main>
 
     <!-- Create/Edit Team Modal -->
@@ -228,13 +108,6 @@ const { smAndDown: mobile } = useBreakpoint()
 const userId = computed(() => userStore.userId)
 const email = computed(() => userStore.email)
 const emailValue = ref(email.value || '')
-const userPlan = computed(() => userStore.userPlan) as ComputedRef<{
-  created_at: string | null
-  features: Features
-  id: string
-  max_pins: number
-  name: string
-} | null>
 
 const router = useRouter()
 const activeTab = ref('preferences')
@@ -281,10 +154,6 @@ const teamOptions = computed(() =>
   }))
 )
 
-const isTeamPlan = computed(
-  () => userPlan.value?.name === 'team' || userPlan.value?.name === 'enterprise'
-)
-const isEnterprisePlan = computed(() => userPlan.value?.name === 'enterprise')
 const hasTeam = computed(() => teamMembers.value.length > 0)
 
 const filteredOrgMembers = computed(() => {

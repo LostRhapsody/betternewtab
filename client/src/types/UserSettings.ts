@@ -12,12 +12,12 @@ export const UserSettingsLabels = [
   {
     label: "Enable Search History",
     key: "search_history",
-    active: false,
+    active: true,
   },
   {
     label: "Enable Autosuggest (Powered By Brave)",
     key: "autosuggest",
-    active: true,
+    active: false,
   },
   {
     label: "Fetch Metadata for new links",

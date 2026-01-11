@@ -2,8 +2,9 @@
 import { useUserStore } from "@/stores/user";
 import axios, { type AxiosInstance } from "axios";
 
+const apiDomain = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
+  baseURL: `${apiDomain}/api`,
   timeout: 10000, // Optional
 });
 

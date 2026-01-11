@@ -52,26 +52,15 @@
           :rows="3"
         />
 
-        <div class="add-link-form__column-select">
-          <TpSelect
-            input-id="add-link-card-column-type"
-            v-model="formData.columnType"
-            :options="columnTypeOptions"
-            label="Column Label"
-          />
-
-          <div class="add-link-form__new-column">
-            <TpInput
-              input-id="add-link-card-new-column-type"
-              v-model="newColumnType"
-              placeholder="New column name"
-              @enter="addNewColumnType"
-            />
-            <TpButton variant="secondary" size="sm" @click="addNewColumnType">
-              Add
-            </TpButton>
-          </div>
-        </div>
+        <TpCombobox
+          input-id="add-link-card-column-type"
+          v-model="formData.columnType"
+          :options="columnTypeOptions"
+          label="Column Label"
+          placeholder="Select or create column..."
+          creatable
+          create-label="Create '{input}'"
+        />
       </form>
 
       <template #actions>
@@ -110,7 +99,7 @@ import {
   TpModal,
   TpInput,
   TpTextarea,
-  TpSelect,
+  TpCombobox,
   TpButton,
   TpTooltip
 } from '@/components/ui'
@@ -133,8 +122,6 @@ const formData = ref({
   description: '',
   columnType: props.columnType
 })
-
-const newColumnType = ref('')
 
 const columnTypes = computed(() => linksStore.uniqueColumnTypes)
 
@@ -165,15 +152,8 @@ const resetForm = () => {
     description: '',
     columnType: props.columnType
   }
-  newColumnType.value = ''
   urlError.value = ''
   validLink.value = true
-}
-
-const addNewColumnType = () => {
-  if (newColumnType.value) {
-    formData.value.columnType = newColumnType.value
-  }
 }
 
 const validateForm = (): boolean => {
@@ -230,9 +210,6 @@ const handleSubmit = async () => {
 
 watch(isModalOpen, (newVal) => {
   if (!newVal) {
-    if (newColumnType.value) {
-      newColumnType.value = ''
-    }
     if (!formData.value.url) {
       resetForm()
     }
@@ -287,22 +264,6 @@ watch(isModalOpen, (newVal) => {
   color: var(--tp-error);
   font-size: var(--tp-text-sm);
   margin-top: calc(-1 * var(--tp-space-2));
-}
-
-.add-link-form__column-select {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tp-space-3);
-}
-
-.add-link-form__new-column {
-  display: flex;
-  gap: var(--tp-space-2);
-  align-items: flex-end;
-}
-
-.add-link-form__new-column > :first-child {
-  flex: 1;
 }
 
 .add-link-form__hints {

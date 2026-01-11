@@ -45,7 +45,11 @@ export const useUserStore = defineStore("user", {
 
         const cachedSettings = cache.get(CacheKeys.SETTINGS);
         if (cachedSettings) {
-          settingsStore.$patch({ settings: cachedSettings });
+          const settings =
+            typeof cachedSettings === "string"
+              ? JSON.parse(cachedSettings)
+              : cachedSettings;
+          settingsStore.$patch({ settings });
         }
 
         return true;
@@ -94,8 +98,12 @@ export const useUserStore = defineStore("user", {
         }
 
         if (data.settings?.settings_blob) {
-          settingsStore.$patch({ settings: data.settings.settings_blob });
-          cache.set(CacheKeys.SETTINGS, data.settings.settings_blob);
+          const settings =
+            typeof data.settings.settings_blob === "string"
+              ? JSON.parse(data.settings.settings_blob)
+              : data.settings.settings_blob;
+          settingsStore.$patch({ settings });
+          cache.set(CacheKeys.SETTINGS, settings);
         }
 
         // Update user cache with latest state

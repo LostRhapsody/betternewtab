@@ -16,7 +16,7 @@
           v-for="(result, index) in filteredResults"
           :key="index"
           :class="['command-palette__item', { 'command-palette__item--focused': focusedIndex === index }]"
-          :ref="el => setItemRef(el, index)"
+          :ref="el => setItemRef(el as HTMLLIElement, index)"
           @click="handleSelect(result)"
           @mouseenter="focusedIndex = index"
         >

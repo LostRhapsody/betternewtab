@@ -278,8 +278,8 @@ async fn runtime(shutdown_rx: mpsc::Receiver<()>) {
 
     let app_state = AppState { client, database };
 
-    // Build router with API routes and static file fallback
-    let app = Router::new()
+    // Build API router with /api prefix
+    let api_routes = Router::new()
         // Authentication routes (public - no middleware)
         .route("/register", post(register_handler))
         .route("/login", post(login_handler))
@@ -313,7 +313,11 @@ async fn runtime(shutdown_rx: mpsc::Receiver<()>) {
         // Add staging login route - doesn't need authentication
         .route("/staging_login", post(staging_login_handler))
         .with_state(app_state)
-        .layer(axum::middleware::from_fn(authenticate_user))
+        .layer(axum::middleware::from_fn(authenticate_user));
+
+    // Main router with API routes nested under /api and static file fallback
+    let app = Router::new()
+        .nest("/api", api_routes)
         .layer(cors)
         // Fallback to static file serving for SPA
         .fallback(assets::serve_static);

@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, computed, nextTick, watch } from 'vue'
 import AddLinkCard from './AddLinkCard.vue'
 import EditLinkModal from './EditLinkModal.vue'
 import LinkCard from './LinkCard.vue'
@@ -65,6 +65,15 @@ const props = defineProps<{
 }>()
 
 const uniqueColumnTypes = computed(() => linkStore.uniqueColumnTypes)
+
+// Reset refs when links change to keep them in sync
+watch(
+  () => linkStore.links,
+  () => {
+    linkRefs.value = []
+    currentFocus.value = null
+  }
+)
 
 const getLinksByColumnType = (columnType: string) => {
   return linkStore.links.filter((link) => link.column_type === columnType)
@@ -104,30 +113,34 @@ const isModalOpen = () => {
 
 const focusLinkCard = (columnType: string, index: number) => {
   nextTick(() => {
-    linkRefs.value = []
-    nextTick(() => {
-      const targetLink = linkRefs.value.find(
-        (ref) =>
-          ref.$el.dataset.column === columnType &&
-          parseInt(ref.$el.dataset.linkIndex) === index
-      )
+    const targetLink = linkRefs.value.find(
+      (ref) =>
+        ref.$el?.dataset.column === columnType &&
+        parseInt(ref.$el?.dataset.linkIndex) === index
+    )
 
-      if (targetLink && targetLink.$el) {
-        const anchorElement = targetLink.$el.querySelector('a')
-        if (anchorElement) {
-          anchorElement.focus()
-        } else {
-          targetLink.$el.focus()
-        }
-        currentFocus.value = { columnType, index }
+    if (targetLink && targetLink.$el) {
+      const anchorElement = targetLink.$el.querySelector('a')
+      if (anchorElement) {
+        anchorElement.focus()
+      } else {
+        targetLink.$el.focus()
       }
-    })
+      currentFocus.value = { columnType, index }
+    }
   })
+}
+
+const focusSearchBar = () => {
+  const searchBar = document.querySelector('.search-bar__input') as HTMLInputElement
+  if (searchBar) {
+    searchBar.focus()
+    currentFocus.value = null
+  }
 }
 
 const handleArrowKeys = (event: KeyboardEvent) => {
   if (
-    isSearchInputFocused() ||
     isModalOpen() ||
     event.ctrlKey ||
     event.altKey ||
@@ -161,10 +174,14 @@ const handleArrowKeys = (event: KeyboardEvent) => {
   if (event.key === 'ArrowDown') {
     if (index < columnLinks.length - 1) {
       focusLinkCard(columnType, index + 1)
+    } else {
+      focusSearchBar()
     }
   } else if (event.key === 'ArrowUp') {
     if (index > 0) {
       focusLinkCard(columnType, index - 1)
+    } else {
+      focusSearchBar()
     }
   } else if (event.key === 'ArrowLeft') {
     if (currentColumnIndex > 0) {
@@ -201,10 +218,25 @@ const handleEditShortcut = (event: KeyboardEvent) => {
   }
 }
 
+const handleDeleteShortcut = (event: KeyboardEvent) => {
+  if (event.key !== 'd') return
+  if (isSearchInputFocused() || isModalOpen()) return
+  if (event.ctrlKey || event.altKey || event.metaKey) return
+  if (!currentFocus.value) return
+
+  event.preventDefault()
+  const { columnType, index } = currentFocus.value
+  const links = getLinksByColumnType(columnType)
+  if (index >= 0 && index < links.length) {
+    handleDeleteLink(links[index])
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keydown', handleArrowKeys)
   window.addEventListener('keydown', handleEditShortcut)
+  window.addEventListener('keydown', handleDeleteShortcut)
   linkRefs.value = []
 })
 
@@ -212,6 +244,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keydown', handleArrowKeys)
   window.removeEventListener('keydown', handleEditShortcut)
+  window.removeEventListener('keydown', handleDeleteShortcut)
 })
 
 const handleKeydown = (event: KeyboardEvent) => {

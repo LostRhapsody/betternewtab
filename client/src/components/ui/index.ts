@@ -5,6 +5,7 @@ export { default as TpButton } from "./TpButton.vue";
 export { default as TpInput } from "./TpInput.vue";
 export { default as TpTextarea } from "./TpTextarea.vue";
 export { default as TpSelect } from "./TpSelect.vue";
+export { default as TpCombobox } from "./TpCombobox.vue";
 export { default as TpModal } from "./TpModal.vue";
 export { default as TpMenu } from "./TpMenu.vue";
 export { default as TpMenuItem } from "./TpMenuItem.vue";
@@ -21,4 +22,5 @@ export { default as TpAvatar } from "./TpAvatar.vue";
 
 // Re-export types
 export type { SelectOption } from "./TpSelect.vue";
+export type { ComboboxOption } from "./TpCombobox.vue";
 export type { RadioOption } from "./TpRadio.vue";

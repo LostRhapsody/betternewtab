@@ -1,7 +1,8 @@
 // composables/useApi.ts
 import { ref } from "vue";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const apiDomain = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = `${apiDomain}/api`;
 
 export function useApi() {
   const loading = ref(false);

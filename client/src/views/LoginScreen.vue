@@ -51,7 +51,7 @@
 
         <p class="login-screen__footer">
           Don't have an account?
-          <a :href="landingUrl" class="login-screen__link">Sign up</a>
+          <router-link to="/signup" class="login-screen__link">Sign up</router-link>
         </p>
       </div>
     </div>
@@ -74,8 +74,6 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const emailError = ref('')
 const passwordError = ref('')
-
-const landingUrl = import.meta.env.VITE_LANDING_URL || 'https://betternewtab.com'
 
 const validateEmail = () => {
   if (!email.value) {

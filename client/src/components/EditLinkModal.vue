@@ -26,24 +26,14 @@
         :rows="3"
       />
 
-      <div class="edit-link-form__column-select">
-        <TpSelect
-          v-model="formData.columnType"
-          :options="columnTypeOptions"
-          label="Column Label"
-        />
-
-        <div class="edit-link-form__new-column">
-          <TpInput
-            v-model="newColumnType"
-            placeholder="New column name"
-            @enter="addNewColumnType"
-          />
-          <TpButton variant="secondary" size="sm" @click="addNewColumnType">
-            Add
-          </TpButton>
-        </div>
-      </div>
+      <TpCombobox
+        v-model="formData.columnType"
+        :options="columnTypeOptions"
+        label="Column Label"
+        placeholder="Select or create column..."
+        creatable
+        create-label="Create '{input}'"
+      />
     </form>
 
     <template #actions>
@@ -61,6 +51,10 @@
             <TpIcon name="help" />
           </TpButton>
         </TpTooltip>
+
+        <TpButton variant="danger" icon-only @click="handleDelete">
+          <TpIcon name="trash" />
+        </TpButton>
 
         <TpButton variant="ghost" @click="closeModal">
           Cancel
@@ -82,7 +76,7 @@ import {
   TpModal,
   TpInput,
   TpTextarea,
-  TpSelect,
+  TpCombobox,
   TpButton,
   TpTooltip,
   TpIcon
@@ -109,8 +103,6 @@ const formData = ref({
   description: '',
   columnType: ''
 })
-
-const newColumnType = ref('')
 
 const columnTypes = computed(() => linksStore.uniqueColumnTypes)
 
@@ -155,18 +147,7 @@ const resetForm = () => {
     description: '',
     columnType: ''
   }
-  newColumnType.value = ''
   urlError.value = ''
-}
-
-const addNewColumnType = () => {
-  if (
-    newColumnType.value.trim() &&
-    !columnTypes.value.includes(newColumnType.value.trim())
-  ) {
-    formData.value.columnType = newColumnType.value.trim()
-    newColumnType.value = ''
-  }
 }
 
 const validateForm = (): boolean => {
@@ -206,11 +187,19 @@ const handleSubmit = async () => {
   }
 }
 
+const handleDelete = async () => {
+  if (!props.link) return
+
+  try {
+    await linksStore.removeLink(props.link.id)
+    closeModal()
+  } catch (error) {
+    console.error('Error deleting link:', error)
+  }
+}
+
 watch(isModalOpen, (newVal) => {
   if (!newVal) {
-    if (newColumnType.value) {
-      newColumnType.value = ''
-    }
     if (!formData.value.url) {
       resetForm()
     }
@@ -223,22 +212,6 @@ watch(isModalOpen, (newVal) => {
   display: flex;
   flex-direction: column;
   gap: var(--tp-space-4);
-}
-
-.edit-link-form__column-select {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tp-space-3);
-}
-
-.edit-link-form__new-column {
-  display: flex;
-  gap: var(--tp-space-2);
-  align-items: flex-end;
-}
-
-.edit-link-form__new-column > :first-child {
-  flex: 1;
 }
 
 .edit-link-form__hints {
