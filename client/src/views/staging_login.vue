@@ -13,6 +13,8 @@
             v-model="password" 
             placeholder="Enter staging password"
             required
+            class="text-black"
+            autocomplete="on"
           />
         </div>
         

@@ -1,10 +1,12 @@
-// test user: evanr@fdm4.com
-//TestPasswordForClerk
+// Hide console window on Windows in release builds
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod assets;
 mod brave;
+mod database;
 mod middleware;
 mod resend;
-mod stripe_client;
-mod supabase;
+mod tray;
 mod user_jwt;
 
 use axum::{
@@ -15,25 +17,18 @@ use axum::{
 };
 use base64::prelude::*;
 use brave::Brave;
-use chrono::{TimeZone, Utc};
+use chrono::Utc;
+use database::Database;
 use dotenv::dotenv;
-use middleware::{authenticate_user, extract_user, UserContext};
+use middleware::{authenticate_user, UserContext};
 use resend::ResendClient;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, env};
-use stripe::{Event, EventType, Subscription};
-use stripe_client::StripeClient;
-use supabase::Supabase;
+use std::{collections::HashMap, env, sync::mpsc, thread};
 use tower_http::cors::{Any, CorsLayer};
+use tray::TrayMessage;
 use tracing_subscriber::prelude::*;
 use url::Url;
-
-#[derive(Serialize, Clone)]
-pub struct SubscriptionResponse {
-    plan_id: String,
-    current_period_end: i64,
-}
 
 #[derive(Deserialize)]
 pub struct CreateUserRequest {
@@ -75,12 +70,6 @@ pub struct SuggestionResponse {
     suggestions: Vec<brave::Suggestion>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct FeedbackRequest {
-    reasons: Option<stripe::UpdateSubscriptionCancellationDetailsFeedback>,
-    feedback_comment: Option<String>,
-}
-
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct UserSettingsRequest {
     search_history: bool,
@@ -92,13 +81,36 @@ pub struct UserSettingsRequest {
     metadata: bool,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct FeedbackRequest {
+    reasons: Option<String>,
+    feedback_comment: Option<String>,
+}
+
 #[derive(Serialize)]
 pub struct UserDataResponse {
-    user: supabase::User,
-    subscription: Option<SubscriptionResponse>,
-    plan: Option<supabase::Plan>,
-    settings: Option<supabase::UserSettings>,
-    links: Vec<supabase::Link>,
+    user: database::User,
+    settings: Option<database::UserSettings>,
+    links: Vec<database::Link>,
+}
+
+// Authentication request/response structs
+#[derive(Deserialize, Debug)]
+pub struct LoginRequest {
+    email: String,
+    password: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RegisterRequest {
+    email: String,
+    password: String,
+}
+
+#[derive(Serialize)]
+pub struct AuthResponse {
+    token: String,
+    user: database::User,
 }
 
 // New struct for staging login request
@@ -107,58 +119,100 @@ pub struct StagingLoginRequest {
     password: String,
 }
 
-// New helper function to disable premium features in user settings
-fn disable_premium_features(settings_blob: &mut serde_json::Value) {
-    if let Some(obj) = settings_blob.as_object_mut() {
-        // Disable all premium features
-        if obj.contains_key("autosuggest") {
-            obj["autosuggest"] = json!(false);
-        }
-        if obj.contains_key("jira_api") {
-            obj["jira_api"] = json!(false);
-        }
-        if obj.contains_key("confluence_api") {
-            obj["confluence_api"] = json!(false);
-        }
-        if obj.contains_key("linear_api") {
-            obj["linear_api"] = json!(false);
-        }
-        if obj.contains_key("metadata") {
-            obj["metadata"] = json!(false);
-        }
-    }
+#[derive(Clone)]
+pub struct AppState {
+    pub client: reqwest::Client,
+    pub database: Database,
 }
 
 fn main() {
-    let _guard = sentry::init(("https://dacfc75c4bbf7f8a70134067d078c21a@o4508773394153472.ingest.us.sentry.io/4508773395857408", sentry::ClientOptions {
-        release: sentry::release_name!(),
+    dotenv().ok();
 
-        // 1.0 is send 100% of traces to Sentry, 0.2 is 20%, etc.
-        traces_sample_rate: 0.2,
-
-        ..sentry::ClientOptions::default()
-    }));
+    // Initialize Sentry
+    let sample_rate = std::env::var("TRACING_SAMPLE_RATE")
+        .unwrap_or_else(|_| "0.2".to_string())
+        .parse::<f32>()
+        .unwrap_or(0.2);
+    let _guard = sentry::init((
+        "https://dacfc75c4bbf7f8a70134067d078c21a@o4508773394153472.ingest.us.sentry.io/4508773395857408",
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            traces_sample_rate: sample_rate,
+            ..sentry::ClientOptions::default()
+        },
+    ));
 
     tracing_subscriber::Registry::default()
         .with(sentry::integrations::tracing::layer())
         .init();
 
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            runtime().await;
-        });
+    // Create channel for shutdown signal
+    let (shutdown_tx, shutdown_rx) = mpsc::channel();
 
-    println!("Ending request");
-    tracing::info!("Ending request");
+    // Spawn tokio runtime in a separate thread
+    let server_handle = thread::spawn(move || {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                runtime(shutdown_rx).await;
+            });
+    });
+
+    // Create system tray on main thread (required for macOS)
+    match tray::create_tray() {
+        Ok((_tray, rx)) => {
+            println!("System tray created successfully");
+            tracing::info!("System tray created successfully");
+
+            // Wait for exit message from tray
+            loop {
+                match rx.recv() {
+                    Ok(TrayMessage::Exit) => {
+                        println!("Exit requested from tray");
+                        tracing::info!("Exit requested from tray");
+                        let _ = shutdown_tx.send(());
+                        break;
+                    }
+                    Err(_) => {
+                        // Channel closed, tray thread exited
+                        break;
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            // If tray creation fails (e.g., headless environment), just run the server
+            eprintln!("Failed to create system tray: {:?}", e);
+            tracing::warn!("Failed to create system tray: {:?}", e);
+            println!("Running in headless mode. Press Ctrl+C to exit.");
+
+            // Wait for Ctrl+C
+            let _ = ctrlc_channel();
+            let _ = shutdown_tx.send(());
+        }
+    }
+
+    // Wait for server to finish
+    let _ = server_handle.join();
+
+    println!("Better New Tab shutting down");
+    tracing::info!("Better New Tab shutting down");
 }
 
-async fn runtime() {
-    tracing::info!("Starting request");
+/// Create a simple channel that receives when Ctrl+C is pressed
+fn ctrlc_channel() -> mpsc::Receiver<()> {
+    let (tx, rx) = mpsc::channel();
+    ctrlc::set_handler(move || {
+        let _ = tx.send(());
+    })
+    .expect("Error setting Ctrl+C handler");
+    rx
+}
 
-    dotenv().ok();
+async fn runtime(shutdown_rx: mpsc::Receiver<()>) {
+    tracing::info!("Starting Better New Tab server");
 
     let cors = {
         let environment =
@@ -190,9 +244,13 @@ async fn runtime() {
                 ])
                 .allow_headers(Any),
             _ => {
-                // Development mode
+                // Development mode - also allow localhost for single binary
                 CorsLayer::new()
-                    .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                    .allow_origin([
+                        "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+                        "http://localhost:3000".parse::<HeaderValue>().unwrap(),
+                        "http://127.0.0.1:3000".parse::<HeaderValue>().unwrap(),
+                    ])
                     .allow_methods([
                         Method::GET,
                         Method::POST,
@@ -207,12 +265,25 @@ async fn runtime() {
 
     let client = reqwest::Client::new();
 
-    // Reminder! Anything you return must be serializable
-    let app = Router::new()
-        // confirm subscription
-        .route("/confirm", get(confirm_handler))
-        // cancel subscription
-        .route("/cancel", post(cancel_handler))
+    // DATABASE_URL is optional now - we use SQLite with a platform-appropriate path
+    let database_url = std::env::var("DATABASE_URL").unwrap_or_default();
+    let database = match Database::new(database_url).await {
+        Ok(database) => database,
+        Err(e) => {
+            tracing::error!("Error initializing database connection: {:?}", e);
+            eprintln!("Error initializing database: {:?}", e);
+            return;
+        }
+    };
+
+    let app_state = AppState { client, database };
+
+    // Build API router with /api prefix
+    let api_routes = Router::new()
+        // Authentication routes (public - no middleware)
+        .route("/register", post(register_handler))
+        .route("/login", post(login_handler))
+        .route("/health", get(health_check))
         // create and update links
         .route("/link", post(create_link).put(update_link))
         // read links
@@ -220,12 +291,9 @@ async fn runtime() {
         // delete link
         .route(
             "/link/{link_id}",
-            delete(move |path, user_context| delete_link(path, user_context)),
-        )
-        // get plan
-        .route(
-            "/plan/{plan_id}",
-            get(move |path, user_context| plan_handler(path, user_context)),
+            delete(move |state: State<AppState>, path, user_context| {
+                delete_link(state, path, user_context)
+            }),
         )
         // create user
         .route("/create_user", post(create_user_handler))
@@ -241,20 +309,110 @@ async fn runtime() {
             "/settings",
             post(create_settings).put(update_settings).get(get_settings),
         )
-        // cancel subscription event listener for Stripe
-        .route("/stripe_cancel_hook", post(cancel_subscription_hook))
         .route("/user_data", get(get_user_data_handler))
         // Add staging login route - doesn't need authentication
         .route("/staging_login", post(staging_login_handler))
-        .with_state(client)
-        .layer(axum::middleware::from_fn(authenticate_user))
-        .layer(axum::middleware::from_fn(extract_user))
-        .layer(cors);
+        .with_state(app_state)
+        .layer(axum::middleware::from_fn(authenticate_user));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("Server running on http://0.0.0.0:3000");
+    // Main router with API routes nested under /api and static file fallback
+    let app = Router::new()
+        .nest("/api", api_routes)
+        .layer(cors)
+        // Fallback to static file serving for SPA
+        .fallback(assets::serve_static);
 
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+        .await
+        .unwrap();
+    println!("Server running on http://127.0.0.1:3000");
+    tracing::info!("Server running on http://127.0.0.1:3000");
+
+    // Serve with graceful shutdown
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            // Wait for shutdown signal in a tokio-compatible way
+            tokio::task::spawn_blocking(move || {
+                let _ = shutdown_rx.recv();
+            })
+            .await
+            .ok();
+        })
+        .await
+        .unwrap();
+}
+
+// Health check endpoint
+async fn health_check() -> StatusCode {
+    StatusCode::OK
+}
+
+// Register handler
+async fn register_handler(
+    State(app_state): State<AppState>,
+    Json(payload): Json<RegisterRequest>,
+) -> Result<Json<AuthResponse>, StatusCode> {
+    tracing::info!("Processing registration request for: {}", payload.email);
+
+    let database = &app_state.database;
+
+    // Register the user (this will hash the password)
+    let mut user = database
+        .register_user(&payload.email, &payload.password)
+        .await
+        .map_err(|e| {
+            tracing::error!("Registration failed: {:?}", e);
+            if e.to_string().contains("already exists") {
+                StatusCode::CONFLICT
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        })?;
+
+    // Generate JWT token
+    let token = user_jwt::generate_jwt(&user.id, &user.email).map_err(|e| {
+        tracing::error!("Failed to generate JWT: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // Set auth_token in user object
+    user.auth_token = Some(token.clone());
+
+    tracing::info!("Successfully registered user: {}", user.email);
+
+    Ok(Json(AuthResponse { token, user }))
+}
+
+// Login handler
+async fn login_handler(
+    State(app_state): State<AppState>,
+    Json(payload): Json<LoginRequest>,
+) -> Result<Json<AuthResponse>, StatusCode> {
+    tracing::info!("Processing login request for: {}", payload.email);
+
+    let database = &app_state.database;
+
+    // Verify password
+    let mut user = database
+        .verify_password(&payload.email, &payload.password)
+        .await
+        .map_err(|e| {
+            tracing::warn!("Login failed for {}: {:?}", payload.email, e);
+            StatusCode::UNAUTHORIZED
+        })?;
+
+    // Generate JWT token
+    let token = user_jwt::generate_jwt(&user.id, &user.email).map_err(|e| {
+        tracing::error!("Failed to generate JWT: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // Set auth_token in user object
+    user.auth_token = Some(token.clone());
+
+    tracing::info!("Successfully logged in user: {}", user.email);
+
+    Ok(Json(AuthResponse { token, user }))
 }
 
 // Staging login handler
@@ -283,11 +441,14 @@ async fn staging_login_handler(
 }
 
 async fn create_user_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<CreateUserRequest>,
-) -> Result<Json<supabase::User>, StatusCode> {
+) -> Result<Json<database::User>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
+    let database = &app_state.database;
+
     println!("Creating new user: {}", payload.email);
 
     sentry::configure_scope(|scope| {
@@ -301,33 +462,16 @@ async fn create_user_handler(
 
     tracing::info!("Creating new user: {}", payload.email);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    let user = supabase::User {
+    let user = database::User {
         id: payload.user_id,
         email: payload.email,
         created_at: Utc::now().to_rfc3339(),
+        password_hash: String::new(), // Legacy endpoint - password not used
         auth_token: None,
     };
 
-    match supabase.create_user(user.clone()).await {
-        Ok(_) => {
-            tracing::info!("Successfully created user: {}", user.email);
-            let create_settings_result = create_user_default_settings(&user).await;
-            if let Err(e) = create_settings_result {
-                if e == StatusCode::INTERNAL_SERVER_ERROR {
-                    tracing::error!("Failed to create user settings for user: {}", user.email);
-                }
-            }
-            Ok(Json(user))
-        }
+    match database.create_user(user.clone()).await {
+        Ok(_) => Ok(Json(user)),
         Err(e) => {
             tracing::error!("Failed to create user: {}", e);
             match e.to_string().as_str() {
@@ -338,286 +482,10 @@ async fn create_user_handler(
     }
 }
 
-/// Handles the confirmation of a user's subscription status.
-///
-/// This function performs the following steps:
-/// 1. Retrieves the Stripe customer associated with the provided email.
-/// 2. Retrieves the Stripe subscription associated with the customer.
-/// 3. Checks if the subscription is active.
-/// 4. Retrieves the corresponding Supabase plan based on the Stripe product ID.
-/// 5. Verifies and updates the user's subscription record in Supabase.
-/// 6. Verifies and creates the user's membership record in Supabase if it doesn't exist.
-///
-/// # Arguments
-///
-/// * `Path((user_email, user_id))` - A tuple containing the user's email and user ID.
-/// * sent to the server as  /confirm/{user_email}/{user_id}
-///
-/// # Returns
-///
-/// * `Result<Json<SubscriptionResponse>, StatusCode>` - A JSON response containing the subscription details or an error status code.
-/// * If no subscription is found, the function returns a free plan ID and a current period end of 0.
-///
-/// # Errors
-///
-/// This function returns an appropriate `StatusCode` in case of errors:
-/// * `StatusCode::INTERNAL_SERVER_ERROR` - If there is an internal server error.
-/// * `StatusCode::NOT_FOUND` - If the user is not found in Supabase.
-/// * `StatusCode::BAD_REQUEST` - If there is a conflict with the existing subscription.
-///
-/// # Example
-///
-/// ```rust
-/// let response = confirm_handler(Path(("user@example.com".to_string(), "user_id".to_string()))).await;
-/// match response {
-///     Ok(json) => println!("Subscription confirmed: {:?}", json),
-///     Err(status) => println!("Error confirming subscription: {:?}", status),
-/// }
-/// ```
-#[tracing::instrument]
-async fn confirm_handler(
-    Extension(user_context): Extension<UserContext>,
-) -> Result<Json<SubscriptionResponse>, StatusCode> {
-    let user_email = user_context.email.clone();
-    let user_id = user_context.user_id.clone();
-    println!("Confirming email: {}", user_email);
-
-    sentry::configure_scope(|scope| {
-        scope.set_user(Some(sentry::User {
-            email: Some(user_email.clone()),
-            id: Some(user_id.clone()),
-            ..Default::default()
-        }));
-        scope.set_tag("http.method", "GET");
-    });
-
-    let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
-
-    // Initialize Supabase client
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    println!("Initialized Supabase client");
-    println!("Getting customer from Stripe");
-    // Get Stripe customer - if one has not been created, they have not subscribed
-    let customer = match StripeClient::get_customer(&user_email).await {
-        Some(customer) => customer,
-        None => {
-            println!("No customer found, returning free plan");
-            return Ok(Json(SubscriptionResponse {
-                plan_id: free_plan_id,
-                current_period_end: 0,
-            }));
-        }
-    };
-
-    println!("Got customer from Stripe, getting subscription");
-    // Get Stripe subscription - if one is not returned, they have not subscribed (or subscription is inactive)
-    // TODO - cleanup task, if the subscription EXISTS in Supbase but NOT stripe, then the customer probably
-    // unsubscribed somehow. We should cancel the subscription in Supabase as well.
-    let subscription = match StripeClient::get_subscription(&customer).await {
-        Some(sub) => sub,
-        None => {
-            println!("No subscription found, returning free plan");
-            return Ok(Json(SubscriptionResponse {
-                plan_id: free_plan_id,
-                current_period_end: 0,
-            }));
-        }
-    };
-
-    println!("Got subscription from Stripe");
-    
-    // Check if subscription is still valid based on status and current period end
-    let current_timestamp = chrono::Utc::now().timestamp();
-    
-    // Check both the subscription status and whether the current period has ended
-    let has_valid_subscription = subscription.status.eq(&stripe::SubscriptionStatus::Active) && 
-        subscription.current_period_end > current_timestamp;
-    
-    // Check if subscription is scheduled to be canceled at period end
-    let is_canceling = subscription.cancel_at_period_end;
-    
-    println!("Subscription status: {:?}, Period end: {}, Current time: {}, Is canceling: {}", 
-        subscription.status, 
-        subscription.current_period_end, 
-        current_timestamp,
-        is_canceling);
-    
-    if !has_valid_subscription {
-        println!("Subscription is not active or period has ended");
-        return Ok(Json(SubscriptionResponse {
-            plan_id: free_plan_id,
-            current_period_end: 0,
-        }));
-    }
-
-    // Get the subscription item - we need the product id for later
-    let item = subscription
-        .items
-        .data
-        .first()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let plan = item
-        .plan
-        .as_ref()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let product_id = plan
-        .product
-        .as_ref()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
-        .id();
-
-    println!("Got product id: {}", product_id);
-
-    let user = supabase
-        .get_user(&user_id)
-        .await
-        .map_err(|e| match e.to_string().as_str() {
-            "404" => {
-                println!(
-                    "User not found, can't create new user for: {} because signup was supposed to be done through Clerk",
-                    user_email
-                );
-                StatusCode::NOT_FOUND
-            }
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-    })?;
-
-    // Get corresponding Supabase plan
-    let supabase_plan = supabase
-        .get_plan_by_stripe_id(&product_id.to_string())
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    println!("Supabase plan: {:?}", supabase_plan);
-
-    /*
-    Note: The subscription has been verified as active in stripe above
-    so everything below is just to verify and update the subscription record in Supabase
-    */
-
-    // Verify subscription record
-    let sub_result = supabase.get_user_subscription(&user.id).await;
-
-    // verify we got the subscription
-    match sub_result {
-        Ok(sub) => {
-            println!("Got subscription from Supabase");
-            // Update existing subscription if plan changed or status has changed
-            let should_update = sub.plan_id != supabase_plan.id || 
-                                sub.status != "active" ||
-                                is_canceling && sub.status != "cancelling";
-            
-            if should_update {
-                let mut updates = HashMap::new();
-                updates.insert("plan_id".to_string(), json!(supabase_plan.id));
-                updates.insert(
-                    "current_period_end".to_string(),
-                    json!(Utc
-                        .timestamp_opt(subscription.current_period_end, 0).unwrap()
-                        .to_rfc3339()),
-                );
-                updates.insert("stripe_subscription_id".to_string(), json!(subscription.id));
-                
-                // If subscription is set to cancel at period end, mark it as "cancelling" in Supabase
-                let status = if is_canceling { "cancelling" } else { "active" };
-                updates.insert("status".to_string(), json!(status));
-
-                println!("Updating subscription with status: {}", status);
-                println!("updates: {:?}", updates);
-                supabase
-                    .update_subscription(&sub.id, updates)
-                    .await
-                    .map_err(|e| {
-                        println!("Error updating subscription: {:?}", e);
-                        tracing::error!("Error updating subscription: {:?}", e);
-                        StatusCode::INTERNAL_SERVER_ERROR
-                    })?;
-            }
-        }
-        Err(_) => {
-            println!("No subscription found, creating subscription");
-            // Create new subscription
-            let new_sub = supabase::Subscription {
-                id: uuid::Uuid::new_v4().to_string(),
-                entity_id: user.id.clone(),
-                entity_type: "user".to_string(),
-                plan_id: supabase_plan.clone().id,
-                status: if is_canceling { "cancelling" } else { "active" }.to_string(),
-                stripe_subscription_id: subscription.id.to_string(),
-                current_period_end: Utc
-                    .timestamp_opt(subscription.current_period_end, 0)
-                    .single()
-                    .expect("Invalid timestamp")
-                    .to_rfc3339(),
-                created_at: Utc::now().to_rfc3339(),
-            };
-
-            println!("new_sub: {:?}", new_sub);
-            if let Err(e) = supabase
-                .create_subscription(
-                    &new_sub.entity_id,
-                    &new_sub.entity_type,
-                    &new_sub.plan_id,
-                    &new_sub.status,
-                    &new_sub.stripe_subscription_id,
-                    &new_sub.current_period_end,
-                )
-                .await
-            {
-                println!("Error creating subscription: {:?}", e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        }
-    }
-
-    // Verify/create user membership
-    let membership_result = supabase.get_user_memberships(&user.id).await;
-
-    match membership_result {
-        Ok(memberships) => {
-            println!("Got membership vector from Supabase");
-            if memberships.is_empty() {
-                println!("Vector is empty, creating membership record");
-                let membership = supabase::UserMembership {
-                    user_id: user.id.clone(),
-                    entity_id: user.id.clone(),
-                    entity_type: "user".to_string(),
-                    role: "owner".to_string(),
-                    created_at: Utc::now().to_rfc3339(),
-                };
-
-                println!("new membership: {:?}", membership);
-                if let Err(e) = supabase.add_member(membership).await {
-                    println!("Error creating membership: {:?}", e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-                println!("Membership created successfully");
-            }
-        }
-        Err(_) => {
-            println!("Error getting membership vector from Supabase");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    println!("Returning response");
-    // Return the subscription
-    Ok(Json(SubscriptionResponse {
-        plan_id: supabase_plan.id,
-        current_period_end: subscription.current_period_end,
-    }))
-}
-
 async fn links_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
-) -> Result<Json<Vec<supabase::Link>>, StatusCode> {
+) -> Result<Json<Vec<database::Link>>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
     println!("Fetching links for user: {}", user_id);
@@ -633,16 +501,10 @@ async fn links_handler(
 
     tracing::info!("Fetching links for user: {}", user_id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
-    let links = supabase.get_links(&user_id, "user").await.map_err(|e| {
+    let links = database.get_links(&user_id, "user").await.map_err(|e| {
         tracing::error!("Failed to fetch links for user {}: {:?}", user_id, e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -656,13 +518,16 @@ async fn links_handler(
 }
 
 async fn create_link(
-    State(client): State<reqwest::Client>,
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     headers: HeaderMap,
     Json(payload): Json<CreateLinkRequest>,
-) -> Result<(StatusCode, Json<supabase::Link>), StatusCode> {
+) -> Result<(StatusCode, Json<database::Link>), StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
+    let client = &app_state.client;
+    let database = &app_state.database;
+
     println!(
         "Creating new link for owner {}: {}",
         payload.owner_id, payload.url
@@ -682,15 +547,6 @@ async fn create_link(
         payload.owner_id,
         payload.url
     );
-
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
 
     let url = if !payload.url.starts_with("https://") {
         format!("https://{}", payload.url)
@@ -732,14 +588,14 @@ async fn create_link(
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    // init metadata, if not free plan retrieve from link's URL, else use defaults
-    let metadata = if user_claims.plan != "free" && metadata_on {
+    // init metadata, retrieve from link's URL, else use defaults
+    let metadata = if metadata_on {
         match get_metadata(State(client.clone()), &url).await {
             Ok(metadata) => metadata,
             Err(StatusCode::BAD_GATEWAY) => {
                 // If we get BAD_GATEWAY from get_metadata, return it directly to the client
                 return Err(StatusCode::BAD_GATEWAY);
-            },
+            }
             Err(_) => {
                 // For any other errors, use default metadata
                 Metadata {
@@ -769,7 +625,7 @@ async fn create_link(
     };
 
     // grab the favicon, or just pass an empty string
-    let favicon = if user_claims.plan != "free" && metadata_on {
+    let favicon = if metadata_on {
         get_favicon(
             State(client),
             &url,
@@ -794,7 +650,7 @@ async fn create_link(
             .unwrap_or_else(|| metadata.description.unwrap().clone())
     };
 
-    let link = supabase::Link {
+    let link = database::Link {
         id: uuid::Uuid::new_v4().to_string(),
         url: url,
         description: Some(description),
@@ -807,8 +663,9 @@ async fn create_link(
         column_type: payload.column_type,
     };
 
-    if let Err(e) = supabase.create_link(link.clone()).await {
+    if let Err(e) = database.create_link(link.clone()).await {
         tracing::error!("Failed to create link in database: {:?}", e);
+        println!("Failed to create link in database: {:?}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
@@ -817,6 +674,7 @@ async fn create_link(
 }
 
 async fn update_link(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<UpdateLinkRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -835,35 +693,25 @@ async fn update_link(
 
     tracing::info!("Updating link: {}", payload.id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
-    let mut updates = HashMap::new();
-    if let Some(url) = payload.url {
-        tracing::info!("Updating URL for link {}", payload.id);
-        updates.insert("url".to_string(), json!(url));
-    }
-    if let Some(description) = payload.description {
-        updates.insert("description".to_string(), json!(description));
-    }
-    if let Some(title) = payload.title {
-        updates.insert("title".to_string(), json!(title));
-    }
-    if let Some(icon) = payload.icon {
-        updates.insert("icon".to_string(), json!(icon));
-    }
-    if let Some(icon) = payload.column_type {
-        updates.insert("column_type".to_string(), json!(icon));
-    }
+    let link = database::Link {
+        id: payload.id.clone(),
+        url: payload.url.clone().unwrap_or_else(|| "".to_string()),
+        description: payload.description.clone(),
+        title: payload.title.clone().unwrap(),
+        icon: payload.icon.clone(),
+        column_type: payload.column_type.clone().unwrap(),
+        created_at: Utc::now().to_rfc3339(),
+        order_index: 0,
+        owner_type: "".to_string(),
+        owner_id: "".to_string(),
+    };
 
-    if let Err(e) = supabase.update_link(&payload.id, updates).await {
-        tracing::error!("Failed to update link {}: {:?}", payload.id, e);
+    if let Err(e) = database.update_link(link).await {
+        tracing::error!("Failed to update link: {:?}", e);
+        println!("Failed to update link: {:?}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
@@ -872,6 +720,7 @@ async fn update_link(
 }
 
 async fn delete_link(
+    State(app_state): State<AppState>,
     Path(link_id): Path<String>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<StatusCode, StatusCode> {
@@ -887,56 +736,44 @@ async fn delete_link(
         scope.set_tag("http.method", "DELETE");
     });
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
-    if let Err(e) = supabase.delete_link(&link_id).await {
-        println!("Error deleting link: {:?}", e);
+    // First, verify that the link exists and belongs to the user
+    let link = database.get_link(&link_id, &user_id).await.map_err(|e| {
+        tracing::warn!("Link not found or unauthorized: {:?}", e);
+        if e.to_string().contains("404") {
+            StatusCode::NOT_FOUND
+        } else {
+            StatusCode::FORBIDDEN
+        }
+    })?;
+
+    // Verify ownership
+    if link.owner_id != user_id {
+        tracing::warn!(
+            "User {} attempted to delete link {} owned by {}",
+            user_id,
+            link_id,
+            link.owner_id
+        );
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    // Delete the link
+    if let Err(e) = database.delete_link(&link_id).await {
+        tracing::error!("Error deleting link: {:?}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+    tracing::info!("Successfully deleted link: {}", link_id);
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn plan_handler(
-    Path(plan_id): Path<String>,
-    Extension(user_context): Extension<UserContext>,
-) -> Result<Json<supabase::Plan>, StatusCode> {
-    let user_email = user_context.email.clone();
-    let user_id = user_context.user_id.clone();
-
-    sentry::configure_scope(|scope| {
-        scope.set_user(Some(sentry::User {
-            email: Some(user_email.clone()),
-            id: Some(user_id.clone()),
-            ..Default::default()
-        }));
-        scope.set_tag("http.method", "GET");
-    });
-
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let plan = supabase
-        .get_plan(&plan_id)
-        .await
-        .map_err(|e| match e.to_string().as_str() {
-            "404" => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        })?;
-
-    Ok(Json(plan))
-}
-
 async fn get_user_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
-) -> Result<Json<supabase::User>, StatusCode> {
+) -> Result<Json<database::User>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
 
@@ -949,13 +786,10 @@ async fn get_user_handler(
         scope.set_tag("http.method", "GET");
     });
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
-    let user = supabase
+    let user = database
         .get_user(&user_id)
         .await
         .map_err(|e| match e.to_string().as_str() {
@@ -964,157 +798,6 @@ async fn get_user_handler(
         })?;
 
     Ok(Json(user))
-}
-
-/// Handles the cancellation of a user's subscription.
-///
-/// This function performs the following steps:
-/// 1. Validates the user email and user ID inputs
-/// 2. Verifies the user exists in Supabase
-/// 3. Confirms the user has an active Stripe subscription
-/// 4. Cancels the subscription in Stripe
-///
-/// # Returns
-///
-/// * `Result<StatusCode, StatusCode>` - Returns OK (200) if cancellation is successful
-///
-/// # Errors
-///
-/// This function returns an appropriate `StatusCode` in case of errors:
-/// * `StatusCode::BAD_REQUEST` (400) - If email or user ID is empty
-/// * `StatusCode::NOT_FOUND` (404) - If user doesn't exist in Supabase
-/// * `StatusCode::UNAUTHORIZED` (401) - If user has no active subscription
-/// * `StatusCode::INTERNAL_SERVER_ERROR` (500) - For any other errors
-///
-/// # Example
-///
-/// ```rust
-/// let response = cancel_handler(Path(("user@example.com".to_string(), "user_id".to_string()))).await;
-/// match response {
-///     Ok(_) => println!("Subscription cancelled successfully"),
-///     Err(status) => println!("Error cancelling subscription: {:?}", status),
-/// }
-/// ```
-#[axum::debug_handler]
-async fn cancel_handler(
-    Extension(user_context): Extension<UserContext>,
-    payload: Json<FeedbackRequest>,
-) -> Result<StatusCode, StatusCode> {
-    let user_email = user_context.email.clone();
-    let user_id = user_context.user_id.clone();
-    println!("Cancelling email: {}", user_email);
-
-    sentry::configure_scope(|scope| {
-        scope.set_user(Some(sentry::User {
-            email: Some(user_email.clone()),
-            id: Some(user_id.clone()),
-            ..Default::default()
-        }));
-        scope.set_tag("http.method", "POST");
-    });
-
-    println!("Cancelling user id: {}", user_id);
-    println!("Feedback: {:?}", payload);
-    let feedback = payload.feedback_comment.clone();
-    let reasons = payload.reasons.clone();
-
-    // confirm the user email and user id are present and formatted well else throw a 400
-    if user_email.is_empty() || user_id.is_empty() {
-        println!("User email or user id is empty");
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    // first confirm if user exists, if not throw a 404
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let _user = supabase
-        .get_user(&user_id)
-        .await
-        .map_err(|e| match e.to_string().as_str() {
-            "404" => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        })?;
-
-    println!("Got user: {:?}", _user);
-
-    // then get the supabase subscription
-    let supa_sub = supabase
-        .get_user_subscription(&user_id)
-        .await
-        .map_err(|e| match e.to_string().as_str() {
-            "404" => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        })?;
-
-    println!("Got supabase subscription: {:?}", supa_sub);
-
-    // then confirm the user's subscription is active, if not throw a 401
-    let customer = match StripeClient::get_customer(&user_email).await {
-        Some(customer) => customer,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
-
-    println!("Got customer: {:?}", customer);
-
-    let subscription = match StripeClient::get_subscription(&customer).await {
-        Some(sub) => sub,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
-
-    println!("Got subscription: {:?}", subscription);
-
-    if !subscription.status.eq(&stripe::SubscriptionStatus::Active) {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-
-    // let's try and cancel the subscription with Stripe
-    let sub = match StripeClient::cancel_subscription(user_email, feedback, reasons).await {
-        Some(sub) => sub,
-        None => {
-            println!("No subscription found");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    println!("Cancelled subscription: {:?}", sub);
-
-    // If that worked, update the subscription records in supabase
-    let mut updates = HashMap::new();
-    updates.insert("status".to_string(), json!("cancelled"));
-    updates.insert("stripe_subscription_id".to_string(), json!(""));
-    updates.insert(
-        "current_period_end".to_string(),
-        json!(Utc::now().to_rfc3339()),
-    );
-
-    println!("updates: {:?}", updates);
-
-    if let Err(e) = supabase.update_subscription(&supa_sub.id, updates).await {
-        println!("Error occurred updating the sub in supabase: {:?}", e);
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
-
-    // todo - test the subscription flow with this
-    let memberships = supabase.get_user_memberships(&user_id).await.map_err(|e| {
-        println!("Error getting memberships: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    for membership in memberships {
-        if let Err(e) = supabase
-            .remove_member(&membership.user_id, &membership.entity_id)
-            .await
-        {
-            println!("Error removing membership: {:?}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    return Ok(StatusCode::OK);
 }
 
 async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metadata, StatusCode> {
@@ -1180,10 +863,10 @@ async fn get_metadata(client: State<reqwest::Client>, url: &str) -> Result<Metad
 }
 
 async fn get_favicon(
-    client: State<reqwest::Client>,
+    client: State<&reqwest::Client>,
     url: &str,
     favicon_source: Option<String>,
-    mime_type: Option<String>
+    mime_type: Option<String>,
 ) -> Result<String, StatusCode> {
     let parsed_url = Url::parse(url).expect("Invalid URL");
     let domain = parsed_url.host_str().unwrap_or("").to_string();
@@ -1299,17 +982,11 @@ async fn suggest_handler(
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    // Check if token is for a "free" plan user or if their plan allows this feature
-    if user_claims.plan == "free" {
-        println!("User plan does not allow auto-suggestions");
-        return Err(StatusCode::FORBIDDEN);
-    }
-
     println!("Suggesting: {}", query);
 
     let brave = Brave::new(
         std::env::var("BRAVE_SUGGEST_URL").expect("BRAVE_URL must be set"),
-        std::env::var("BRAVE_TEST_KEY").expect("BRAVE_API_KEY must be set"),
+        std::env::var("BRAVE_API_KEY").expect("BRAVE_API_KEY must be set"),
     )
     .map_err(|e| {
         println!("Error initializing Brave client: {:?}", e);
@@ -1332,6 +1009,7 @@ async fn suggest_handler(
 }
 
 async fn feedback_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<FeedbackRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1352,14 +1030,11 @@ async fn feedback_handler(
     let user_email = user_context.email.clone();
     println!("Feedback for user: {}", user_id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
     // Check if the user has sent feedback in the last 24 hours
-    let can_send_feedback = supabase
+    let can_send_feedback = database
         .check_feedback_timestamp(&user_id)
         .await
         .map_err(|e| {
@@ -1396,8 +1071,8 @@ async fn feedback_handler(
         })?;
 
     // Create a feedback timestamp record
-    supabase
-        .create_feedback_timestamp(&user_id, &Utc::now().to_rfc3339())
+    database
+        .create_feedback_timestamp(&user_id, &Utc::now())
         .await
         .map_err(|e| {
             println!("Error creating feedback timestamp: {:?}", e);
@@ -1408,6 +1083,7 @@ async fn feedback_handler(
 }
 
 async fn create_settings(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<UserSettingsRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1427,19 +1103,16 @@ async fn create_settings(
     println!("Creating settings for user: {}", user_id);
     println!("Payload: {:?}", payload);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
-    let settings = supabase::UserSettings {
+    let settings = database::UserSettings {
         user_id: user_id.clone(),
-        settings_blob: json!(payload),
+        settings_blob: serde_json::to_string(&payload).unwrap_or_default(),
         created_at: Utc::now().to_rfc3339(),
     };
 
-    if let Err(e) = supabase.create_user_settings(settings).await {
+    if let Err(e) = database.create_user_settings(settings).await {
         println!("Error creating user settings: {:?}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
@@ -1448,6 +1121,7 @@ async fn create_settings(
 }
 
 async fn update_settings(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
     Json(payload): Json<UserSettingsRequest>,
 ) -> Result<StatusCode, StatusCode> {
@@ -1467,16 +1141,13 @@ async fn update_settings(
     println!("Updating settings for user: {}", user_id);
     println!("Payload: {:?}", payload);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
     let mut updates = HashMap::new();
     updates.insert("settings_blob".to_string(), json!(payload));
 
-    if let Err(e) = supabase.update_user_settings(&user_id, updates).await {
+    if let Err(e) = database.update_user_settings(&user_id, updates).await {
         println!("Error updating user settings: {:?}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
@@ -1485,8 +1156,9 @@ async fn update_settings(
 }
 
 async fn get_settings(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
-) -> Result<Json<supabase::UserSettings>, StatusCode> {
+) -> Result<Json<database::UserSettings>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
     println!("Getting settings for user: {}", user_id);
@@ -1502,14 +1174,11 @@ async fn get_settings(
 
     println!("Getting settings for user: {}", user_id);
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
     let settings =
-        supabase
+        database
             .get_user_settings(&user_id)
             .await
             .map_err(|e| match e.to_string().as_str() {
@@ -1520,128 +1189,16 @@ async fn get_settings(
     Ok(Json(settings))
 }
 
-async fn cancel_subscription_hook(
-    headers: HeaderMap,
-    Json(payload): Json<Event>,
-) -> Result<StatusCode, StatusCode> {
-    println!("Received cancel subscription webhook");
-
-    sentry::configure_scope(|scope| {
-        scope.set_tag("http.method", "POST");
-    });
-
-    let endpoint_secret =
-        env::var("STRIPE_ENDPOINT_SECRET").expect("STRIPE_ENDPOINT_SECRET must be set");
-    let verify_signature = env::var("STRIPE_VERIFY_WEBHOOK_SIGNATURE")
-        .expect("STRIPE_VERIFY_WEBHOOK_SIGNATURE must be set");
-
-    let signature = headers
-        .get("Stripe-Signature")
-        .ok_or_else(|| {
-            println!("Missing Stripe-Signature header");
-            StatusCode::BAD_REQUEST
-        })?
-        .to_str()
-        .map_err(|e| {
-            println!("Error parsing Stripe-Signature header: {:?}", e);
-            StatusCode::BAD_REQUEST
-        })?;
-
-    let payload_str = serde_json::to_string(&payload).map_err(|e| {
-        println!("Error serializing payload: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    let event = if verify_signature == "true" {
-        stripe::Webhook::construct_event(&payload_str, signature, &endpoint_secret).map_err(
-            |e| {
-                println!("Error constructing Stripe event: {:?}", e);
-                StatusCode::BAD_REQUEST
-            },
-        )?
-    } else {
-        serde_json::from_str::<Event>(&payload_str).map_err(|e| {
-            println!("Error deserializing event: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-    };
-
-    if event.type_ != EventType::CustomerSubscriptionDeleted {
-        println!("Unexpected event type: {:?}", event.type_);
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let event_data = serde_json::to_value(event.data.object).map_err(|e| {
-        println!("Error converting event data to value: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    let subscription: Subscription = serde_json::from_value(event_data).map_err(|e| {
-        println!("Error deserializing subscription: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    let customer_id = subscription.customer.id();
-
-    let user_email = StripeClient::get_customer_email(&customer_id)
-        .await
-        .map_err(|e| {
-            println!(
-                "Error retrieving customer email for ID: {:?}, error: {:?}",
-                customer_id, e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let user_email = match user_email {
-        Some(email) => email,
-        None => {
-            println!("No email found for customer ID: {:?}", customer_id);
-            return Err(StatusCode::NOT_FOUND);
-        }
-    };
-
-    let supabase = Supabase::new(
-        env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        println!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    let user = supabase.get_user_by_email(&user_email).await.map_err(|e| {
-        println!("Error retrieving user by email: {:?}", e);
-        StatusCode::NOT_FOUND
-    })?;
-
-    let mut updates = HashMap::new();
-    updates.insert("status".to_string(), json!("cancelled"));
-    updates.insert("stripe_subscription_id".to_string(), json!(subscription.id));
-    updates.insert(
-        "current_period_end".to_string(),
-        json!(Utc::now().to_rfc3339()),
-    );
-
-    supabase
-        .update_subscription(&user.id, updates)
-        .await
-        .map_err(|e| {
-            println!("Error updating subscription: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(StatusCode::OK)
-}
-
 async fn get_user_data_handler(
+    State(app_state): State<AppState>,
     Extension(user_context): Extension<UserContext>,
 ) -> Result<Json<UserDataResponse>, StatusCode> {
     let user_email = user_context.email.clone();
     let user_id = user_context.user_id.clone();
     let mut new_user_created = false;
-    let mut settings: Option<supabase::UserSettings> = None;
-    println!("Fetching user data!");
+    let mut settings: Option<database::UserSettings> = None;
+    println!("Fetching user data for {}", user_email);
+    tracing::info!("Fetching user data for {}", user_email);
 
     sentry::configure_scope(|scope| {
         scope.set_user(Some(sentry::User {
@@ -1652,43 +1209,40 @@ async fn get_user_data_handler(
         scope.set_tag("http.method", "GET");
     });
 
-    println!("Fetching user data!");
-    let user_id = user_context.user_id.clone();
-    let user_email = user_context.email.clone();
-    tracing::info!("Fetching user data for {}", user_email);
-
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|e| {
-        tracing::error!("Error initializing Supabase client: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let database = &app_state.database;
 
     // Get or create user
-    let user = match supabase.get_user(&user_id).await {
+    let user = match database.get_user(&user_id).await {
         Ok(user) => {
             tracing::info!("Found existing user: {}", user.email);
+            println!("Found existing user: {}", user.email);
             user
         }
-        Err(_) => {
+        Err(e) => {
+            println!("Error fetching user: {:?}", e);
             tracing::info!("Creating new user: {}", user_email);
-            let new_user = supabase::User {
+            println!("Creating new user: {}", user_email);
+            let new_user = database::User {
                 id: user_id.clone(),
                 email: user_email.clone(),
                 created_at: Utc::now().to_rfc3339(),
                 auth_token: None,
+                password_hash: String::new(),
             };
-            supabase.create_user(new_user.clone()).await.map_err(|e| {
+            database.create_user(new_user.clone()).await.map_err(|e| {
                 tracing::error!("Failed to create user: {:?}", e);
+                println!("Failed to create user: {:?}", e);
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
             new_user_created = true;
-            let create_settings_result = create_user_default_settings(&new_user).await;
-            if let Err(e) = create_settings_result {
-                if e == StatusCode::INTERNAL_SERVER_ERROR {
+            let create_settings_result = create_user_default_settings(&app_state, &new_user).await;
+            if let Err(e) = &create_settings_result {
+                if *e == StatusCode::INTERNAL_SERVER_ERROR {
                     tracing::error!(
+                        "Failed to create user settings for user: {}",
+                        new_user.email
+                    );
+                    println!(
                         "Failed to create user settings for user: {}",
                         new_user.email
                     );
@@ -1700,67 +1254,17 @@ async fn get_user_data_handler(
         }
     };
 
-    tracing::info!("Fetching subscription info for {}", user_email);
-    
-    // Track if the subscription is active
-    let mut has_active_subscription = false;
-    
-    // Get subscription info
-    let subscription = match StripeClient::get_customer(&user_email).await {
-        Some(customer) => match StripeClient::get_subscription(&customer).await {
-            Some(sub) => {
-                // Check if subscription is still valid based on status and current period end
-                let current_timestamp = chrono::Utc::now().timestamp();
-                has_active_subscription = sub.status.eq(&stripe::SubscriptionStatus::Active) && 
-                    sub.current_period_end > current_timestamp;
-                
-                if has_active_subscription {
-                    let item = sub
-                        .items
-                        .data
-                        .first()
-                        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-                    let plan = item
-                        .plan
-                        .as_ref()
-                        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-                    let product_id = plan
-                        .product
-                        .as_ref()
-                        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?
-                        .id();
-
-                    let supabase_plan = supabase
-                        .get_plan_by_stripe_id(&product_id.to_string())
-                        .await
-                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-                    Some((
-                        SubscriptionResponse {
-                            plan_id: supabase_plan.id.clone(),
-                            current_period_end: sub.current_period_end,
-                        },
-                        supabase_plan,
-                    ))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        },
-        None => None,
-    };
-
     tracing::info!("Fetching user settings for {}", user_id);
-    // only fetch settings if this is an existing user, otherwise we already created the default settings for new users
+    println!("Fetching user settings for {}", user_id);
     if !new_user_created {
-        settings = match supabase.get_user_settings(&user_id).await {
+        settings = match database.get_user_settings(&user_id).await {
             Ok(settings) => Some(settings),
-            Err(_) => match create_user_default_settings(&user).await {
+            Err(_) => match create_user_default_settings(&app_state, &user).await {
                 Ok(new_settings) => Some(new_settings),
                 Err(e) => {
                     if e == StatusCode::INTERNAL_SERVER_ERROR {
                         tracing::error!("Failed to create user settings for user: {}", user.email);
+                        println!("Failed to create user settings for user: {}", user.email);
                     }
                     None
                 }
@@ -1768,58 +1272,18 @@ async fn get_user_data_handler(
         };
     }
 
-    // If subscription is not active but we have settings, disable premium features
-    if !has_active_subscription && settings.is_some() {
-        let mut user_settings = settings.unwrap();
-        let mut settings_blob = user_settings.settings_blob.clone();
-        
-        // Disable premium features in the settings
-        disable_premium_features(&mut settings_blob);
-        
-        // Update the settings object
-        user_settings.settings_blob = settings_blob;
-        
-        // Save changes to database if settings were modified
-        let mut updates = HashMap::new();
-        updates.insert("settings_blob".to_string(), user_settings.settings_blob.clone());
-        
-        if let Err(e) = supabase.update_user_settings(&user_id, updates).await {
-            tracing::error!("Failed to update user settings after disabling premium features: {:?}", e);
-        } else {
-            tracing::info!("Successfully disabled premium features for user with expired subscription");
-        }
-        
-        // Update the settings value for the response
-        settings = Some(user_settings);
-    }
-
     tracing::info!("Fetching links for user {}", user_id);
-    let links = supabase.get_links(&user_id, "user").await.map_err(|e| {
+    println!("Fetching links for user {}", user_id);
+    let links = database.get_links(&user_id, "user").await.map_err(|e| {
         tracing::error!("Failed to fetch links: {:?}", e);
+        println!("Failed to fetch links: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let free_plan_id = std::env::var("FREE_PLAN_ID").expect("FREE_PLAN_ID must be set");
-    let free_plan = if subscription.is_none() {
-        Some(
-            supabase
-                .get_plan(&free_plan_id)
-                .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-        )
-    } else {
-        None
-    };
-
-    // Generate JWT token with user ID and plan info
-    let plan_name = subscription
-        .as_ref()
-        .map(|(_, plan)| plan.name.clone())
-        .or_else(|| free_plan.as_ref().map(|p| p.name.clone()))
-        .unwrap_or_else(|| "free".to_string());
-
-    let auth_token = user_jwt::generate_jwt(&user_id, &plan_name).map_err(|e| {
+    // Generate JWT token with user ID
+    let auth_token = user_jwt::generate_jwt(&user_id, &user_email).map_err(|e| {
         tracing::error!("Failed to generate JWT token: {:?}", e);
+        println!("Failed to generate JWT token: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
@@ -1827,37 +1291,31 @@ async fn get_user_data_handler(
         "Successfully assembled user data response for {}",
         user_email
     );
+    println!(
+        "Successfully assembled user data response for {}",
+        user_email
+    );
 
-    // Create response with user data and authorization token
+    // Create response with user data
     let mut response = UserDataResponse {
         user,
-        subscription: subscription.as_ref().map(|(sub, _)| sub.clone()).or(Some(
-            SubscriptionResponse {
-                plan_id: free_plan_id.clone(),
-                current_period_end: 0,
-            },
-        )),
-        plan: subscription.map(|(_, plan)| plan).or(free_plan),
         settings,
         links,
     };
 
-    // Add the auth_token to the response
     response.user.auth_token = Some(auth_token);
 
     Ok(Json(response))
 }
 
 async fn create_user_default_settings(
-    user: &crate::supabase::User,
-) -> Result<supabase::UserSettings, StatusCode> {
+    app_state: &AppState,
+    user: &crate::database::User,
+) -> Result<database::UserSettings, StatusCode> {
     println!("Creating default user settings");
 
-    let supabase = Supabase::new(
-        std::env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
-        std::env::var("SUPABASE_KEY").expect("SUPABASE_KEY must be set"),
-    )
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // Use app_state's database instance
+    let database = &app_state.database;
 
     let settings_blob = UserSettingsRequest {
         search_history: false,
@@ -1869,15 +1327,15 @@ async fn create_user_default_settings(
         metadata: false,
     };
 
-    let user_settings = supabase::UserSettings {
+    let user_settings = database::UserSettings {
         user_id: user.id.clone(),
-        settings_blob: json!(settings_blob),
+        settings_blob: serde_json::to_string(&settings_blob).unwrap_or_default(),
         created_at: Utc::now().to_rfc3339(),
     };
 
-    let settings = supabase.get_user_settings(&user.id).await.ok();
+    let settings = database.get_user_settings(&user.id).await.ok();
     if settings.is_none() {
-        if let Err(e) = supabase.create_user_settings(user_settings.clone()).await {
+        if let Err(e) = database.create_user_settings(user_settings.clone()).await {
             println!("Failed to create user settings: {:?}", e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }

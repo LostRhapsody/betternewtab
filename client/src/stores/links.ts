@@ -125,22 +125,25 @@ export const useLinksStore = defineStore("links", {
 
     async removeLink(linkId: string) {
       this.isLoading = true;
+      const originalLinks = [...this.links];
       this.links = this.links.filter((link) => link.id !== linkId);
+
       try {
         const response = await api.delete(API.DELETE_LINK(linkId));
-        if (response.status !== 200) {
+        if (response.status !== 204) {
           throw new Error(`Failed to delete link ${response.status}`);
         }
+        // Update cache only after successful deletion
         cache.set(CacheKeys.LINKS, this.links);
+        return true;
       } catch (error) {
+        // Restore original links if deletion fails
+        this.links = originalLinks;
         this.error = error as string;
-        this.isLoading = false;
         return false;
       } finally {
         this.isLoading = false;
       }
-
-      return true;
     },
 
     async updateLink(link: Link) {

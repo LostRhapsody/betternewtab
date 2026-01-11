@@ -19,12 +19,17 @@ export const useUserSettingsStore = defineStore("userSettings", {
   }),
   actions: {
     async updateSetting(key: keyof UserSettings, value: boolean) {
+      console.log("Updating setting:", key, value);
       this.settings[key] = value;
+      console.log("Settings:", this.settings);
       try {
         const userStore = useUserStore();
         if (!userStore.userId) return;
+        console.log("User ID:", userStore.userId);
         await api.put(API.UPDATE_SETTINGS, this.settings);
+        console.log("Settings updated:", this.settings);
         cache.set(CacheKeys.SETTINGS, this.settings);
+        console.log("Settings cached:", cache.get(CacheKeys.SETTINGS));
       } catch (error) {
         console.error("Failed to update settings:", error);
       }
@@ -35,7 +40,10 @@ export const useUserSettingsStore = defineStore("userSettings", {
       if (Object.values(this.settings).every((val) => val === false)) {
         const cachedSettings = cache.get<UserSettings>(CacheKeys.SETTINGS);
         if (cachedSettings) {
-          this.settings = cachedSettings;
+          this.settings =
+            typeof cachedSettings === "string"
+              ? JSON.parse(cachedSettings)
+              : cachedSettings;
           return;
         }
 
@@ -43,7 +51,11 @@ export const useUserSettingsStore = defineStore("userSettings", {
           const userStore = useUserStore();
           if (!userStore.userId) return;
           const response = await api.get(API.GET_SETTINGS);
-          this.settings = response.data.settings_blob;
+          const settingsBlob = response.data.settings_blob;
+          this.settings =
+            typeof settingsBlob === "string"
+              ? JSON.parse(settingsBlob)
+              : settingsBlob;
           cache.set(CacheKeys.SETTINGS, this.settings);
         } catch (error) {
           console.error("Failed to fetch settings:", error);

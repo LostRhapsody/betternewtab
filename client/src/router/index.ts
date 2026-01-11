@@ -1,7 +1,7 @@
-import type { Subscription, SubscriptionResponse } from "@/types/Subscription";
+import { API } from "@/constants/api";
+import api from "@/services/api";
+import { authService } from "@/services/auth";
 import { CacheKeys, cache } from "@/utils/cache";
-import { Clerk } from "@clerk/clerk-js";
-// src/router/index.ts
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserSettingsStore } from "../stores/settings";
 import { useUserStore } from "../stores/user";
@@ -12,17 +12,22 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: "/login",
+      name: "login",
+      component: () => import("../views/LoginScreen.vue"),
+      meta: { requiresGuest: true },
+    },
+    {
+      path: "/signup",
+      name: "signup",
+      component: () => import("../views/SignUpScreen.vue"),
+      meta: { requiresGuest: true },
+    },
+    {
       path: "/",
       name: "home",
       component: () => import("../views/Home.vue"),
-      beforeEnter: (to, from, next) => {
-        // Check if we're in staging mode and not logged in
-        if (isStaging && !cache.get(CacheKeys.STAGING_LOGGED_IN)) {
-          next("/staging-login");
-        } else {
-          next();
-        }
-      },
+      meta: { requiresAuth: true },
     },
     {
       path: "/staging-login",
@@ -30,115 +35,85 @@ const router = createRouter({
       component: () => import("../views/staging_login.vue"),
     },
     {
-      path: "/plans",
-      name: "plans",
-      component: () => import("../views/Plans.vue"),
-      beforeEnter: (to, from, next) => {
-        // Check if we're in staging mode and not logged in
-        if (isStaging && !cache.get(CacheKeys.STAGING_LOGGED_IN)) {
-          next("/staging-login");
-        } else {
-          next();
-        }
-      },
-    },
-    {
-      path: "/confirm",
-      name: "confirm",
-      component: () => import("../views/Confirm.vue"),
-      beforeEnter: (to, from, next) => {
-        // Check if we're in staging mode and not logged in
-        if (isStaging && !cache.get(CacheKeys.STAGING_LOGGED_IN)) {
-          next("/staging-login");
-        } else {
-          next();
-        }
-      },
-    },
-    {
-      path: "/contact",
-      name: "contact",
-      component: () => import("../views/Contact.vue"),
-    },
-    {
-      path: "/privacy-policy",
-      name: "privacyPolicy",
-      component: () => import("../views/PrivacyPolicy.vue"),
-    },
-    {
-      path: "/terms-of-service",
-      name: "termsOfService",
-      component: () => import("../views/TermsOfService.vue"),
-    },
-    {
       path: "/settings",
       name: "settings",
       component: () => import("../views/Settings.vue"),
-      beforeEnter: async (to, from, next) => {
-        // Check if we're in staging mode and not logged in
-        if (isStaging && !cache.get(CacheKeys.STAGING_LOGGED_IN)) {
-          next("/staging-login");
+      meta: { requiresAuth: true },
+    },
+  ],
+});
+
+// Global navigation guard
+router.beforeEach(async (to, from, next) => {
+  // Check if we're in staging mode and not logged in (for staging routes)
+  if (isStaging && !cache.get(CacheKeys.STAGING_LOGGED_IN)) {
+    if (to.path !== "/staging-login") {
+      next("/staging-login");
+      return;
+    }
+  }
+
+  const isAuthenticated = authService.isAuthenticated();
+
+  // Handle guest-only routes (like login)
+  if (to.meta.requiresGuest && isAuthenticated) {
+    next("/");
+    return;
+  }
+
+  // Handle auth-required routes
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next("/login");
+    return;
+  }
+
+  // For authenticated routes, ensure user data is loaded
+  if (to.meta.requiresAuth && isAuthenticated) {
+    const userStore = useUserStore();
+    const userSettingsStore = useUserSettingsStore();
+
+    // If user data not loaded yet (page refresh scenario)
+    if (!userStore.userId) {
+      try {
+        const response = await api.get<{
+          user: { id: string; email: string };
+        }>(API.GET_USER_DATA);
+
+        if (!response.data.user) {
+          authService.logout();
+          next("/login");
           return;
         }
 
-        const userStore = useUserStore();
-        const userSettingsStore = useUserSettingsStore();
+        const authUser = {
+          id: response.data.user.id,
+          email: response.data.user.email,
+        };
 
-        // if not logged in already in userStore (user probably refreshed page)
-        // note: don't refreh from cache here, speed is not important, accuracy is.
-        if (!userStore.userId) {
-          try {
-            const clerk = new Clerk(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
-            await clerk.load();
-
-            if (!clerk.user) {
-              throw new Error("User not logged in");
+        // Fetch user data asynchronously without blocking
+        userStore
+          .fetchUserData(authUser)
+          .then((success) => {
+            if (!success) {
+              console.error("Failed to fetch user data");
             }
+          })
+          .catch((err) => {
+            console.error("Error fetching user data:", err);
+          });
 
-            if (!clerk.user.emailAddresses[0]) {
-              throw new Error("No user email found");
-            }
+        // Always fetch settings
+        await userSettingsStore.fetchSettings();
+      } catch (err) {
+        console.error(err);
+        authService.logout();
+        next("/login");
+        return;
+      }
+    }
+  }
 
-            let gotUser = false;
-
-            // Fetch user data asynchronously without blocking the UI
-            userStore
-              .fetchUserData({
-                id: clerk.user.id,
-                firstName: clerk.user.firstName || "",
-                lastName: clerk.user.lastName || "",
-                email: clerk.user.emailAddresses[0].emailAddress,
-              })
-              .then((success) => {
-                if (!success) {
-                  console.error("Failed to fetch user data");
-                }
-              })
-              .catch((err) => {
-                console.error("Error fetching user data:", err);
-              });
-
-            // Proceed without waiting for fetchUserData to complete
-            gotUser = !!userStore.userId;
-
-            if (!gotUser) {
-              throw new Error("Failed to fetch user data");
-            }
-
-            // always fetch settings with User
-            await userSettingsStore.fetchSettings();
-
-            next();
-          } catch (err) {
-            console.error(err);
-            next("/");
-          }
-        } else {
-          next();
-        }
-      },
-    },
-  ],
+  next();
 });
 
 export default router;

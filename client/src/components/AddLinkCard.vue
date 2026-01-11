@@ -1,257 +1,287 @@
-<!-- AddLinkCard.vue -->
 <template>
-	<div>
-		<div id="add-link-card" v-if="!isAtMaxPins || (isAtMaxPins && isPlanFree)" @click="handleClick"
-			class="group cursor-pointer border-2 rounded-lg p-4 transition-all duration-300 flex flex-col items-center justify-center space-y-2"
-			:class="[
-				isAtMaxPins
-					? 'border-amber-500/50 bg-amber-50/50 hover:bg-amber-100/50'
-					: 'border-dashed hover:border-primary border-gray-300'
-			]" @mouseenter="hover = true" @mouseleave="hover = false">
-			<v-icon :color="isAtMaxPins ? 'amber-darken-2' : (hover ? 'primary' : 'grey')" size="24">
-				{{ isAtMaxPins ? 'mdi-arrow-up-circle' : 'mdi-plus' }}
-			</v-icon>
-			<span :class="isAtMaxPins ? 'text-amber-800' : (hover ? 'text-primary' : 'text-grey')">
-				{{ isAtMaxPins ? 'Upgrade for more pins' : 'Add new link' }}
-			</span>
-		</div>
+  <div>
+    <div
+      id="add-link-card"
+      class="add-link-card"
+      @click="handleClick"
+      @mouseenter="hover = true"
+      @mouseleave="hover = false"
+    >
+      <TpIcon
+        name="plus"
+        :class="[
+          'add-link-card__icon',
+          { 'add-link-card__icon--active': hover }
+        ]"
+      />
+      <span class="add-link-card__text">
+        Add new link
+      </span>
+    </div>
 
-		<v-dialog v-model="isModalOpen" width="500" :fullscreen="mobile">
-			<v-card class="px-8 py-8 sm:py-0 sm:px-0">
-				<v-card-title>Add New Link </v-card-title>
+    <TpModal v-model="isModalOpen" title="Add New Link" :size="mobile ? 'full' : 'md'" initial-focus="#add-link-card-url">
+      <form @submit.prevent="handleSubmit" ref="formRef" class="add-link-form">
+        <TpInput
+          input-id="add-link-card-url"
+          v-model="formData.url"
+          label="URL"
+          type="url"
+          placeholder="https://example.com"
+          required
+          :error="urlError"
+          @enter="handleSubmit"
+        />
 
-				<v-card-text>
-					<v-form @submit.prevent="handleSubmit" ref="form">
-						<v-text-field v-model="formData.url" :rules="[v => !!v || 'URL is required', linksStore.validateUrl]"
-							label="URL" required type="url" @keyup.enter="handleSubmit"></v-text-field>
-						<p v-if="!validLink" class="text-error my-2 text-sm">Invalid URL: Failed to connect with this URL's server, is it spelled correctly?</p>
+        <p v-if="!validLink" class="add-link-form__error">
+          Invalid URL: Failed to connect with this URL's server, is it spelled correctly?
+        </p>
 
-						<v-text-field @keyup.enter="(e: Event) => { e.preventDefault(); handleSubmit() }"
-							v-model="formData.title" label="Title"></v-text-field>
+        <TpInput
+          input-id="add-link-card-title"
+          v-model="formData.title"
+          label="Title"
+          placeholder="My Link"
+          @enter="handleSubmit"
+        />
 
-						<v-textarea @keydown.enter.prevent="(e: KeyboardEvent) => {
-							if (e.shiftKey && e.target !== null) {
-								(e.target as HTMLTextAreaElement).value += '\n'
-							} else {
-								handleSubmit()
-							}
-						}" v-model="formData.description" label="Description" rows="3"></v-textarea>
+        <TpTextarea
+          input-id="add-link-card-description"
+          v-model="formData.description"
+          label="Description"
+          placeholder="Optional description"
+          :rows="3"
+        />
 
-						<v-select v-model="formData.columnType" :items="columnTypes" label="Column Label" required>
-							<template v-slot:append-item>
-								<v-divider class="my-4"></v-divider>
-								<v-list-item>
-									<v-text-field
-										v-model="newColumnType"
-										label="New Column Type"
-										dense
-										hide-details
-										@keyup.enter="addNewColumnType"
-									></v-text-field>
-									<v-btn @click="addNewColumnType" color="primary" class="w-full">
-										Add
-									</v-btn>
-								</v-list-item>
-							</template>
-						</v-select>
-					</v-form>
-					<p></p>
-				</v-card-text>
+        <TpCombobox
+          input-id="add-link-card-column-type"
+          v-model="formData.columnType"
+          :options="columnTypeOptions"
+          label="Column Label"
+          placeholder="Select or create column..."
+          creatable
+          create-label="Create '{input}'"
+        />
+      </form>
 
+      <template #actions>
+        <div class="add-link-form__hints" v-if="!mobile">
+          <span>Submit: <kbd>Enter</kbd></span>
+          <span>New line: <kbd>Shift</kbd> + <kbd>Enter</kbd></span>
+        </div>
 
-				<v-card-actions>
-							<div :class="mobile ? 'hidden' : 'text-xs text-gray-500 grid grid-cols-3 gap-2 ps-4 pb-4'">
-								<span class="col-span-1 text-start">Submit:</span>
-								<span class="col-span-2">
-									<span class="kbd">enter<v-icon size="18">mdi-keyboard-return</v-icon></span>
-								</span>
-								<span class="col-span-1 text-start">New line:</span>
-								<span class="col-span-2">
-									<span class="kbd">shift<v-icon size="18">mdi-arrow-up</v-icon></span> + <span
-									class="kbd">enter<v-icon size="18">mdi-keyboard-return</v-icon></span>
-								</span>
-							</div>
-							<v-spacer v-if="!mobile"></v-spacer>
-							<div :class="mobile ? 'flex flex-col gap-4 w-full' : 'grid grid-rows-2 gap-4'">
-								<div :class="mobile ? 'flex justify-around' : ''">
-									<v-btn color="grey-darken-1" :variant="mobile ? 'elevated' : 'text' " :size="mobile ? 'x-large' : 'default'" @click="closeModal">
-										Cancel
-									</v-btn>
-									<v-btn color="primary" :variant="mobile ? 'elevated' : 'text'" :size="mobile ? 'x-large' : 'default'" :loading="isLoading" @click="handleSubmit">
-										Add Link
-									</v-btn>
-								</div>
-								<div class="flex justify-end">
-									<v-tooltip location="left" :z-index="1000" max-width="300" open-on-click>
-										<template v-slot:activator="{ props }">
-											<v-btn v-bind="props">
-												<v-icon size="x-large" icon="mdi-help-circle-outline" class="text-gray-500" />
-											</v-btn>
-										</template>
-										<span>
-											<span class="kbd">+Plus Feature</span><br/>
-											If title and description are left blank, <strong>Better New Tab</strong> attempts to get them from the website, along
-											with an icon, from the URL's website.
-										</span>
-									</v-tooltip>
-							</div>
-						</div>
-					</v-card-actions>
-			</v-card>
-		</v-dialog>
-	</div>
+        <div class="add-link-form__actions">
+          <TpTooltip content="If title and description are left blank, Better New Tab attempts to fetch them from the website automatically." position="left">
+            <TpButton variant="ghost" icon-only>
+              <TpIcon name="help" />
+            </TpButton>
+          </TpTooltip>
+
+          <TpButton variant="ghost" @click="closeModal">
+            Cancel
+          </TpButton>
+          <TpButton variant="primary" :loading="isLoading" @click="handleSubmit">
+            Add Link
+          </TpButton>
+        </div>
+      </template>
+    </TpModal>
+  </div>
 </template>
 
 <script setup lang="ts">
-	import { computed, ref, watch, nextTick } from "vue";
-	import { useRouter } from "vue-router";
-	import { useLinksStore } from "../stores/links";
-	import { useUserStore } from "../stores/user";
-	import type { CreateLinkRequest, Link } from "../types/Link";
-	import { useDisplay } from 'vuetify';
+import { computed, ref, watch } from 'vue'
+import { useLinksStore } from '../stores/links'
+import { useUserStore } from '../stores/user'
+import { useBreakpoint } from '@/composables/useBreakpoint'
+import type { CreateLinkRequest } from '../types/Link'
+import {
+  TpIcon,
+  TpModal,
+  TpInput,
+  TpTextarea,
+  TpCombobox,
+  TpButton,
+  TpTooltip
+} from '@/components/ui'
 
-	const linksStore = useLinksStore();
-	const userStore = useUserStore();
-	const mobile = useDisplay().smAndDown;
-	const validLink = ref(true);
+const linksStore = useLinksStore()
+const userStore = useUserStore()
+const { smAndDown: mobile } = useBreakpoint()
+const validLink = ref(true)
+const urlError = ref('')
+const props = defineProps<{ columnType: string }>()
 
-	type formData = {
-		url: string;
-		title: string;
-		description: string;
-		columnType: string;
-	};
+const isModalOpen = ref(false)
+const isLoading = ref(false)
+const hover = ref(false)
+const formRef = ref<HTMLFormElement | null>(null)
 
-	const props = defineProps<{
-		columnType: string;
-		userId: string | null;
-		maxPins: number;
-		isPlanFree: boolean;
-	}>();
+const formData = ref({
+  url: '',
+  title: '',
+  description: '',
+  columnType: props.columnType
+})
 
-	const router = useRouter();
-	const isModalOpen = ref(false);
-	const isLoading = ref(false);
-	const hover = ref(false);
-	const form = ref<HTMLFormElement | null>(null);
+const columnTypes = computed(() => linksStore.uniqueColumnTypes)
 
-	const formData = ref({
-		url: "",
-		title: "",
-		description: "",
-		columnType: props.columnType,
-	});
+const columnTypeOptions = computed(() =>
+  columnTypes.value.map((type) => ({
+    value: type,
+    label: type.charAt(0).toUpperCase() + type.slice(1)
+  }))
+)
 
-	const newColumnType = ref("");
+const handleClick = () => {
+  openModal()
+}
 
-	const columnTypes = computed(() => {
-		return linksStore.uniqueColumnTypes;
-	});
+const openModal = () => {
+  isModalOpen.value = true
+}
 
-	const isAtMaxPins = computed(() => {
-		return linksStore.links.length >= props.maxPins;
-	});
+const closeModal = () => {
+  isModalOpen.value = false
+  resetForm()
+}
 
-	const handleClick = () => {
-		if (isAtMaxPins.value) {
-			router.push("/plans");
-			return;
-		}
-		openModal();
-	};
+const resetForm = () => {
+  formData.value = {
+    url: '',
+    title: '',
+    description: '',
+    columnType: props.columnType
+  }
+  urlError.value = ''
+  validLink.value = true
+}
 
-	const openModal = () => {
-		if (linksStore.links.length >= props.maxPins) {
-			alert(
-				`You've reached your maximum number of pins (${props.maxPins}). Please upgrade your plan for more.`,
-			);
-			return;
-		}
-		isModalOpen.value = true;
-		nextTick(() => {
-			const urlField = document.querySelector('input[type="url"]');
-			if (urlField) {
-				(urlField as HTMLInputElement).focus();
-			}
-		});
-	};
+const validateForm = (): boolean => {
+  if (!formData.value.url) {
+    urlError.value = 'URL is required'
+    return false
+  }
 
-	const closeModal = () => {
-		isModalOpen.value = false;
-		resetForm();
-	};
+  const urlValidation = linksStore.validateUrl(formData.value.url)
+  if (urlValidation !== true) {
+    urlError.value = urlValidation as string
+    return false
+  }
 
-	const resetForm = () => {
-		formData.value = {
-			url: "",
-			title: "",
-			description: "",
-			columnType: props.columnType,
-		};
-		newColumnType.value = "";
-		if (form.value) {
-			form.value.resetValidation();
-		}
-	};
+  urlError.value = ''
+  return true
+}
 
-	const addNewColumnType = () => {
-		if (newColumnType.value && !columnTypes.value.includes(newColumnType.value)) {
-			formData.value.columnType = newColumnType.value;
-			newColumnType.value = "";
-		}
-	};
+const handleSubmit = async () => {
+  if (!validateForm()) return
 
-	const handleSubmit = async () => {
-		if (!form.value) return;
+  try {
+    isLoading.value = true
 
-		const { valid } = await form.value.validate();
-		if (!valid) return;
+    if (!userStore.userId) {
+      console.error('User not logged in')
+      return
+    }
 
-		try {
-			isLoading.value = true;
+    const linkData: CreateLinkRequest = {
+      title: formData.value.title,
+      description: formData.value.description,
+      url: formData.value.url,
+      next_order_index: linksStore.links.length + 1,
+      owner_id: userStore.userId,
+      owner_type: 'user',
+      column_type: formData.value.columnType
+    }
 
-			if (!userStore.userId) {
-				console.error("User not logged in");
-				return;
-			}
+    const savedLink = await linksStore.postLink(linkData)
+    if (savedLink === 502) {
+      validLink.value = false
+      return
+    }
+    validLink.value = true
+    if (!savedLink) console.error('Error saving link')
+    closeModal()
+  } catch (error) {
+    console.error('Error saving link:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
 
-			const linkData: CreateLinkRequest = {
-				title: formData.value.title,
-				description: formData.value.description,
-				url: formData.value.url,
-				next_order_index: linksStore.links.length + 1,
-				owner_id: userStore.userId,
-				owner_type: "user",
-				column_type: formData.value.columnType,
-			};
-
-			const savedLink = await linksStore.postLink(linkData);
-			if (savedLink === 502) {
-				validLink.value = false;
-				return;
-			}
-			validLink.value = true;
-			if (!savedLink) console.error("Error saving link");
-			closeModal();
-		} catch (error) {
-			console.error("Error saving link:", error);
-		} finally {
-			isLoading.value = false;
-		}
-	};
-
-	watch(isModalOpen, (newVal) => {
-		if (!newVal) {
-			// Modal is closed
-			if (newColumnType.value) {
-				// Clear the new column type if it exists
-				newColumnType.value = "";
-			}
-			
-			// Reset the form data if URL is not provided (form not completed)
-			if (!formData.value.url) {
-				resetForm();
-			}
-		}
-	});
+watch(isModalOpen, (newVal) => {
+  if (!newVal) {
+    if (!formData.value.url) {
+      resetForm()
+    }
+  }
+})
 </script>
+
+<style scoped>
+.add-link-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tp-space-2);
+  padding: var(--tp-space-4);
+  border: var(--tp-border-width-thick) dashed var(--tp-border);
+  border-radius: var(--tp-radius-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--tp-transition-fast),
+    background-color var(--tp-transition-fast);
+}
+
+.add-link-card:hover {
+  border-color: var(--tp-accent);
+  background: var(--tp-accent-glow);
+}
+
+.add-link-card__icon {
+  color: var(--tp-text-muted);
+  transition: color var(--tp-transition-fast);
+}
+
+.add-link-card__icon--active {
+  color: var(--tp-accent);
+}
+
+.add-link-card__text {
+  font-size: var(--tp-text-sm);
+  color: var(--tp-text-muted);
+}
+
+/* Form styles */
+.add-link-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-4);
+  min-height: 360px;
+}
+
+.add-link-form__error {
+  color: var(--tp-error);
+  font-size: var(--tp-text-sm);
+  margin-top: calc(-1 * var(--tp-space-2));
+}
+
+.add-link-form__hints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-1);
+  font-size: var(--tp-text-xs);
+  color: var(--tp-text-muted);
+}
+
+.add-link-form__hints kbd {
+  font-size: var(--tp-text-xs);
+}
+
+.add-link-form__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+  margin-left: auto;
+}
+</style>

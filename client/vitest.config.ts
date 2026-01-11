@@ -16,8 +16,7 @@ export default mergeConfig(
 				output: {
 					manualChunks: {
 						'vendor-vue': ['vue', 'vue-router', 'pinia'],
-          				'vendor-clerk': ['@clerk/clerk-js'],
-          				'vendor-ui': ['vuetify', '@mdi/font'],
+						'vendor-ui': ['vuetify', '@mdi/font'],
 					},
 				},
 			},
