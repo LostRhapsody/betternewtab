@@ -14,18 +14,12 @@ const ICON_BYTES: &[u8] = include_bytes!("../assets/icon.png");
 
 /// Initialize platform-specific requirements
 fn platform_init() -> Result<(), Box<dyn std::error::Error>> {
+    // GTK must be initialized for tray menus on Linux.
+    // The gtk crate is already a transitive dependency of tray-icon,
+    // so we're not adding any new dependencies here.
     #[cfg(target_os = "linux")]
-    {
-        // GTK must be initialized for tray menus on Linux
-        // We use raw FFI to avoid depending on the unmaintained gtk crate
-        use std::ptr;
-        extern "C" {
-            fn gtk_init(argc: *mut i32, argv: *mut *mut *mut i8) -> i32;
-        }
-        unsafe {
-            gtk_init(ptr::null_mut(), ptr::null_mut());
-        }
-    }
+    gtk::init()?;
+
     Ok(())
 }
 

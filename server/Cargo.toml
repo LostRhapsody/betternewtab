@@ -36,5 +36,10 @@ image = "0.24"
 dirs = "5.0"
 ctrlc = "3.4"
 
+# gtk is already a transitive dependency of tray-icon on Linux,
+# we just need to re-export it to call gtk::init()
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
 [target.'cfg(windows)'.build-dependencies]
 embed-resource = "2.4"
