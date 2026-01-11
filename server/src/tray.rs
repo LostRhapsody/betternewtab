@@ -15,6 +15,12 @@ const ICON_BYTES: &[u8] = include_bytes!("../assets/icon.png");
 /// Create the system tray icon and menu
 /// Returns the tray icon (must be kept alive) and a receiver for exit messages
 pub fn create_tray() -> Result<(TrayIcon, Receiver<TrayMessage>), Box<dyn std::error::Error>> {
+    // Initialize GTK on Linux (required for tray menus)
+    #[cfg(target_os = "linux")]
+    {
+        gtk::init()?;
+    }
+
     // Load icon from embedded bytes
     let icon_image = image::load_from_memory(ICON_BYTES)?;
     let icon_rgba = icon_image.to_rgba8();
