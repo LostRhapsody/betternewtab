@@ -12,14 +12,28 @@ pub enum TrayMessage {
 /// Icon bytes embedded at compile time
 const ICON_BYTES: &[u8] = include_bytes!("../assets/icon.png");
 
+/// Initialize platform-specific requirements
+fn platform_init() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "linux")]
+    {
+        // GTK must be initialized for tray menus on Linux
+        // We use raw FFI to avoid depending on the unmaintained gtk crate
+        use std::ptr;
+        extern "C" {
+            fn gtk_init(argc: *mut i32, argv: *mut *mut *mut i8) -> i32;
+        }
+        unsafe {
+            gtk_init(ptr::null_mut(), ptr::null_mut());
+        }
+    }
+    Ok(())
+}
+
 /// Create the system tray icon and menu
 /// Returns the tray icon (must be kept alive) and a receiver for exit messages
 pub fn create_tray() -> Result<(TrayIcon, Receiver<TrayMessage>), Box<dyn std::error::Error>> {
-    // Initialize GTK on Linux (required for tray menus)
-    #[cfg(target_os = "linux")]
-    {
-        gtk::init()?;
-    }
+    // Initialize platform-specific requirements
+    platform_init()?;
 
     // Load icon from embedded bytes
     let icon_image = image::load_from_memory(ICON_BYTES)?;
