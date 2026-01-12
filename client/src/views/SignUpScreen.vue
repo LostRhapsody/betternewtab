@@ -63,9 +63,9 @@
 
         <p class="signup-screen__footer">
           Already have an account?
-          <button type="button" class="signup-screen__link" @click="switchToLogin">
+          <router-link to="/login" class="signup-screen__link">
             Login here
-          </button>
+          </router-link>
         </p>
       </div>
     </div>
