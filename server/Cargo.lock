@@ -208,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "better-new-tab"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "axum",
