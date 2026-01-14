@@ -30,10 +30,9 @@ We're leaving user-based everything intact, in case anyone want's to host this f
 
 ### Backend (Rust)
 - **Rust** with Axum web framework
-- **PostgreSQL** for data persistence
+- **SQLite** for data persistence (local file-based)
 - **SQLx** for type-safe database queries
 - **JWT** for authentication
-- **Stripe** for payments
 - **Sentry** for error tracking
 
 ## Features
@@ -46,11 +45,41 @@ We're leaving user-based everything intact, in case anyone want's to host this f
 - **Subscription Plans**: Free, Plus, and Pro tiers with Stripe integration
 - **Integrations**: Jira, Confluence, and Linear API integration (premium)
 
+## Setting as New Tab Page
+
+After setting up BetterNewTab locally, you can configure your browser to use it as the new tab page.
+
+### Chrome / Brave / Edge (Chromium-based)
+
+Chromium browsers don't allow custom new tab URLs directly, so you'll need an extension:
+
+1. Install the [Custom New Tab URL](https://chrome.google.com/webstore/detail/custom-new-tab-url/) extension
+2. Click the extension icon and set the URL to `http://localhost:5173`
+3. (Optional) Set as homepage: Settings > On startup > Open a specific page
+
+### Firefox
+
+1. Install the [New Tab Override](https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/) add-on
+2. In the add-on settings, set the custom URL to `http://localhost:5173`
+3. (Optional) Set as homepage: Settings > Home > Homepage and new windows
+
+### Safari
+
+Safari doesn't support custom new tab pages without third-party tools. Consider:
+1. Set as homepage: Safari > Settings > General > Homepage
+2. Use a keyboard shortcut (Cmd+Shift+H) to open homepage in new tabs
+
+### Arc
+
+1. Open Settings (Cmd+,)
+2. Go to "Links" tab
+3. Under "New Tab", select "Custom URL"
+4. Enter `http://localhost:5173`
+
 ## Prerequisites
 
 - **Bun** v1.0+ (for frontend)
 - **Rust** 1.70+ (for backend)
-- **PostgreSQL** 16+ (or Docker)
 - **Node.js** 18+ (optional, for some tooling)
 
 ## Getting Started
@@ -62,42 +91,7 @@ git clone <your-repo-url>
 cd betternewtab
 ```
 
-### 2. Database Setup
-
-#### Option A: Using Docker (Recommended)
-
-```bash
-# Start PostgreSQL with Docker Compose
-docker compose up -d
-
-# The database will be available at localhost:5432
-# Database: betternewtab
-# User: postgres
-# Password: postgres
-```
-
-#### Option B: Local PostgreSQL
-
-Install PostgreSQL 16+ and create a database:
-
-```sql
-CREATE DATABASE betternewtab;
-```
-
-### 3. Run Database Migrations
-
-```bash
-cd server
-
-# Set the DATABASE_URL environment variable
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/betternewtab"
-
-# Run migrations using psql
-psql $DATABASE_URL -f migrations/001_initial_schema.sql
-psql $DATABASE_URL -f migrations/002_functions.sql
-```
-
-### 4. Backend Setup
+### 2. Backend Setup
 
 ```bash
 cd server
@@ -106,20 +100,20 @@ cd server
 cp .env.example .env
 
 # Edit .env with your configuration
-# Required variables:
-# - DATABASE_URL
-# - JWT_SECRET
-# - STRIPE_SECRET_KEY (get from Stripe Dashboard)
-# - FREE_PLAN_ID (from database after seeding)
+# Required variable:
+# - JWT_SECRET (any random string for signing tokens)
 
-# Install dependencies and run
+# Build and run
 cargo build
 cargo run
 ```
 
-The server will start on `http://localhost:3000`.
+The server will start on `http://localhost:3000`. The SQLite database is created automatically at:
+- Windows: `%APPDATA%/BetterNewTab/betternewtab.db`
+- macOS: `~/Library/Application Support/BetterNewTab/betternewtab.db`
+- Linux: `~/.local/share/BetterNewTab/betternewtab.db`
 
-### 5. Client App Setup
+### 3. Client App Setup
 
 ```bash
 cd client
@@ -140,7 +134,7 @@ bun dev:all
 
 The client app will be available at `http://localhost:5173`.
 
-### 6. Landing Page Setup (Optional)
+### 4. Landing Page Setup (Optional)
 
 ```bash
 cd landing-page
@@ -161,7 +155,7 @@ bun tailwind:build && bun dev
 
 The landing page will be available at `http://localhost:5175`.
 
-### 7. Documentation Setup (Optional)
+### 5. Documentation Setup (Optional)
 
 ```bash
 cd docs
@@ -487,55 +481,3 @@ This project is configured for Railway deployment with PostgreSQL.
 ## Support
 
 For issues and questions, please create an issue in the GitHub repository.
-
-
-# Things the AI told me
-
-I need to read through this later. Just in case.
-
-Migration Complete! Backend Successfully Compiles
-I've successfully fixed all the compilation errors in the Rust backend. Here's what was done:
-Issues Fixed
-1. Replaced all supabase references with database throughout the codebase:
-  - Variable names (local supabase → database)
-  - Type references (supabase::User → database::User)
-  - Method calls on wrong variables
-2. Fixed User struct initializations - Added password_hash field to all User struct creations (3 locations)
-3. Fixed create_subscription call - Updated to use individual parameters instead of a Subscription object
-4. Fixed type annotation in database.rs - Added explicit type for password_hash field retrieval
-Compilation Status
-✅ cargo check - SUCCESS
-Finished dev profile [unoptimized + debuginfo] target(s) in 6.97s
-Next Steps
-1. Set up local environment:
-  # Start PostgreSQL
-  docker-compose up -d
-  
-  # Create .env files
-  cp server/.env.example server/.env
-  cp client/.env.example client/.env
-  
-  # Run migrations
-  psql  -f server/migrations/001_initial_schema.sql
-  psql  -f server/migrations/002_functions.sql
-  
-2. Test the backend:
-  cd server
-  cargo run
-  
-  # In another terminal:
-  curl -X POST http://localhost:3000/register \
-    -H "Content-Type: application/json" \
-    -d '{"email":"test@example.com","password":"test123"}'
-  
-3. Update frontend (see MIGRATION_SUMMARY.md for details):
-  - Remove Clerk references
-  - Implement login/register UI
-  - Update auth flow to use JWT tokens
-All documentation has been created:
-- ✅ README.md - Complete project documentation
-- ✅ DEPLOYMENT.md - Railway deployment guide
-- ✅ MIGRATION_SUMMARY.md - Detailed change log
-- ✅ QUICKSTART.md - Fast local setup
-- ✅ COMPILE_STATUS.md - Current status and next steps
-The backend is ready to run! 🚀

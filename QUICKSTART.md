@@ -89,16 +89,6 @@ curl http://localhost:3000/user_data \
 
 ## What's Next?
 
-### Frontend Auth UI Needed
-
-The backend is fully functional, but the frontend still has old Clerk authentication UI. You'll need to:
-
-1. **Create Login/Register forms** that call your new endpoints
-2. **Update the user store** to handle JWT tokens
-3. **Remove Clerk references** from components
-
-See `MIGRATION_SUMMARY.md` for details on what needs updating.
-
 ### Recommended Next Steps
 
 1. **Set up Stripe** (for payments)

@@ -88,7 +88,7 @@ import type { User, UserState } from "@/types/User";
 
 | Item | Convention | Example |
 |------|------------|---------|
-| Types/Interfaces | PascalCase | `UserState`, `ClerkUser` |
+| Types/Interfaces | PascalCase | `UserState`, `User` |
 | Functions | camelCase | `fetchUserData`, `setUserId` |
 | Constants | camelCase or SCREAMING_SNAKE | `API.GET_USER_DATA` |
 | Pinia stores | `use[Name]Store` | `useUserStore` |
@@ -102,7 +102,7 @@ import type { User, UserState } from "@/types/User";
 - Always type function parameters and return values
 
 ```typescript
-async function fetchUserData(clerk_user: ClerkUser): Promise<boolean> {
+async function fetchUserData(clerk_user: User): Promise<boolean> {
   // ...
 }
 ```
@@ -148,7 +148,7 @@ export const useUserStore = defineStore("user", {
   }),
 
   actions: {
-    async fetchUserData(clerk_user: ClerkUser): Promise<boolean> {
+    async fetchUserData(clerk_user: User): Promise<boolean> {
       this.isLoading = true;
       try {
         // API call
@@ -244,7 +244,7 @@ client/
 server/
 ├── src/
 │   ├── main.rs          # Entry + handlers
-│   ├── supabase.rs      # Database client
+│   ├── database.rs      # Database client (SQLite)
 │   ├── stripe_client.rs # Payments
 │   └── middleware.rs    # Auth middleware
 ```
@@ -253,7 +253,7 @@ server/
 
 - **Vue 3.5**, **Vue Router 4**, **Pinia 2.3**
 - **Vuetify 3.7** for UI components
-- **Clerk** for authentication
+- **JWT-based authentication**
 - **Axios** for HTTP requests
 - **Vitest** for unit tests, **Cypress** for E2E
 - **Biome** for linting/formatting
