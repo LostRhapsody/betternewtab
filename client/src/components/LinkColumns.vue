@@ -19,7 +19,7 @@
 
       <LinkCard
         v-for="(link, index) in getLinksByColumnType(columnType)"
-        :key="link.order_index"
+        :key="link.id"
         :icon="link.icon ?? ''"
         :title="link.title"
         :description="link.description ?? ''"
@@ -33,6 +33,11 @@
         :tabindex="getFocusableIndex(columnType, index)"
         :data-column="columnType"
         :data-link-index="index"
+        :draggable="true"
+        :onDragStart="(idx: number) => handleDragStart(columnType, idx)"
+        :onDragOver="(idx: number) => handleDragOver(columnType, idx)"
+        :onDragEnd="handleDragEnd"
+        :isDragOver="dragOverState?.columnType === columnType && dragOverState?.index === index"
       />
 
       <AddLinkCard
@@ -52,6 +57,7 @@ import EditLinkModal from './EditLinkModal.vue'
 import LinkCard from './LinkCard.vue'
 import type { Link } from '../types/Link'
 import { useLinksStore, SHORTCUT_MAPPINGS } from '../stores/links'
+import { openUrl } from '../utils/openUrl'
 
 const linkStore = useLinksStore()
 
@@ -59,6 +65,10 @@ const showEditModal = ref(false)
 const editingLink = ref<Link | undefined>()
 const linkRefs = ref<any[]>([])
 const currentFocus = ref<{ columnType: string; index: number } | null>(null)
+
+// Drag state
+const dragStartState = ref<{ columnType: string; index: number } | null>(null)
+const dragOverState = ref<{ columnType: string; index: number } | null>(null)
 
 const props = defineProps<{
   userId: string | null
@@ -98,6 +108,39 @@ const handleEditLink = (link: Link) => {
   showEditModal.value = true
 }
 
+// Drag handlers
+const handleDragStart = (columnType: string, index: number) => {
+  dragStartState.value = { columnType, index }
+}
+
+const handleDragOver = (columnType: string, index: number) => {
+  if (!dragStartState.value) return
+  // Only allow reordering within the same column
+  if (dragStartState.value.columnType !== columnType) return
+  dragOverState.value = { columnType, index }
+}
+
+const handleDragEnd = () => {
+  if (dragStartState.value && dragOverState.value) {
+    const { columnType: startColumn, index: startIndex } = dragStartState.value
+    const { columnType: endColumn, index: endIndex } = dragOverState.value
+
+    if (startColumn === endColumn && startIndex !== endIndex) {
+      // Reorder links within the column
+      const columnLinks = getLinksByColumnType(startColumn)
+      const movedLink = columnLinks[startIndex]
+      const targetLink = columnLinks[endIndex]
+
+      if (movedLink && targetLink) {
+        linkStore.reorderLinks(startColumn, startIndex, endIndex)
+      }
+    }
+  }
+
+  dragStartState.value = null
+  dragOverState.value = null
+}
+
 const isSearchInputFocused = () => {
   const activeElement = document.activeElement
   return (
@@ -109,6 +152,11 @@ const isSearchInputFocused = () => {
 
 const isModalOpen = () => {
   return document.querySelector('.tp-modal-overlay') !== null
+}
+
+const isDropdownOpen = () => {
+  // Check if any TpSelect dropdown is open (it uses --open class)
+  return document.querySelector('.tp-select--open') !== null
 }
 
 const focusLinkCard = (columnType: string, index: number) => {
@@ -142,6 +190,7 @@ const focusSearchBar = () => {
 const handleArrowKeys = (event: KeyboardEvent) => {
   if (
     isModalOpen() ||
+    isDropdownOpen() ||
     event.ctrlKey ||
     event.altKey ||
     event.metaKey
@@ -206,7 +255,7 @@ const handleArrowKeys = (event: KeyboardEvent) => {
 
 const handleEditShortcut = (event: KeyboardEvent) => {
   if (event.key !== 'e') return
-  if (isSearchInputFocused() || isModalOpen()) return
+  if (isSearchInputFocused() || isModalOpen() || isDropdownOpen()) return
   if (event.ctrlKey || event.altKey || event.metaKey) return
   if (!currentFocus.value) return
 
@@ -220,7 +269,7 @@ const handleEditShortcut = (event: KeyboardEvent) => {
 
 const handleDeleteShortcut = (event: KeyboardEvent) => {
   if (event.key !== 'd') return
-  if (isSearchInputFocused() || isModalOpen()) return
+  if (isSearchInputFocused() || isModalOpen() || isDropdownOpen()) return
   if (event.ctrlKey || event.altKey || event.metaKey) return
   if (!currentFocus.value) return
 
@@ -232,11 +281,24 @@ const handleDeleteShortcut = (event: KeyboardEvent) => {
   }
 }
 
+const handleLinkFocus = (event: FocusEvent) => {
+  const target = event.target as HTMLElement
+  const linkCard = target.closest('.link-columns__card') as HTMLElement
+  if (linkCard) {
+    const columnType = linkCard.dataset.column
+    const linkIndex = parseInt(linkCard.dataset.linkIndex || '0')
+    if (columnType !== undefined) {
+      currentFocus.value = { columnType, index: linkIndex }
+    }
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keydown', handleArrowKeys)
   window.addEventListener('keydown', handleEditShortcut)
   window.addEventListener('keydown', handleDeleteShortcut)
+  document.addEventListener('focusin', handleLinkFocus)
   linkRefs.value = []
 })
 
@@ -245,11 +307,12 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleArrowKeys)
   window.removeEventListener('keydown', handleEditShortcut)
   window.removeEventListener('keydown', handleDeleteShortcut)
+  document.removeEventListener('focusin', handleLinkFocus)
 })
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (!/^[1-9]$/.test(event.key)) return
-  if (isModalOpen()) return
+  if (isModalOpen() || isDropdownOpen()) return
 
   const numKey = Number.parseInt(event.key) - 1
 
@@ -265,7 +328,7 @@ const handleKeydown = (event: KeyboardEvent) => {
     const links = getLinksByColumnType(columnType)
 
     if (numKey >= 0 && numKey < links.length) {
-      window.open(links[numKey].url, '_blank')
+      openUrl(links[numKey].url)
     }
   }
 }

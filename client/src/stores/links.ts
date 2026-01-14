@@ -158,6 +158,7 @@ export const useLinksStore = defineStore("links", {
         title: link.title,
         icon: link.icon,
         column_type: link.column_type,
+        order_index: link.order_index,
       };
       /*
         if 200, link was updated, nothing else to do
@@ -200,6 +201,50 @@ export const useLinksStore = defineStore("links", {
       const urlPattern =
         /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?(\?.*)?$/;
       return urlPattern.test(url) ? true : "Please enter a valid URL";
+    },
+
+    async reorderLinks(columnType: string, fromIndex: number, toIndex: number) {
+      // Get links for this column (create a copy to avoid mutating original)
+      const columnLinks = this.links
+        .filter((link) => link.column_type === columnType)
+        .map((link) => ({ ...link }));
+
+      if (fromIndex < 0 || fromIndex >= columnLinks.length) return;
+      if (toIndex < 0 || toIndex >= columnLinks.length) return;
+
+      // Reorder within the column copy
+      const [movedLink] = columnLinks.splice(fromIndex, 1);
+      columnLinks.splice(toIndex, 0, movedLink);
+
+      // Update order_index for reordered links
+      columnLinks.forEach((link, index) => {
+        link.order_index = index;
+      });
+
+      // Create a map of updated links by ID for quick lookup
+      const updatedLinksMap = new Map(
+        columnLinks.map((link) => [link.id, link]),
+      );
+
+      // Update only the affected links in the main array (preserve original order)
+      this.links = this.links.map((link) => {
+        if (link.column_type === columnType) {
+          return updatedLinksMap.get(link.id) || link;
+        }
+        return link;
+      });
+
+      // Update cache
+      cache.set(CacheKeys.LINKS, this.links);
+
+      // Persist to server - update each link's order_index
+      try {
+        for (const link of columnLinks) {
+          await this.updateLink(link);
+        }
+      } catch (error) {
+        console.error("Error persisting link order:", error);
+      }
     },
   },
 });

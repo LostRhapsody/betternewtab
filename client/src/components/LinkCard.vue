@@ -12,6 +12,11 @@ interface Props {
   shortcut: string
   onDelete: () => void
   onEdit: () => void
+  draggable?: boolean
+  onDragStart?: (index: number) => void
+  onDragOver?: (index: number) => void
+  onDragEnd?: () => void
+  isDragOver?: boolean
 }
 
 const settingsStore = useUserSettingsStore()
@@ -67,6 +72,23 @@ if (props.icon && !isMdiIcon.value) {
   })
 }
 
+// Drag handlers
+const handleDragStart = (event: DragEvent) => {
+  if (!props.draggable) return
+  event.dataTransfer?.setData('text/plain', props.index.toString())
+  props.onDragStart?.(props.index)
+}
+
+const handleDragOver = () => {
+  if (!props.draggable) return
+  props.onDragOver?.(props.index)
+}
+
+const handleDragEnd = () => {
+  if (!props.draggable) return
+  props.onDragEnd?.()
+}
+
 // Map MDI icons to our icon names
 const getMappedIcon = (mdiIcon: string) => {
   const iconMap: Record<string, string> = {
@@ -82,7 +104,15 @@ const getMappedIcon = (mdiIcon: string) => {
 </script>
 
 <template>
-  <div class="link-card">
+  <div
+    class="link-card"
+    :class="{ 'link-card--drag-over': isDragOver }"
+    :draggable="draggable"
+    @dragstart="handleDragStart"
+    @dragover.prevent="handleDragOver"
+    @dragend="handleDragEnd"
+    @drop.prevent="handleDragEnd"
+  >
     <a
       :href="link"
       :target="settingsStore.settings.new_tabs ? '_blank' : '_self'"
@@ -166,6 +196,20 @@ const getMappedIcon = (mdiIcon: string) => {
 .link-card:hover {
   background: var(--tp-bg-tertiary);
   border-color: var(--tp-border-strong);
+}
+
+.link-card--drag-over {
+  border-color: var(--tp-accent);
+  border-style: dashed;
+  background: var(--tp-accent-glow);
+}
+
+.link-card[draggable="true"] {
+  cursor: grab;
+}
+
+.link-card[draggable="true"]:active {
+  cursor: grabbing;
 }
 
 .link-card__link {

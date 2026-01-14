@@ -15,6 +15,7 @@ export type CreateLinkRequest = {
   url: string;
   description: string | null;
   title: string;
+  icon?: string | null;
   next_order_index: number;
   owner_type: string;
   owner_id: string;
@@ -28,4 +29,5 @@ export type UpdateLinkRequest = {
   title: string | null;
   icon: string | null;
   column_type: string | null;
+  order_index?: number;
 };

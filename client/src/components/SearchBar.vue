@@ -13,6 +13,7 @@
           @blur="handleBlur"
           class="search-bar__input"
           :style="{ height: textareaHeight + 'px' }"
+          autofocus
         />
       </div>
 
@@ -187,6 +188,7 @@ const MAX_HISTORY_ENTRIES = Number.parseInt(import.meta.env.VITE_MAX_HISTORY_ENT
 const fuzzyResults = ref<FuseResult<Link>[]>([])
 const autoSuggestions = ref<EnhancedSuggestion[]>([])
 const historySuggestions = ref<ScoredHistoryItem[]>([])
+const engineChangedViaKeyboard = ref(false)
 
 const searchEngineOptions = computed(() =>
   searchEngines.map((engine) => ({
@@ -254,15 +256,13 @@ const getFilteredHistory = computed(() => {
 })
 
 const isCompleteURI = computed(() => {
-  if (!searchQuery.value || !searchQuery.value.includes('.')) {
-    return false
-  }
-
-  if (linksStore.validateUrl(searchQuery.value)) {
-    return true
-  }
-
-  return false
+  if (!searchQuery.value) return false
+  // Must have protocol (http:// or https://) to be treated as direct URL navigation
+  if (!searchQuery.value.match(/^https?:\/\//i)) return false
+  // Cannot contain spaces (indicates a search query, not a URL)
+  if (searchQuery.value.includes(' ')) return false
+  // Must be valid URL format
+  return linksStore.validateUrl(searchQuery.value) === true
 })
 
 const jiraLink = computed(() => `https://atlassian.net/browse/${searchQuery.value}`)
@@ -433,6 +433,11 @@ const selectHistoryItem = (query: string) => {
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
+  // Let Ctrl+Arrow events pass through for search engine switching
+  if (event.ctrlKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    return
+  }
+
   const historyLength = getFilteredHistory.value.length
   const fuzzyLength = fuzzyResults.value.length
   const suggestionsLength = autoSuggestions.value.length
@@ -467,6 +472,14 @@ const handleKeydown = (event: KeyboardEvent) => {
         }
         return
     }
+  } else if (event.key === 'ArrowDown') {
+    // No dropdown items - focus first link card
+    event.preventDefault()
+    const firstLinkCard = document.querySelector('.link-columns__card a') as HTMLElement
+    if (firstLinkCard) {
+      firstLinkCard.focus()
+    }
+    return
   } else if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     performSearch()
@@ -512,6 +525,7 @@ const handleSearchEngineHotkeys = (event: KeyboardEvent) => {
     newIndex = (currentIndex + 1) % searchEngines.length
   }
 
+  engineChangedViaKeyboard.value = true
   searchEngineStore.setSearchEngine(searchEngines[newIndex].url)
   updateSelectedEngine()
 }
@@ -615,23 +629,49 @@ watch(searchQuery, async (newQuery) => {
 })
 
 watch(selectedEngine, () => {
-  setTimeout(() => {
-    if (searchInput.value) {
-      ;(searchInput.value as HTMLElement).focus()
-    }
-  }, 200)
+  // Only auto-focus search if engine was changed via keyboard shortcut
+  if (engineChangedViaKeyboard.value) {
+    setTimeout(() => {
+      if (searchInput.value) {
+        ;(searchInput.value as HTMLElement).focus()
+      }
+      engineChangedViaKeyboard.value = false
+    }, 200)
+  }
 })
 
-onMounted(() => {
+const focusSearchInput = () => {
   if (searchInput.value) {
     searchInput.value.focus()
   }
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    // Re-focus when tab becomes visible (e.g., user switches to this tab)
+    setTimeout(focusSearchInput, 50)
+    setTimeout(focusSearchInput, 150)
+  }
+}
+
+onMounted(() => {
+  // Aggressive focus strategy to beat browser's URL bar focus
+  // Try multiple times with increasing delays to ensure focus lands on search box
+  focusSearchInput()
+  requestAnimationFrame(focusSearchInput)
+  setTimeout(focusSearchInput, 50)
+  setTimeout(focusSearchInput, 100)
+  setTimeout(focusSearchInput, 150)
+  setTimeout(focusSearchInput, 200)
+
   loadSearchHistory()
   window.addEventListener('keydown', handleSearchEngineHotkeys)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleSearchEngineHotkeys)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
