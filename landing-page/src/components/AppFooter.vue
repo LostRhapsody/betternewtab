@@ -3,7 +3,7 @@
     <div class="tp-container">
       <div class="footer__inner">
         <!-- Logo -->
-        <a href="/" class="footer__logo tp-mono">BetterNewTab_</a>
+        <a href="/" class="footer__logo tp-mono">OmegaTab_</a>
 
         <!-- Social Links -->
         <div class="footer__social">
@@ -26,7 +26,7 @@
       </div>
 
       <div class="footer__bottom">
-        <p class="tp-muted text-sm">&copy; {{ new Date().getFullYear() }} BetterNewTab. Free and open source.</p>
+        <p class="tp-muted text-sm">&copy; {{ new Date().getFullYear() }} OmegaTab. Free and open source.</p>
       </div>
     </div>
   </footer>

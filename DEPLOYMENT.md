@@ -1,6 +1,6 @@
 # Deployment Guide - Railway
 
-This guide covers deploying BetterNewTab to Railway.
+This guide covers deploying OmegaTab to Railway.
 
 ## Prerequisites
 

@@ -207,41 +207,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "better-new-tab"
-version = "0.2.2"
-dependencies = [
- "anyhow",
- "axum",
- "base64",
- "bcrypt",
- "chrono",
- "ctrlc",
- "dirs",
- "dotenv",
- "embed-resource",
- "gtk",
- "image",
- "jsonwebtoken",
- "mime_guess",
- "reqwest",
- "resend-rs",
- "rust-embed",
- "scraper",
- "sentry",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "tray-icon",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "bit_field"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2284,6 +2249,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62948e14d923ea95ea2c7c86c71013138b66525b86bdc08d2dcc262bdb497b87"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "omega-tab"
+version = "0.2.2"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64",
+ "bcrypt",
+ "chrono",
+ "ctrlc",
+ "dirs",
+ "dotenv",
+ "embed-resource",
+ "gtk",
+ "image",
+ "jsonwebtoken",
+ "mime_guess",
+ "reqwest",
+ "resend-rs",
+ "rust-embed",
+ "scraper",
+ "sentry",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "tray-icon",
+ "url",
+ "uuid",
 ]
 
 [[package]]

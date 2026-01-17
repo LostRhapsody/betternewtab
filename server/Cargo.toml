@@ -1,10 +1,10 @@
 [package]
-name = "better-new-tab"
+name = "omega-tab"
 version = "0.2.2"
 edition = "2021"
 
 [[bin]]
-name = "BetterNewTab"
+name = "OmegaTab"
 path = "src/main.rs"
 
 [dependencies]

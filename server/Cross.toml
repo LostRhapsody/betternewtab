@@ -1,4 +1,4 @@
-# Cross-compilation configuration for BetterNewTab
+# Cross-compilation configuration for OmegaTab
 # See: https://github.com/cross-rs/cross
 
 [target.aarch64-unknown-linux-gnu]

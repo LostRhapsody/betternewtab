@@ -15,7 +15,7 @@
         <!-- Hero Content -->
         <div class="max-w-3xl mx-auto">
           <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-            A <span class="tp-accent">better new tab</span> for your browser
+            The <span class="tp-accent">ultimate &#937; new tab</span> for your browser
           </h1>
           <p class="text-lg tp-secondary mb-12 max-w-2xl mx-auto">
             Create a personalized launch pad for all your tools and resources.
@@ -24,7 +24,7 @@
 
           <!-- Homepage Image -->
           <div class="mb-8">
-            <img src="/copy/homepage.png" alt="BetterNewTab Homepage" class="w-full rounded shadow-lg border border-tp-border" />
+            <img src="/copy/homepage.png" alt="OmegaTab Homepage" class="w-full rounded shadow-lg border border-tp-border" />
           </div>
 
           <!-- CTA -->
@@ -36,7 +36,7 @@
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </a>
-            <a href="https://github.com/LostRhapsody/betternewtab" target="_blank" class="tp-btn tp-btn-secondary">
+            <a href="https://github.com/LostRhapsody/omega-tab" target="_blank" class="tp-btn tp-btn-secondary">
               View on GitHub
             </a>
           </div>
@@ -118,7 +118,7 @@
 import AppFooter from "@/components/AppFooter.vue";
 import AppHeader from "@/components/AppHeader.vue";
 
-const docsUrl = import.meta.env.VITE_DOCS_URL || "/docs";
+const docsUrl = "https://omega-tab.evanrobertson.dev/docs"
 </script>
 
 <style scoped>

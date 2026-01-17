@@ -1,4 +1,4 @@
-# BetterNewTab
+# OmegaTab
 
 A customizable browser new tab replacement that helps you organize your most-used links, search the web, and boost productivity.
 
@@ -47,7 +47,7 @@ We're leaving user-based everything intact, in case anyone want's to host this f
 
 ## Setting as New Tab Page
 
-After setting up BetterNewTab locally, you can configure your browser to use it as the new tab page.
+After setting up OmegaTab locally, you can configure your browser to use it as the new tab page.
 
 ### Chrome / Brave / Edge (Chromium-based)
 
@@ -88,7 +88,7 @@ Safari doesn't support custom new tab pages without third-party tools. Consider:
 
 ```bash
 git clone <your-repo-url>
-cd betternewtab
+cd omega-tab
 ```
 
 ### 2. Backend Setup
@@ -109,9 +109,9 @@ cargo run
 ```
 
 The server will start on `http://localhost:3000`. The SQLite database is created automatically at:
-- Windows: `%APPDATA%/BetterNewTab/betternewtab.db`
-- macOS: `~/Library/Application Support/BetterNewTab/betternewtab.db`
-- Linux: `~/.local/share/BetterNewTab/betternewtab.db`
+- Windows: `%APPDATA%/OmegaTab/omega-tab.db`
+- macOS: `~/Library/Application Support/OmegaTab/omega-tab.db`
+- Linux: `~/.local/share/OmegaTab/omega-tab.db`
 
 ### 3. Client App Setup
 
@@ -254,7 +254,7 @@ cargo clippy
 ## Project Structure
 
 ```
-betternewtab/
+omega-tab/
 ├── client/                 # Vue.js main app (authenticated users)
 │   ├── src/
 │   │   ├── assets/        # CSS, images
@@ -307,7 +307,7 @@ betternewtab/
 
 ```bash
 # Database
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/betternewtab
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/omega-tab
 
 # Authentication
 JWT_SECRET=your-super-secret-jwt-key-change-this

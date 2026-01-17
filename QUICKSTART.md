@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get BetterNewTab running locally in 5 minutes.
+Get OmegaTab running locally in 5 minutes.
 
 ## Prerequisites
 
@@ -135,8 +135,8 @@ bun install
 ### Migrations didn't run
 ```bash
 # Run manually
-docker-compose exec postgres psql -U postgres -d betternewtab -f /docker-entrypoint-initdb.d/001_initial_schema.sql
-docker-compose exec postgres psql -U postgres -d betternewtab -f /docker-entrypoint-initdb.d/002_functions.sql
+docker-compose exec postgres psql -U postgres -d omega_tab -f /docker-entrypoint-initdb.d/001_initial_schema.sql
+docker-compose exec postgres psql -U postgres -d omega_tab -f /docker-entrypoint-initdb.d/002_functions.sql
 ```
 
 ## Development Workflow
@@ -176,7 +176,7 @@ bun test:unit
 
 ```bash
 # Connect to database
-docker-compose exec postgres psql -U postgres -d betternewtab
+docker-compose exec postgres psql -U postgres -d omega_tab
 
 # Useful commands:
 \dt          # List tables

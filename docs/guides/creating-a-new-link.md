@@ -1,11 +1,11 @@
 ---
 title: Creating a New Link
-description: Learn how to add new links to your BetterNewTab dashboard
+description: Learn how to add new links to your OmegaTab dashboard
 ---
 
 # Creating a New Link
 
-Adding your favorite websites to BetterNewTab is quick and simple. This guide will walk you through the process of creating a new link card.
+Adding your favorite websites to OmegaTab is quick and simple. This guide will walk you through the process of creating a new link card.
 
 ## Ways to Add a New Link
 
@@ -33,7 +33,7 @@ The Add New Link form contains the following fields:
 - **Column Label** (required): The category where this link should appear
 
 ::: tip Plus+ and Pro Feature
-If you leave the title and description blank, BetterNewTab will attempt to fetch them automatically from the website, along with an icon. This is available for Plus+ and Pro subscribers.
+If you leave the title and description blank, OmegaTab will attempt to fetch them automatically from the website, along with an icon. This is available for Plus+ and Pro subscribers.
 :::
 
 ### 3. Column Organization

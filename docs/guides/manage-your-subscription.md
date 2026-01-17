@@ -1,6 +1,6 @@
 ---
 title: Manage Your Subscription
-description: Learn how to update payment information or cancel your BetterNewTab subscription
+description: Learn how to update payment information or cancel your OmegaTab subscription
 ---
 
 # Managing Your Subscription

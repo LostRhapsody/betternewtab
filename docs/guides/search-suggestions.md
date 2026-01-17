@@ -5,11 +5,11 @@ description: Get intelligent search recommendations powered by Brave's suggestio
 
 # Search Suggestions
 
-BetterNewTab offers smart search suggestions that help you find what you're looking for more efficiently. This guide explains how the search suggestions feature works.
+OmegaTab offers smart search suggestions that help you find what you're looking for more efficiently. This guide explains how the search suggestions feature works.
 
 ## What Are Search Suggestions?
 
-As you type in the search bar, BetterNewTab can display a list of suggested search queries that might match what you're looking for. These suggestions can help you:
+As you type in the search bar, OmegaTab can display a list of suggested search queries that might match what you're looking for. These suggestions can help you:
 
 - Complete your search query faster
 - Discover related search terms you hadn't considered
@@ -20,7 +20,7 @@ As you type in the search bar, BetterNewTab can display a list of suggested sear
 
 ## Powered by Brave
 
-BetterNewTab's search suggestions are powered by Brave's suggestion API, which provides relevant, privacy-focused search recommendations.
+OmegaTab's search suggestions are powered by Brave's suggestion API, which provides relevant, privacy-focused search recommendations.
 
 ## How to Use Search Suggestions
 
@@ -37,7 +37,7 @@ To use search suggestions:
 When using search suggestions:
 
 - Your search query is sent to Brave's API to generate suggestions
-- BetterNewTab respects your privacy and only sends the minimum data needed
+- OmegaTab respects your privacy and only sends the minimum data needed
 - No personal information is shared with Brave beyond your search query itself
 
 ## Enabling or Disabling Suggestions

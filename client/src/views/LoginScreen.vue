@@ -5,7 +5,7 @@
 
     <div class="login-screen__container">
       <div class="login-screen__header">
-        <h1 class="login-screen__logo">BetterNewTab_</h1>
+        <h1 class="login-screen__logo">OmegaTab_</h1>
         <p class="login-screen__subtitle">Sign in to access your dashboard</p>
       </div>
 

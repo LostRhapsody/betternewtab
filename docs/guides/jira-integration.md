@@ -1,6 +1,6 @@
 # Jira Integration
 
-BetterNewTab's Jira integration enables you to search and access your Jira issues directly from your new tab, making your workflow more efficient.
+OmegaTab's Jira integration enables you to search and access your Jira issues directly from your new tab, making your workflow more efficient.
 
 ::: warning
 This feature is not yet available and these steps are not finalized.
@@ -16,7 +16,7 @@ Please contact support if you have further questions.
 
 ### Configuration Steps
 
-1. In BetterNewTab, open the **User Settings** panel by clicking on the gear icon in the top-right corner
+1. In OmegaTab, open the **User Settings** panel by clicking on the gear icon in the top-right corner
 2. Navigate to the **Integrations** tab
 3. Find the Jira section and click **Configure**
 4. Enter the following information:
@@ -28,7 +28,7 @@ Please contact support if you have further questions.
 
 Once configured, you'll be able to:
 
-- Search for Jira issues directly from BetterNewTab's search bar by using the prefix `j:` or `jira:`
+- Search for Jira issues directly from OmegaTab's search bar by using the prefix `j:` or `jira:`
 - View matching Jira issues as suggestions when typing a search query
 - Click on any search result to open the corresponding Jira issue
 - See key information about issues including status, assignee, and priority

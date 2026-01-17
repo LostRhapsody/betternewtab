@@ -1,15 +1,15 @@
 ---
 title: Metadata Fetching
-description: Learn how BetterNewTab automatically retrieves website information
+description: Learn how OmegaTab automatically retrieves website information
 ---
 
 # Metadata Fetching
 
-BetterNewTab includes a smart metadata fetching feature that automatically retrieves website information when you add a new link. This guide explains how it works and what to expect.
+OmegaTab includes a smart metadata fetching feature that automatically retrieves website information when you add a new link. This guide explains how it works and what to expect.
 
 ## What Is Metadata Fetching?
 
-When you add a new link to your dashboard without specifying a title or description, BetterNewTab can automatically retrieve:
+When you add a new link to your dashboard without specifying a title or description, OmegaTab can automatically retrieve:
 
 - Website title
 - Description from meta tags
@@ -23,7 +23,7 @@ The metadata fetching process works as follows:
 
 1. You enter a URL in the "Add New Link" form
 2. You leave the title and/or description fields empty
-3. When you save the link, BetterNewTab connects to the website
+3. When you save the link, OmegaTab connects to the website
 4. Our backend server parses the website's HTML content
 5. The server extracts meta tags, title tags, and icon information
 6. This information is used to populate your link card

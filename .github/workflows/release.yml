@@ -51,7 +51,7 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: BetterNewTab-linux-x86_64
+            artifact: OmegaTab-linux-x86_64
             cross: false
             experimental: false
 
@@ -59,7 +59,7 @@ jobs:
           - name: linux-aarch64
             os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            artifact: BetterNewTab-linux-aarch64
+            artifact: OmegaTab-linux-aarch64
             cross: true
             experimental: true
 
@@ -67,7 +67,7 @@ jobs:
           - name: macos-x86_64
             os: macos-13
             target: x86_64-apple-darwin
-            artifact: BetterNewTab-macos-x86_64
+            artifact: OmegaTab-macos-x86_64
             cross: false
             experimental: false
 
@@ -75,7 +75,7 @@ jobs:
           - name: macos-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
-            artifact: BetterNewTab-macos-aarch64
+            artifact: OmegaTab-macos-aarch64
             cross: false
             experimental: false
 
@@ -83,7 +83,7 @@ jobs:
           - name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: BetterNewTab-windows-x86_64.exe
+            artifact: OmegaTab-windows-x86_64.exe
             cross: false
             experimental: false
 
@@ -133,14 +133,14 @@ jobs:
       - name: Prepare artifact (Unix)
         if: runner.os != 'Windows'
         run: |
-          cp server/target/${{ matrix.target }}/release/BetterNewTab ${{ matrix.artifact }}
+          cp server/target/${{ matrix.target }}/release/OmegaTab ${{ matrix.artifact }}
           chmod +x ${{ matrix.artifact }}
 
       # Prepare artifact (Windows)
       - name: Prepare artifact (Windows)
         if: runner.os == 'Windows'
         run: |
-          cp server/target/${{ matrix.target }}/release/BetterNewTab.exe ${{ matrix.artifact }}
+          cp server/target/${{ matrix.target }}/release/OmegaTab.exe ${{ matrix.artifact }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -165,14 +165,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
-          pattern: BetterNewTab-*
+          pattern: OmegaTab-*
           merge-multiple: false
 
       - name: Prepare release files
         run: |
           mkdir -p release-files
           # Move all binaries to release-files, flattening the directory structure
-          find artifacts -type f -name 'BetterNewTab*' -exec mv {} release-files/ \;
+          find artifacts -type f -name 'OmegaTab*' -exec mv {} release-files/ \;
           ls -la release-files/
 
       - name: Generate Release Notes
@@ -189,7 +189,7 @@ jobs:
           else
             echo "## Initial Release" > release_notes.md
             echo "" >> release_notes.md
-            echo "First release of BetterNewTab!" >> release_notes.md
+            echo "First release of OmegaTab!" >> release_notes.md
           fi
 
           echo "" >> release_notes.md
@@ -198,7 +198,7 @@ jobs:
           echo "" >> release_notes.md
           echo "### Quick Install (Linux/macOS)" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo 'curl -fsSL https://raw.githubusercontent.com/LostRhapsody/betternewtab/main/install.sh | bash' >> release_notes.md
+          echo 'curl -fsSL https://raw.githubusercontent.com/LostRhapsody/omega-tab/main/install.sh | bash' >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
           echo "### Manual Download" >> release_notes.md
@@ -207,7 +207,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: BetterNewTab ${{ github.ref_name }}
+          name: OmegaTab ${{ github.ref_name }}
           body_path: release_notes.md
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

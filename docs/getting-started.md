@@ -1,15 +1,15 @@
 ---
 title: Geting Started
-description: Getting started with BetterNewTab
+description: Getting started with OmegaTab
 ---
 
-# Getting Started with BetterNewTab
+# Getting Started with OmegaTab
 
-Welcome to BetterNewTab! This guide will help you get up and running with the ultimate new tab replacement for your browser.
+Welcome to OmegaTab! This guide will help you get up and running with the ultimate new tab replacement for your browser.
 
-## What is BetterNewTab?
+## What is OmegaTab?
 
-BetterNewTab transforms your browser's new tab page into a powerful productivity hub. It provides:
+OmegaTab transforms your browser's new tab page into a powerful productivity hub. It provides:
 
 - Quick access to your most frequently used websites
 - Powerful universal search functionality
@@ -17,10 +17,10 @@ BetterNewTab transforms your browser's new tab page into a powerful productivity
 - Command palette for keyboard navigation
 - Clean, distraction-free interface
 
-## Setting up BetterNewTab
+## Setting up OmegaTab
 
-1. **First Visit**: When you first open BetterNewTab, you'll see the landing page, with a sign up button in the top right
-2. **Sign In**: Create an account or sign in to access BetterNewTab
+1. **First Visit**: When you first open OmegaTab, you'll see the landing page, with a sign up button in the top right
+2. **Sign In**: Create an account or sign in to access OmegaTab
 3. **Add Your Links**: Start adding your favorite websites using the "Add new link" button
 4. **Organize**: Group your links into columns using the column labels
 5. **Search**: Use the search bar at the top to open your links or perform web searches using the selected search engine
@@ -35,7 +35,7 @@ BetterNewTab transforms your browser's new tab page into a powerful productivity
 
 ## Next Steps
 
-Explore the [guides section](/guides) to learn about specific features and get the most out of BetterNewTab:
+Explore the [guides section](/guides) to learn about specific features and get the most out of OmegaTab:
 
 - [Creating a New Link](/guides/creating-a-new-link)
 - [Editing a Link](/guides/editing-a-link)

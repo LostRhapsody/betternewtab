@@ -1,11 +1,11 @@
 ---
 title: Keyboard Shortcuts
-description: Master BetterNewTab with these keyboard shortcuts
+description: Master OmegaTab with these keyboard shortcuts
 ---
 
 # Keyboard Shortcuts
 
-BetterNewTab offers a variety of keyboard shortcuts to enhance your productivity and navigation experience. This guide covers all the keyboard shortcuts available in the application.
+OmegaTab offers a variety of keyboard shortcuts to enhance your productivity and navigation experience. This guide covers all the keyboard shortcuts available in the application.
 
 ## Quick Reference
 
@@ -53,7 +53,7 @@ The Command Palette gives you keyboard access to all your links and application 
 ::: info Column Shortcuts
 The first two columns in your dashboard have shortcuts reserved for them. Additional columns will not have a unique shortcut mapped to them.
 
-BetterNewTab is designed with a 1 or 2 column layout in mind, and we make 18 links added to your first 1 or 2 columns easy and fast to launch via shortcuts. You can add as many columns as you want, and BetterNewTab supports displaying them, but shortcuts are only available for the first two columns.
+OmegaTab is designed with a 1 or 2 column layout in mind, and we make 18 links added to your first 1 or 2 columns easy and fast to launch via shortcuts. You can add as many columns as you want, and OmegaTab supports displaying them, but shortcuts are only available for the first two columns.
 :::
 
 

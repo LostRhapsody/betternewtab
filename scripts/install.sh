@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Better New Tab Installer
+# Omega Tab Installer
 # Downloads and installs the latest release from GitHub
 #
 
@@ -12,8 +12,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-REPO="LostRhapsody/betternewtab"
-BINARY_NAME="BetterNewTab"
+REPO="LostRhapsody/omega-tab"
+BINARY_NAME="OmegaTab"
 
 # Detect OS and architecture
 detect_platform() {
@@ -105,9 +105,9 @@ install_binary() {
         fi
 
         echo -e "${GREEN}Installed successfully!${NC}"
-        echo -e "${GREEN}Run '${BINARY_NAME}' to start Better New Tab${NC}"
+        echo -e "${GREEN}Run '${BINARY_NAME}' to start Omega Tab${NC}"
     elif [ "$OS" = "windows" ]; then
-        INSTALL_DIR="$HOME/AppData/Local/BetterNewTab"
+        INSTALL_DIR="$HOME/AppData/Local/OmegaTab"
         INSTALL_PATH="${INSTALL_DIR}/${BINARY_NAME}.exe"
 
         mkdir -p "$INSTALL_DIR"
@@ -123,7 +123,7 @@ install_binary() {
 # Main installation flow
 main() {
     echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}    Better New Tab Installer${NC}"
+    echo -e "${GREEN}    Omega Tab Installer${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
 
@@ -137,8 +137,8 @@ main() {
     echo -e "${GREEN}    Installation Complete!${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
-    echo "Better New Tab is now installed."
-    echo "Run 'BetterNewTab' to start the application."
+    echo "Omega Tab is now installed."
+    echo "Run 'OmegaTab' to start the application."
     echo ""
     echo "The application will:"
     echo "  - Start a local server on http://127.0.0.1:3000"

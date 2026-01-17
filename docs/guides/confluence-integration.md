@@ -1,6 +1,6 @@
 # Confluence Integration
 
-BetterNewTab's Confluence integration allows you to quickly search and access your Confluence Account's spaces and pages directly from BetterNewTab.
+OmegaTab's Confluence integration allows you to quickly search and access your Confluence Account's spaces and pages directly from OmegaTab.
 
 ::: warning
 This feature is not yet available and these steps are not finalized.
@@ -16,7 +16,7 @@ Please contact support if you have further questions.
 
 ### Configuration Steps
 
-1. In BetterNewTab, open the **User Settings** panel by clicking on the gear icon in the top-right corner
+1. In OmegaTab, open the **User Settings** panel by clicking on the gear icon in the top-right corner
 2. Navigate to the **Integrations** tab
 3. Find the Confluence section and click **Configure**
 4. Enter the following information:
@@ -28,7 +28,7 @@ Please contact support if you have further questions.
 
 Once configured, you'll be able to:
 
-- Search for Confluence pages directly from BetterNewTab's search bar by using the prefix `c:` or `confluence:`
+- Search for Confluence pages directly from OmegaTab's search bar by using the prefix `c:` or `confluence:`
 - See matching Confluence pages as suggestions when typing a search query
 - Click on any search result to open the corresponding Confluence page
 

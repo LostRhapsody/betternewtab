@@ -15,7 +15,7 @@
 
         <div class="prose-container tp-card max-w-3xl mx-auto">
           <p class="tp-secondary mb-6">
-            This Privacy Policy describes how BetterNewTab ("we", "us" or "our") collects, uses, and shares your personal information when you use our website and browser extension (the "Service").
+            This Privacy Policy describes how OmegaTab ("we", "us" or "our") collects, uses, and shares your personal information when you use our website and browser extension (the "Service").
           </p>
 
           <h2>Information We Collect</h2>
@@ -120,7 +120,7 @@
           <p class="tp-secondary mb-4">If you have any questions about this Privacy Policy, please contact us:</p>
 
           <ul class="tp-secondary">
-            <li>By email: <a href="mailto:support@betternewtab.com">support@betternewtab.com</a></li>
+            <li>By email: <a href="mailto:support@omega-tab.evanrobertson.dev">support@omega-tab.evanrobertson.dev</a></li>
             <li>By visiting our <a href="/contact">contact page</a></li>
           </ul>
         </div>

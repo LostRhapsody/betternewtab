@@ -1,11 +1,11 @@
 ---
 title: Editing a Link
-description: Learn how to modify your existing links in BetterNewTab
+description: Learn how to modify your existing links in OmegaTab
 ---
 
 # Editing a Link
 
-Once you've added links to your BetterNewTab dashboard, you may want to update them. This guide explains how to edit your existing link cards.
+Once you've added links to your OmegaTab dashboard, you may want to update them. This guide explains how to edit your existing link cards.
 
 ## Accessing the Edit Options
 
@@ -21,7 +21,7 @@ The Edit Link modal allows you to modify:
 - **Column Label**: Move the link to a different column/category
 
 ::: info Note
-Unlike when creating a new link, BetterNewTab will not attempt to fetch metadata when editing a link. Any changes you make will be applied exactly as entered.
+Unlike when creating a new link, OmegaTab will not attempt to fetch metadata when editing a link. Any changes you make will be applied exactly as entered.
 :::
 
 ## Column Management

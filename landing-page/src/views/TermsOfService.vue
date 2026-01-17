@@ -15,7 +15,7 @@
 
         <div class="prose-container tp-card max-w-3xl mx-auto">
           <p class="tp-secondary mb-6">
-            Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the BetterNewTab website and browser extension (the "Service") operated by BetterNewTab ("us", "we", or "our").
+            Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the OmegaTab website and browser extension (the "Service") operated by OmegaTab ("us", "we", or "our").
           </p>
 
           <p class="tp-secondary">
@@ -63,17 +63,17 @@
           <h2>4. Intellectual Property</h2>
 
           <p class="tp-secondary">
-            The Service and its original content (excluding Content provided by users), features, and functionality are and will remain the exclusive property of BetterNewTab and its licensors. The Service is protected by copyright, trademark, and other laws of both the United States and Canada.
+            The Service and its original content (excluding Content provided by users), features, and functionality are and will remain the exclusive property of OmegaTab and its licensors. The Service is protected by copyright, trademark, and other laws of both the United States and Canada.
           </p>
 
           <h2>5. Links to Other Websites</h2>
 
           <p class="tp-secondary">
-            Our Service may contain links to third-party websites or services that are not owned or controlled by BetterNewTab.
+            Our Service may contain links to third-party websites or services that are not owned or controlled by OmegaTab.
           </p>
 
           <p class="tp-secondary">
-            BetterNewTab has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third-party websites or services. You further acknowledge and agree that BetterNewTab shall not be responsible or liable for any damage or loss caused by or in connection with the use of any such content, goods, or services.
+            OmegaTab has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third-party websites or services. You further acknowledge and agree that OmegaTab shall not be responsible or liable for any damage or loss caused by or in connection with the use of any such content, goods, or services.
           </p>
 
           <h2>6. Termination</h2>
@@ -89,7 +89,7 @@
           <h2>7. Limitation of Liability</h2>
 
           <p class="tp-secondary">
-            In no event shall BetterNewTab, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
+            In no event shall OmegaTab, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
           </p>
 
           <h2>8. Disclaimer</h2>
@@ -119,7 +119,7 @@
           <p class="tp-secondary mb-4">If you have any questions about these Terms, please contact us:</p>
 
           <ul class="tp-secondary">
-            <li>By email: <a href="mailto:support@betternewtab.com">support@betternewtab.com</a></li>
+            <li>By email: <a href="mailto:support@omega-tab.evanrobertson.dev">support@omega-tab.evanrobertson.dev</a></li>
             <li>By visiting our <a href="/contact">contact page</a></li>
           </ul>
         </div>

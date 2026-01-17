@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: betternewtab-db
+    container_name: omega-tab-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: betternewtab
+      POSTGRES_DB: omega_tab
     ports:
       - "5432:5432"
     volumes:

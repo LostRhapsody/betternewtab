@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**BetterNewTab** - A browser new tab replacement web application.
+**OmegaTab** - A browser new tab replacement web application.
 
 - **Frontend (`client/`)**: Vue.js 3 + TypeScript + Vite
 - **Backend (`server/`)**: Rust + Axum

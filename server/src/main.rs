@@ -197,8 +197,8 @@ fn main() {
     // Wait for server to finish
     let _ = server_handle.join();
 
-    println!("Better New Tab shutting down");
-    tracing::info!("Better New Tab shutting down");
+    println!("Omega Tab shutting down");
+    tracing::info!("Omega Tab shutting down");
 }
 
 /// Create a simple channel that receives when Ctrl+C is pressed
@@ -212,7 +212,7 @@ fn ctrlc_channel() -> mpsc::Receiver<()> {
 }
 
 async fn runtime(shutdown_rx: mpsc::Receiver<()>) {
-    tracing::info!("Starting Better New Tab server");
+    tracing::info!("Starting Omega Tab server");
 
     let cors = {
         let environment =
@@ -220,7 +220,7 @@ async fn runtime(shutdown_rx: mpsc::Receiver<()>) {
 
         match environment.as_str() {
             "production" => CorsLayer::new()
-                .allow_origin("https://betternewtab.com".parse::<HeaderValue>().unwrap())
+                .allow_origin("https://omega-tab.evanrobertson.dev".parse::<HeaderValue>().unwrap())
                 .allow_methods([
                     Method::GET,
                     Method::POST,
@@ -231,7 +231,7 @@ async fn runtime(shutdown_rx: mpsc::Receiver<()>) {
                 .allow_headers(Any),
             "staging" => CorsLayer::new()
                 .allow_origin(
-                    "https://staging.betternewtab.com"
+                    "https://staging.omega-tab.evanrobertson.dev"
                         .parse::<HeaderValue>()
                         .unwrap(),
                 )

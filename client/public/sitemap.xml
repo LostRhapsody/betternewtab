@@ -5,25 +5,25 @@
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <!-- Main Pages -->
   <url>
-    <loc>https://betternewtab.com/</loc>
+    <loc>https://omega-tab.evanrobertson.dev/</loc>
     <lastmod>2023-11-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://betternewtab.com/plans</loc>
+    <loc>https://omega-tab.evanrobertson.dev/plans</loc>
     <lastmod>2023-11-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://betternewtab.com/help</loc>
+    <loc>https://omega-tab.evanrobertson.dev/help</loc>
     <lastmod>2023-11-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://betternewtab.com/help/getting-started</loc>
+    <loc>https://omega-tab.evanrobertson.dev/help/getting-started</loc>
     <lastmod>2023-11-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Better New Tab Release Build Script
+# Omega Tab Release Build Script
 # Builds the Vue frontend and Rust server for distribution
 #
 
@@ -20,7 +20,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DIST_DIR="${PROJECT_ROOT}/dist"
 
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}    Better New Tab Release Build${NC}"
+echo -e "${GREEN}    Omega Tab Release Build${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
@@ -60,7 +60,7 @@ fi
 cargo build --release
 
 # Find the built binary
-BINARY_NAME="BetterNewTab"
+BINARY_NAME="OmegaTab"
 TARGET_DIR="${PROJECT_ROOT}/server/target/release"
 
 if [ -f "${TARGET_DIR}/${BINARY_NAME}" ]; then

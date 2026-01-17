@@ -3,12 +3,12 @@
 layout: home
 
 hero:
-  name: "BetterNewTab"
+  name: "OmegaTab"
   text: "\nThe Ultimate New Tab Page"
   image: 
     src: "/favicon.svg"
-    alt: "BetterNewTab icon, a plus sign"
-  tagline: Getting started and guides for BetterNewTab
+    alt: "OmegaTab icon, a plus sign"
+  tagline: Getting started and guides for OmegaTab
   actions:
     - theme: brand
       text: Getting Started
@@ -17,8 +17,8 @@ hero:
       text: Guides
       link: /guides
     - theme: alt
-      text: Return to Better New Tab
-      link: https://betternewtab.com
+      text: Return to Omega Tab
+      link: https://omega-tab.evanrobertson.dev
       target: _self
 
 features:
@@ -33,7 +33,7 @@ features:
     details: Keyboard-first design lets you search, add links, open links, etc
   - title: Third-Party Integrations
     icon: 🔗
-    details: Search your organization's Jira or Linear issues or knowledgebase, straight from BetterNewTab
+    details: Search your organization's Jira or Linear issues or knowledgebase, straight from OmegaTab
   - title: Automatic Link Details
     icon: 🤖
     details: Automatically retrieve the title, description, and icon of your links by just entering the URL

@@ -1,4 +1,4 @@
-const CACHE_PREFIX = "betternewtab_";
+const CACHE_PREFIX = "omegatab_";
 const CACHE_VERSION = "v1_";
 
 export const CacheKeys = {

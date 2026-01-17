@@ -20,7 +20,7 @@ impl ResendClient {
     email_body: &str,
   ) -> Result<()> {
     tracing::info!("Sending email to: {}", customer_support_email);
-    let from = "evan@updates.betternewtab.com";
+    let from = "evan@updates.omega-tab.evanrobertson.dev";
     let to = [customer_support_email];
 
     let email = CreateEmailBaseOptions::new(from, to, subject)

@@ -1,15 +1,15 @@
 ---
 title: Command Palette
-description: Navigate BetterNewTab efficiently using keyboard commands
+description: Navigate OmegaTab efficiently using keyboard commands
 ---
 
 # Command Palette
 
-Use the Command Palette to quickly access features and links in BetterNewTab with just your keyboard.
+Use the Command Palette to quickly access features and links in OmegaTab with just your keyboard.
 
 ## Opening the Command Palette
 
-Press `Ctrl+K` to open the Command Palette from anywhere in BetterNewTab.
+Press `Ctrl+K` to open the Command Palette from anywhere in OmegaTab.
 
 ![Command Palette](/copy/command_palette.png)
 

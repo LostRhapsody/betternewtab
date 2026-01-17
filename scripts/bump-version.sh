@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# BetterNewTab Version Bump Script
+# OmegaTab Version Bump Script
 # Bumps version, commits, tags, and optionally pushes to trigger a release
 #
 # Usage:
@@ -154,14 +154,14 @@ push_to_remote() {
         echo -e "${GREEN}Pushed commits and tag to origin${NC}"
         echo ""
         echo -e "${GREEN}Release workflow triggered!${NC}"
-        echo -e "View progress at: ${BLUE}https://github.com/LostRhapsody/betternewtab/actions${NC}"
+        echo -e "View progress at: ${BLUE}https://github.com/LostRhapsody/omega-tab/actions${NC}"
     fi
 }
 
 # Main script
 main() {
     echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}    BetterNewTab Version Bump${NC}"
+    echo -e "${GREEN}    OmegaTab Version Bump${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
 

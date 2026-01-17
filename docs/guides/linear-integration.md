@@ -1,6 +1,6 @@
 # Linear Integration
 
-BetterNewTab's Linear integration lets you search and access your Linear issues directly from your new tab, streamlining your project management workflow.
+OmegaTab's Linear integration lets you search and access your Linear issues directly from your new tab, streamlining your project management workflow.
 
 ::: warning
 This feature is not yet available and these steps are not finalized.
@@ -16,7 +16,7 @@ Please contact support if you have further questions.
 
 ### Configuration Steps
 
-1. In BetterNewTab, open the **User Settings** panel by clicking on the gear icon in the top-right corner
+1. In OmegaTab, open the **User Settings** panel by clicking on the gear icon in the top-right corner
 2. Navigate to the **Integrations** tab
 3. Find the Linear section and click **Configure**
 4. Enter your Linear API key
@@ -25,7 +25,7 @@ Please contact support if you have further questions.
 
 Once configured, you'll be able to:
 
-- Search for Linear issues directly from BetterNewTab's search bar by using the prefix `l:` or `linear:`
+- Search for Linear issues directly from OmegaTab's search bar by using the prefix `l:` or `linear:`
 - See matching Linear issues as suggestions when typing a search query
 - Click on any search result to open the corresponding Linear issue
 - View key information about issues including status, priority, and assignee

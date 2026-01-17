@@ -1,11 +1,11 @@
 ---
 title: User Settings
-description: Configure your BetterNewTab experience with personalized settings
+description: Configure your OmegaTab experience with personalized settings
 ---
 
 # User Settings
 
-BetterNewTab offers various settings to customize your experience. This guide explains each available option and how to access your settings.
+OmegaTab offers various settings to customize your experience. This guide explains each available option and how to access your settings.
 
 ## Accessing Settings
 
@@ -15,7 +15,7 @@ To access your user settings:
 2. The "User Preferences" tab in the left sidebar will be selected where you can see your preferences
 
 ::: info Difference between settings and account
-BetterNewTab uses a 3rd party user authentication service to manage user accounts securely. The settings for BetterNewTab and your user account are separate for this reason.
+OmegaTab uses a 3rd party user authentication service to manage user accounts securely. The settings for OmegaTab and your user account are separate for this reason.
 :::
 
 ## Manage Your Account
@@ -29,11 +29,11 @@ To manage your user account:
 
 ## Available Settings
 
-BetterNewTab offers the following user preferences:
+OmegaTab offers the following user preferences:
 
 ### Free Features
 
-- **Enable Search History**: When enabled, BetterNewTab will remember your recent searches for quick access
+- **Enable Search History**: When enabled, OmegaTab will remember your recent searches for quick access
 - **Open Links In New Tabs**: When enabled, clicking on links will open them in new browser tabs rather than the current tab
 
 ### Plus Features

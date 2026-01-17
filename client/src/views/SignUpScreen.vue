@@ -5,7 +5,7 @@
 
     <div class="signup-screen__container">
       <div class="signup-screen__header">
-        <h1 class="signup-screen__logo">BetterNewTab_</h1>
+        <h1 class="signup-screen__logo">OmegaTab_</h1>
         <p class="signup-screen__subtitle">Create your account to get started</p>
       </div>
 

@@ -91,17 +91,73 @@ pub struct Database {
 /// Get the platform-appropriate data directory for storing the database
 fn get_data_dir() -> PathBuf {
     if let Some(data_dir) = dirs::data_local_dir() {
-        data_dir.join("betternewtab")
+        data_dir.join("omega-tab")
     } else {
         // Fallback to current directory
         PathBuf::from(".")
     }
 }
 
+/// Get the old data directory from the previous project name (betternewtab)
+fn get_legacy_data_dir() -> Option<PathBuf> {
+    dirs::data_local_dir().map(|data_dir| data_dir.join("betternewtab"))
+}
+
+/// Migrate database from old betternewtab location to new omega-tab location if needed
+fn migrate_legacy_database(new_data_dir: &PathBuf) -> Result<()> {
+    let new_db_path = new_data_dir.join("data.db");
+
+    // If new database already exists, no migration needed
+    if new_db_path.exists() {
+        return Ok(());
+    }
+
+    // Check if legacy database exists
+    if let Some(legacy_dir) = get_legacy_data_dir() {
+        let legacy_db_path = legacy_dir.join("data.db");
+
+        if legacy_db_path.exists() {
+            tracing::info!(
+                "Found legacy database at {}, migrating to {}",
+                legacy_db_path.display(),
+                new_db_path.display()
+            );
+
+            // Create new data directory if it doesn't exist
+            std::fs::create_dir_all(new_data_dir)?;
+
+            // Copy the database file to the new location
+            std::fs::copy(&legacy_db_path, &new_db_path)?;
+
+            tracing::info!("Successfully migrated database from betternewtab to omega-tab");
+
+            // Also copy any WAL/SHM files if they exist (SQLite journal files)
+            let legacy_wal = legacy_dir.join("data.db-wal");
+            let legacy_shm = legacy_dir.join("data.db-shm");
+
+            if legacy_wal.exists() {
+                let _ = std::fs::copy(&legacy_wal, new_data_dir.join("data.db-wal"));
+            }
+            if legacy_shm.exists() {
+                let _ = std::fs::copy(&legacy_shm, new_data_dir.join("data.db-shm"));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 impl Database {
     pub async fn new(_database_url: String) -> Result<Self> {
         // Create data directory if it doesn't exist
         let data_dir = get_data_dir();
+
+        // Check for and migrate legacy database from betternewtab
+        if let Err(e) = migrate_legacy_database(&data_dir) {
+            tracing::warn!("Failed to migrate legacy database: {}", e);
+            // Continue anyway - this isn't fatal
+        }
+
         std::fs::create_dir_all(&data_dir)?;
 
         let db_path = data_dir.join("data.db");

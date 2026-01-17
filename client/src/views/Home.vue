@@ -7,7 +7,7 @@
       <header class="home-header">
         <div class="home-header__container">
           <h1 class="home-header__logo">
-            <a href="#">BetterNewTab_</a>
+            <a href="#">OmegaTab_</a>
           </h1>
           <UserMenu />
         </div>
@@ -156,7 +156,7 @@
             </a>
           </TpMenuItem>
           <TpMenuItem>
-            <a href="https://github.com/LostRhapsody/betternewtab/issues" class="home-help-menu__link">
+            <a href="https://github.com/LostRhapsody/omega-tab/issues" class="home-help-menu__link">
               <TpIcon name="help" size="sm" />
               Report Issues
             </a>
@@ -197,7 +197,7 @@ import {
 
 // Set SEO metadata using Unhead
 useHead({
-  title: 'BetterNewTab - The Ultimate New Tab',
+  title: 'OmegaTab - The Ultimate New Tab',
   meta: [
     {
       name: 'description',
@@ -210,7 +210,7 @@ useHead({
     },
     {
       property: 'og:title',
-      content: 'BetterNewTab - The Ultimate New Tab'
+      content: 'OmegaTab - The Ultimate New Tab'
     },
     {
       property: 'og:description',
@@ -222,7 +222,7 @@ useHead({
     },
     {
       property: 'og:url',
-      content: 'https://betternewtab.com'
+      content: 'https://omega-tab.evanrobertson.dev'
     },
     {
       name: 'twitter:card',
@@ -230,7 +230,7 @@ useHead({
     },
     {
       name: 'twitter:title',
-      content: 'BetterNewTab - The Ultimate New Tab'
+      content: 'OmegaTab - The Ultimate New Tab'
     },
     {
       name: 'twitter:description',
@@ -243,7 +243,7 @@ useHead({
       children: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
-        name: 'BetterNewTab',
+        name: 'OmegaTab',
         description: 'Create the ultimate new tab landing page.',
         applicationCategory: 'ProductivityApplication',
         operatingSystem: 'Any',
@@ -259,7 +259,7 @@ useHead({
   link: [
     {
       rel: 'canonical',
-      href: 'https://betternewtab.com'
+      href: 'https://omega-tab.evanrobertson.dev'
     }
   ]
 })

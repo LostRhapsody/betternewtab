@@ -2,8 +2,8 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "BetterNewTab | Guides",
-  description: "Getting started and guides for BetterNewTab",
+  title: "OmegaTab | Guides",
+  description: "Getting started and guides for OmegaTab",
   base: '/',
   themeConfig: {
     logo: '/favicon.svg',    
@@ -14,7 +14,7 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guides', link: '/guides' },
-      { text: 'BetterNewTab', link: 'https://betternewtab.com', target: '_self' },
+      { text: 'OmegaTab', link: 'https://omega-tab.evanrobertson.dev', target: '_self' },
     ],
 
     sidebar: [
@@ -47,7 +47,7 @@ export default defineConfig({
       }
     ],
     footer: {
-      message: 'BetterNewTab',
+      message: 'OmegaTab',
       copyright: 'Copyright © 2019-present Evan Robertson'
     },
     lastUpdated: {
