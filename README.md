@@ -10,6 +10,16 @@ With that in mind, all of our current features and functionality needs to be red
 
 We're leaving user-based everything intact, in case anyone want's to host this for other's to use together, so multiple people can use a single instance and not have to share the same lame links.
 
+## Landing Page
+
+[Click here to check out our official landing page](omega-tab.evanrobertson.dev), which has some screenshots and descriptions of features.
+
+## Getting Started
+
+A "proper" deployment system is in the works, as Omega Tab can be run as a single executable, so installing and starting up *should* be easy. Right now, there are a few steps. You'll need to clone the repository, have bun and rust installed, then install everything, instructions are below!
+
+There are also instructions on how to set Omega Tab as your new tab page in a few different browsers.
+
 ## Tech Stack
 
 ### Client App (Vue.js)
@@ -33,7 +43,6 @@ We're leaving user-based everything intact, in case anyone want's to host this f
 - **SQLite** for data persistence (local file-based)
 - **SQLx** for type-safe database queries
 - **JWT** for authentication
-- **Sentry** for error tracking
 
 ## Features
 
@@ -42,20 +51,26 @@ We're leaving user-based everything intact, in case anyone want's to host this f
 - **Auto-suggestions**: Get search suggestions as you type (premium)
 - **Metadata Fetching**: Automatically fetch favicons, titles, and descriptions
 - **Keyboard Shortcuts**: Navigate links with Ctrl+1-9, open command palette with Ctrl+K
-- **Subscription Plans**: Free, Plus, and Pro tiers with Stripe integration
-- **Integrations**: Jira, Confluence, and Linear API integration (premium)
 
 ## Setting as New Tab Page
 
 After setting up OmegaTab locally, you can configure your browser to use it as the new tab page.
 
-### Chrome / Brave / Edge (Chromium-based)
+### Chrome / Edge / Helium
 
 Chromium browsers don't allow custom new tab URLs directly, so you'll need an extension:
 
 1. Install the [Custom New Tab URL](https://chrome.google.com/webstore/detail/custom-new-tab-url/) extension
 2. Click the extension icon and set the URL to `http://localhost:5173`
 3. (Optional) Set as homepage: Settings > On startup > Open a specific page
+
+### Brave
+
+1. Open Settings, Get Started
+2. On Startup -> Open the New Tab page
+3. New Tab Page Shows -> Homepage
+4. Appearance -> Show home button (true)
+5. Enter custom web address (http://localhost:5173)
 
 ### Firefox
 
